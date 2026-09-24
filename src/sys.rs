@@ -34,8 +34,12 @@ pub(crate) mod ffi {
 
         fn spline(self: Pin<&mut WireBuilder>, points: &[f64]) -> Result<()>;
 
-        fn helix(self: Pin<&mut WireBuilder>, pitch: f64, height: f64, right_handed: bool)
-            -> Result<()>;
+        fn helix(
+            self: Pin<&mut WireBuilder>,
+            pitch: f64,
+            height: f64,
+            right_handed: bool,
+        ) -> Result<()>;
 
         fn finish(self: Pin<&mut WireBuilder>, closed: bool) -> Result<UniquePtr<Shape>>;
 
@@ -45,11 +49,7 @@ pub(crate) mod ffi {
 
         fn make_cylinder(radius: f64, height: f64) -> Result<UniquePtr<Shape>>;
 
-        fn make_cone(
-            radius_bottom: f64,
-            radius_top: f64,
-            height: f64,
-        ) -> Result<UniquePtr<Shape>>;
+        fn make_cone(radius_bottom: f64, radius_top: f64, height: f64) -> Result<UniquePtr<Shape>>;
 
         fn make_torus(major_radius: f64, minor_radius: f64) -> Result<UniquePtr<Shape>>;
 

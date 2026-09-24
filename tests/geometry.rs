@@ -94,7 +94,10 @@ fn fillet_removes_material_from_vertical_edges() {
     let parts = build("fillet.json");
     assert_eq!(parts[0].solid_count(), 1);
     let volume = parts[0].volume();
-    assert!(volume > 0.0 && volume < 3000.0, "unexpected volume {volume}");
+    assert!(
+        volume > 0.0 && volume < 3000.0,
+        "unexpected volume {volume}"
+    );
 }
 
 #[test]
@@ -108,7 +111,10 @@ fn export_config_renders_a_png() {
     .expect("config parses");
     config.export(&parts).expect("renders");
     let bytes = std::fs::read(&path).expect("image exists");
-    assert_eq!(&bytes[..8], &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]);
+    assert_eq!(
+        &bytes[..8],
+        &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]
+    );
     let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
     assert_eq!(width, 64);
     let _ = std::fs::remove_file(&path);
@@ -168,5 +174,8 @@ fn chamfer_on_a_box_removes_material() {
     let parts = build("chamfer.json");
     assert_eq!(parts[0].solid_count(), 1);
     let volume = parts[0].volume();
-    assert!(volume > 0.0 && volume < 1000.0, "unexpected volume {volume}");
+    assert!(
+        volume > 0.0 && volume < 1000.0,
+        "unexpected volume {volume}"
+    );
 }

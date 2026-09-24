@@ -51,10 +51,10 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
 }
 
 pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
-    // One pass over the arena: validate every reference and collect reachability.
+    // One `try_map` pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
     for (index, node) in model.parts.iter().enumerate() {
-        node.try_for_each_operand(|operand| {
+        node.try_map(|operand| {
             validate_index(operand, index)?;
             referenced.insert(operand);
             Ok(())
@@ -63,12 +63,19 @@ pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
 
     // Roots are the nodes nobody references.
     let mut roots = Vec::new();
-    for (index, node) in model.parts.iter().enumerate() {
+    for (index, _) in model.parts.iter().enumerate() {
         if !referenced.contains(&index) {
-            roots.push(evaluate_node(node, &model.parts, index)?);
+            roots.push(build(index, &model.parts)?);
         }
     }
     Ok(roots)
+}
+
+/// Recursively evaluates a node: `try_map` turns its operands into `Part`s (this is exactly where
+/// the cache will plug in), then `evaluate` turns the ready `Node<Part>` into a `Part`.
+fn build(index: usize, parts: &[Node<usize>]) -> Result<Part> {
+    let node: Node<Part> = parts[index].try_map(|operand| build(operand, parts))?;
+    node.evaluate()
 }
 
 fn validate_index(index: usize, current: usize) -> Result<()> {
@@ -79,117 +86,108 @@ fn validate_index(index: usize, current: usize) -> Result<()> {
     }
 }
 
-fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
-    match node {
-        Node::Box {
-            width,
-            length,
-            height,
-        } => make_part(ffi::make_box(
-            width.value(),
-            length.value(),
-            height.value(),
-        )?),
-        Node::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
-        Node::Cylinder { radius, height } => {
-            make_part(ffi::make_cylinder(radius.value(), height.value())?)
-        }
-        Node::Cone {
-            radius_bottom,
-            radius_top,
-            height,
-        } => make_part(ffi::make_cone(
-            radius_bottom.value(),
-            radius_top.value(),
-            height.value(),
-        )?),
-        Node::Torus {
-            major_radius,
-            minor_radius,
-        } => make_part(ffi::make_torus(
-            major_radius.value(),
-            minor_radius.value(),
-        )?),
-        Node::Wedge {
-            width,
-            length,
-            height,
-            top_width,
-        } => make_part(ffi::make_wedge(
-            width.value(),
-            length.value(),
-            height.value(),
-            top_width.value(),
-        )?),
-        Node::Halfspace => make_part(ffi::make_halfspace()?),
-        Node::Fuse { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::fuse(a, b)?)),
-        Node::Cut { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::cut(a, b)?)),
-        Node::Common { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::common(a, b)?)),
-        Node::Transform { target, ops } => {
-            let mut result = operand(*target, parts, current)?;
-            for op in ops {
-                result = apply_transform(result, op)?;
+impl Node<Part> {
+    /// Applies the node's operation; all operands are already evaluated (see [`build`]).
+    fn evaluate(self) -> Result<Part> {
+        match self {
+            Node::Box {
+                width,
+                length,
+                height,
+            } => make_part(ffi::make_box(
+                width.value(),
+                length.value(),
+                height.value(),
+            )?),
+            Node::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
+            Node::Cylinder { radius, height } => {
+                make_part(ffi::make_cylinder(radius.value(), height.value())?)
             }
-            Ok(result)
-        }
-        Node::Extrude { profile, height } => {
-            let wire = build_profile_wire(profile)?;
-            make_part(ffi::extrude(&wire, height.value())?)
-        }
-        Node::Revolve { profile, angle } => {
-            let wire = build_profile_wire(profile)?;
-            make_part(ffi::revolve(&wire, angle.value())?)
-        }
-        Node::Sweep {
-            profile,
-            path,
-            mode,
-        } => {
-            let profile_wire = build_profile_wire(profile)?;
-            let spine = build_path_wire(path, false)?;
-            let follow = matches!(mode, SweepMode::Follow);
-            make_part(ffi::sweep(&profile_wire, &spine, follow)?)
-        }
-        Node::Loft { sections, ruled } => {
-            if sections.len() < 2 {
-                return Err(Error::LoftNeedsTwoSections);
+            Node::Cone {
+                radius_bottom,
+                radius_top,
+                height,
+            } => make_part(ffi::make_cone(
+                radius_bottom.value(),
+                radius_top.value(),
+                height.value(),
+            )?),
+            Node::Torus {
+                major_radius,
+                minor_radius,
+            } => make_part(ffi::make_torus(major_radius.value(), minor_radius.value())?),
+            Node::Wedge {
+                width,
+                length,
+                height,
+                top_width,
+            } => make_part(ffi::make_wedge(
+                width.value(),
+                length.value(),
+                height.value(),
+                top_width.value(),
+            )?),
+            Node::Halfspace => make_part(ffi::make_halfspace()?),
+            Node::Fuse { parts } => reduce(parts.into_iter(), |a, b| Ok(ffi::fuse(a, b)?)),
+            Node::Cut { base, tools } => reduce(std::iter::once(base).chain(tools), |a, b| {
+                Ok(ffi::cut(a, b)?)
+            }),
+            Node::Common { parts } => reduce(parts.into_iter(), |a, b| Ok(ffi::common(a, b)?)),
+            Node::Transform { target, ops } => {
+                let mut result = target;
+                for op in &ops {
+                    result = apply_transform(result, op)?;
+                }
+                Ok(result)
             }
-            let mut builder = ffi::new_loft_builder(*ruled);
-            for section in sections {
-                let wire = build_path_wire(section, true)?;
-                builder.pin_mut().add(&wire)?;
+            Node::Extrude { profile, height } => {
+                let wire = build_profile_wire(&profile)?;
+                make_part(ffi::extrude(&wire, height.value())?)
             }
-            make_part(builder.pin_mut().finish()?)
+            Node::Revolve { profile, angle } => {
+                let wire = build_profile_wire(&profile)?;
+                make_part(ffi::revolve(&wire, angle.value())?)
+            }
+            Node::Sweep {
+                profile,
+                path,
+                mode,
+            } => {
+                let profile_wire = build_profile_wire(&profile)?;
+                let spine = build_path_wire(&path, false)?;
+                let follow = matches!(mode, SweepMode::Follow);
+                make_part(ffi::sweep(&profile_wire, &spine, follow)?)
+            }
+            Node::Loft { sections, ruled } => {
+                if sections.len() < 2 {
+                    return Err(Error::LoftNeedsTwoSections);
+                }
+                let mut builder = ffi::new_loft_builder(ruled);
+                for section in &sections {
+                    let wire = build_path_wire(section, true)?;
+                    builder.pin_mut().add(&wire)?;
+                }
+                make_part(builder.pin_mut().finish()?)
+            }
+            Node::Fillet {
+                target,
+                kind,
+                radius,
+            } => evaluate_fillet(target, kind, &radius),
         }
-        Node::Fillet {
-            target,
-            kind,
-            radius,
-        } => evaluate_fillet(*target, *kind, radius, parts, current),
     }
 }
 
-/// Folds a binary operation left-to-right over a node's operands (e.g. `fuse`/`cut`/`common`).
-/// Operand traversal is centralized in [`Node::try_for_each_operand`].
-fn fold_operands<F>(
-    node: &Node,
-    parts: &[Node],
-    current: usize,
-    combine: F,
-) -> Result<Part>
+/// Reduces already-evaluated operands with a binary operation (e.g. `fuse`/`cut`/`common`).
+fn reduce<F>(operands: impl Iterator<Item = Part>, combine: F) -> Result<Part>
 where
     F: Fn(&ffi::Shape, &ffi::Shape) -> Result<UniquePtr<ffi::Shape>>,
 {
-    let mut accumulator: Option<Part> = None;
-    node.try_for_each_operand(|index| {
-        let next = operand(index, parts, current)?;
-        accumulator = Some(match accumulator.take() {
-            Some(previous) => make_part(combine(previous.shape(), next.shape())?)?,
-            None => next,
-        });
-        Ok(())
-    })?;
-    accumulator.ok_or(Error::MissingOperand)
+    let mut operands = operands;
+    let first = operands.next().ok_or(Error::MissingOperand)?;
+    operands.try_fold(first, |accumulator, next| {
+        make_part(combine(accumulator.shape(), next.shape())?)
+    })
 }
 
 fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
@@ -233,15 +231,8 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
     }
 }
 
-fn evaluate_fillet(
-    target: usize,
-    kind: FilletKind,
-    radius: &RadiusSpec,
-    parts: &[Node],
-    current: usize,
-) -> Result<Part> {
-    let part = operand(target, parts, current)?;
-    let shape = part.shape();
+fn evaluate_fillet(target: Part, kind: FilletKind, radius: &RadiusSpec) -> Result<Part> {
+    let shape = target.shape();
     let engine = expression_engine();
     let mut values = Vec::new();
     for solid in 0..ffi::solid_count(shape) {
@@ -416,11 +407,4 @@ fn flatten2(points: &[Point2]) -> Vec<f64> {
         flat.push(0.0);
     }
     flat
-}
-
-fn operand(index: usize, parts: &[Node], current: usize) -> Result<Part> {
-    if index >= current {
-        return Err(Error::InvalidReference { index, current });
-    }
-    evaluate_node(&parts[index], parts, index)
 }

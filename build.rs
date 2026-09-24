@@ -31,9 +31,7 @@ fn resolve_occt_directory() -> PathBuf {
         .iter()
         .map(PathBuf::from)
         .find(|directory| directory.join("include/opencascade").exists())
-        .unwrap_or_else(|| {
-            panic!("OpenCASCADE not found. Set the OCCT_DIR environment variable.")
-        })
+        .unwrap_or_else(|| panic!("OpenCASCADE not found. Set the OCCT_DIR environment variable."))
 }
 
 fn main() {

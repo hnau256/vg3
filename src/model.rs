@@ -131,9 +131,16 @@ pub enum Curve2 {
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Curve3 {
-    Line { to: Point3 },
-    Arc { via: Point3, to: Point3 },
-    Spline { points: Vec<Point3> },
+    Line {
+        to: Point3,
+    },
+    Arc {
+        via: Point3,
+        to: Point3,
+    },
+    Spline {
+        points: Vec<Point3>,
+    },
     Helix {
         pitch: Scalar,
         height: Scalar,
@@ -210,7 +217,7 @@ pub enum RadiusSpec {
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum Node {
+pub enum Node<T> {
     Box {
         width: Scalar,
         length: Scalar,
@@ -259,21 +266,21 @@ pub enum Node {
         ruled: bool,
     },
     Fuse {
-        parts: Vec<usize>,
+        parts: Vec<T>,
     },
     Cut {
-        base: usize,
-        tools: Vec<usize>,
+        base: T,
+        tools: Vec<T>,
     },
     Common {
-        parts: Vec<usize>,
+        parts: Vec<T>,
     },
     Transform {
-        target: usize,
+        target: T,
         ops: Vec<TransformOp>,
     },
     Fillet {
-        target: usize,
+        target: T,
         #[serde(default)]
         kind: FilletKind,
         radius: RadiusSpec,
@@ -284,7 +291,7 @@ pub enum Node {
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
-    pub parts: Vec<Node>,
+    pub parts: Vec<Node<usize>>,
 }
 
 pub fn parse(source: &str) -> Result<Model> {
@@ -295,22 +302,100 @@ pub fn parse(source: &str) -> Result<Model> {
     Ok(model)
 }
 
-impl Node {
-    /// Applies `visit` to each operand (dependency) index, in evaluation order.
+impl<T: Clone> Node<T> {
+    /// Functor over operands: rebuilds the node, applying `f` to every operand, in order.
     ///
-    /// Single source of truth for "where are a node's operands": validation, reachability and
-    /// evaluation all traverse the tree through this method.
-    pub fn try_for_each_operand(&self, mut visit: impl FnMut(usize) -> Result<()>) -> Result<()> {
-        match self {
-            Node::Fuse { parts } | Node::Common { parts } => {
-                parts.iter().try_for_each(|&index| visit(index))
-            }
-            Node::Cut { base, tools } => {
-                visit(*base)?;
-                tools.iter().try_for_each(|&index| visit(index))
-            }
-            Node::Transform { target, .. } | Node::Fillet { target, .. } => visit(*target),
-            _ => Ok(()),
-        }
+    /// This is the single source of truth for "where are a node's operands". Operand-level
+    /// concerns — validation, reachability, evaluation (`Node<usize>` → `Node<Part>`) and,
+    /// later, the cache key — are all expressed as a `try_map` over the arena.
+    pub fn try_map<U>(&self, mut f: impl FnMut(T) -> Result<U>) -> Result<Node<U>> {
+        Ok(match self {
+            Node::Box {
+                width,
+                length,
+                height,
+            } => Node::Box {
+                width: *width,
+                length: *length,
+                height: *height,
+            },
+            Node::Sphere { radius } => Node::Sphere { radius: *radius },
+            Node::Cylinder { radius, height } => Node::Cylinder {
+                radius: *radius,
+                height: *height,
+            },
+            Node::Cone {
+                radius_bottom,
+                radius_top,
+                height,
+            } => Node::Cone {
+                radius_bottom: *radius_bottom,
+                radius_top: *radius_top,
+                height: *height,
+            },
+            Node::Torus {
+                major_radius,
+                minor_radius,
+            } => Node::Torus {
+                major_radius: *major_radius,
+                minor_radius: *minor_radius,
+            },
+            Node::Wedge {
+                width,
+                length,
+                height,
+                top_width,
+            } => Node::Wedge {
+                width: *width,
+                length: *length,
+                height: *height,
+                top_width: *top_width,
+            },
+            Node::Halfspace => Node::Halfspace,
+            Node::Extrude { profile, height } => Node::Extrude {
+                profile: profile.clone(),
+                height: *height,
+            },
+            Node::Revolve { profile, angle } => Node::Revolve {
+                profile: profile.clone(),
+                angle: *angle,
+            },
+            Node::Sweep {
+                profile,
+                path,
+                mode,
+            } => Node::Sweep {
+                profile: profile.clone(),
+                path: path.clone(),
+                mode: *mode,
+            },
+            Node::Loft { sections, ruled } => Node::Loft {
+                sections: sections.clone(),
+                ruled: *ruled,
+            },
+            Node::Fuse { parts } => Node::Fuse {
+                parts: parts.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+            },
+            Node::Cut { base, tools } => Node::Cut {
+                base: f(base.clone())?,
+                tools: tools.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+            },
+            Node::Common { parts } => Node::Common {
+                parts: parts.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+            },
+            Node::Transform { target, ops } => Node::Transform {
+                target: f(target.clone())?,
+                ops: ops.clone(),
+            },
+            Node::Fillet {
+                target,
+                kind,
+                radius,
+            } => Node::Fillet {
+                target: f(target.clone())?,
+                kind: *kind,
+                radius: radius.clone(),
+            },
+        })
     }
 }
