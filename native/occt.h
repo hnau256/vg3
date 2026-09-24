@@ -172,6 +172,10 @@ bool is_solids_only(const Shape& shape);
 
 std::size_t solid_count(const Shape& shape);
 
+std::size_t face_count(const Shape& shape);
+
+std::unique_ptr<Shape> unify(const Shape& shape);
+
 bool write_stl(const Shape& shape, rust::Str path, double tolerance);
 
 }  // namespace vg3

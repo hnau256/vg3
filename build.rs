@@ -16,6 +16,7 @@ const OCCT_TOOLKITS: &[&str] = &[
     "TKOffset",
     "TKMesh",
     "TKDESTL",
+    "TKShHealing",
 ];
 
 fn resolve_occt_directory() -> PathBuf {

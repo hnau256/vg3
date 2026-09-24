@@ -121,6 +121,15 @@ fn export_config_rejects_unknown_parameters() {
 }
 
 #[test]
+fn fuse_result_is_unified_into_a_clean_brep() {
+    let parts = build("fuse_clean.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_eq!(parts[0].face_count(), 6);
+    assert_close(parts[0].volume(), 2000.0, 1e-6);
+    assert_bounds(&parts[0], [0.0, 0.0, 0.0, 20.0, 10.0, 10.0]);
+}
+
+#[test]
 fn halfspace_cuts_away_material_on_the_reference_side() {
     let parts = build("halfspace.json");
     assert_eq!(parts.len(), 1);

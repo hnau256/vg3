@@ -24,6 +24,7 @@
 #include <BRepLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <GeomAbs_CurveType.hxx>
+#include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
@@ -362,6 +363,35 @@ std::size_t solid_count(const Shape& shape) {
         ++count;
     }
     return count;
+}
+
+std::size_t face_count(const Shape& shape) {
+    std::size_t count = 0;
+    for (TopExp_Explorer explorer(shape.topods(), TopAbs_FACE); explorer.More();
+         explorer.Next()) {
+        ++count;
+    }
+    return count;
+}
+
+std::unique_ptr<Shape> unify(const Shape& shape) {
+    try {
+        ShapeUpgrade_UnifySameDomain algorithm(
+            shape.topods(),
+            Standard_True,
+            Standard_True,
+            Standard_True
+        );
+        algorithm.Build();
+        const TopoDS_Shape result = algorithm.Shape();
+        if (result.IsNull()) {
+            throw std::runtime_error("unify produced a null shape");
+        }
+        ensure_valid(result);
+        return std::make_unique<Shape>(result);
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
 }
 
 WireBuilder::WireBuilder() : started_(false), has_edges_(false) {}

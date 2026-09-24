@@ -23,6 +23,10 @@ impl Part {
         ffi::solid_count(self.shape())
     }
 
+    pub fn face_count(&self) -> usize {
+        ffi::face_count(self.shape())
+    }
+
     pub fn volume(&self) -> f64 {
         ffi::volume(self.shape())
     }
@@ -39,7 +43,11 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
     if !ffi::is_solids_only(&shape) {
         return Err(Error::NotASolid);
     }
-    Ok(Part { shape })
+    let unified = ffi::unify(&shape)?;
+    if !ffi::is_solids_only(&unified) {
+        return Err(Error::NotASolid);
+    }
+    Ok(Part { shape: unified })
 }
 
 pub fn evaluate(model: &Model) -> Result<Vec<Part>> {

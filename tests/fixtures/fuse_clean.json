@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "fuse",
+      "parts": [
+        { "type": "box", "width": 10, "length": 10, "height": 10 },
+        {
+          "type": "transform",
+          "target": { "type": "box", "width": 10, "length": 10, "height": 10 },
+          "ops": [{ "type": "translate", "value": { "dx": 10, "dy": 0, "dz": 0 } }]
+        }
+      ]
+    }
+  ]
+}

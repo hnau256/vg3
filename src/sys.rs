@@ -125,6 +125,10 @@ pub(crate) mod ffi {
 
         fn solid_count(shape: &Shape) -> usize;
 
+        fn face_count(shape: &Shape) -> usize;
+
+        fn unify(shape: &Shape) -> Result<UniquePtr<Shape>>;
+
         fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<bool>;
     }
 }
