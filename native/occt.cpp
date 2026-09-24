@@ -17,6 +17,9 @@
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepFilletAPI_MakeChamfer.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
+#include <BRepLib_MakeFace.hxx>
+#include <BRepPrimAPI_MakeHalfSpace.hxx>
+#include <gp_Pln.hxx>
 #include <BRepGProp.hxx>
 #include <BRepLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -173,6 +176,19 @@ std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius) {
     try {
         BRepPrimAPI_MakeTorus maker(major_radius, minor_radius);
         const TopoDS_Shape shape = maker.Shape();
+        ensure_valid(shape);
+        return std::make_unique<Shape>(shape);
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<Shape> make_halfspace() {
+    try {
+        const gp_Pln plane;
+        BRepLib_MakeFace make_face(plane);
+        BRepPrimAPI_MakeHalfSpace make_half_space(make_face.Face(), gp_Pnt(0.0, 0.0, -1.0));
+        const TopoDS_Shape shape = make_half_space.Solid();
         ensure_valid(shape);
         return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {

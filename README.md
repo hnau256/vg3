@@ -146,7 +146,8 @@ vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Part
 
 ## Реализовано
 
-- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`.
+- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace` (полупространство
+  `z ≤ 0`, инструмент для `cut`).
 - **Генерация тел**: `extrude`, `revolve` (ось Y, полный оборот = 2π), `sweep` (`follow`/`rigid`),
   `loft` (`ruled`).
 - **Булевы**: `fuse`, `cut`, `common`.

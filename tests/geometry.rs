@@ -98,6 +98,15 @@ fn fillet_removes_material_from_vertical_edges() {
 }
 
 #[test]
+fn halfspace_cuts_away_material_on_the_reference_side() {
+    let parts = build("halfspace.json");
+    assert_eq!(parts.len(), 1);
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), 500.0, 1e-6);
+    assert_bounds(&parts[0], [0.0, 0.0, 5.0, 10.0, 10.0, 10.0]);
+}
+
+#[test]
 fn helical_thread_adds_a_ridge_to_the_cylinder() {
     let parts = build("thread.json");
     assert_eq!(parts.len(), 1);

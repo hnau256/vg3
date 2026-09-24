@@ -245,6 +245,7 @@ pub enum Node {
         height: Scalar,
         top_width: Scalar,
     },
+    Halfspace,
     Extrude {
         profile: Profile,
         height: Scalar,

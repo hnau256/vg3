@@ -60,6 +60,8 @@ pub(crate) mod ffi {
             top_width: f64,
         ) -> Result<UniquePtr<Shape>>;
 
+        fn make_halfspace() -> Result<UniquePtr<Shape>>;
+
         fn extrude(profile: &Shape, height: f64) -> Result<UniquePtr<Shape>>;
 
         fn revolve(profile: &Shape, angle: f64) -> Result<UniquePtr<Shape>>;

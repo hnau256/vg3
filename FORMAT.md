@@ -117,6 +117,7 @@ Path    = { "start": Point3, "edges": [ Curve3... ] }   // 3D
 { "type": "cone",     "radius_bottom": Scalar, "radius_top": Scalar, "height": Scalar } // ось +Z
 { "type": "torus",    "major_radius": Scalar, "minor_radius": Scalar }       // центр в начале, пл. XY
 { "type": "wedge",    "width": Scalar, "length": Scalar, "height": Scalar, "top_width": Scalar }
+{ "type": "halfspace" }  // бесконечный solid z ≤ 0 (материал со стороны опорной точки); инструмент для cut
 ```
 
 ### 4.2 Генерация тел

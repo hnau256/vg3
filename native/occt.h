@@ -93,6 +93,8 @@ std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius);
 
 std::unique_ptr<Shape> make_wedge(double width, double length, double height, double top_width);
 
+std::unique_ptr<Shape> make_halfspace();
+
 std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle);

@@ -74,6 +74,7 @@ fn validate_node(node: &Node, current: usize) -> Result<()> {
         | Node::Cone { .. }
         | Node::Torus { .. }
         | Node::Wedge { .. }
+        | Node::Halfspace
         | Node::Extrude { .. }
         | Node::Revolve { .. }
         | Node::Sweep { .. }
@@ -121,6 +122,7 @@ fn collect_references(node: &Node, referenced: &mut HashSet<usize>) {
         | Node::Cone { .. }
         | Node::Torus { .. }
         | Node::Wedge { .. }
+        | Node::Halfspace
         | Node::Extrude { .. }
         | Node::Revolve { .. }
         | Node::Sweep { .. }
@@ -192,6 +194,7 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             height.value(),
             top_width.value(),
         )?),
+        Node::Halfspace => make_part(ffi::make_halfspace()?),
         Node::Fuse { parts: operands } => {
             fold_boolean(operands, parts, current, |a, b| Ok(ffi::fuse(a, b)?))
         }
