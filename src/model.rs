@@ -14,7 +14,7 @@ impl Scalar {
     }
 }
 
-impl std::hash::Hash for Scalar {
+impl Hash for Scalar {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.to_bits().hash(state);
     }
@@ -31,8 +31,6 @@ impl TryFrom<f64> for Scalar {
     }
 }
 
-const TAU: f64 = std::f64::consts::TAU;
-
 #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
 #[serde(try_from = "f64")]
 pub struct Angle(f64);
@@ -43,7 +41,7 @@ impl Angle {
     }
 }
 
-impl std::hash::Hash for Angle {
+impl Hash for Angle {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.to_bits().hash(state);
     }
@@ -56,18 +54,19 @@ impl TryFrom<f64> for Angle {
         if !value.is_finite() {
             return Err(Error::NonFiniteScalar);
         }
-        let reduced = value.rem_euclid(TAU);
-        Ok(Angle(if reduced == 0.0 { 0.0 } else { reduced }))
+        Ok(Angle(if value == 0.0 { 0.0 } else { value }))
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Point2 {
     pub x: Scalar,
     pub y: Scalar,
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Point3 {
     pub x: Scalar,
     pub y: Scalar,
@@ -75,6 +74,7 @@ pub struct Point3 {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Vector3 {
     pub dx: Scalar,
     pub dy: Scalar,
@@ -89,6 +89,7 @@ pub struct Normal3 {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawNormal3 {
     dx: Scalar,
     dy: Scalar,
@@ -119,14 +120,39 @@ impl<'de> Deserialize<'de> for Normal3 {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Curve<P> {
+    Line { to: P },
+    Arc { via: P, to: P },
+    Spline { points: Vec<P> },
+}
+
+pub type Curve2 = Curve<Point2>;
+pub type Curve3 = Curve<Point3>;
+
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Profile {
+    pub start: Point2,
+    pub edges: Vec<Curve2>,
+}
+
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Path {
+    pub start: Point3,
+    pub edges: Vec<Curve3>,
+}
+
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Operand {
     Index(usize),
     Inline(Box<Node>),
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransformOp {
     Translate {
@@ -151,7 +177,30 @@ pub enum TransformOp {
     },
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SweepMode {
+    #[default]
+    Follow,
+    Rigid,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FilletKind {
+    #[default]
+    Fillet,
+    Chamfer,
+}
+
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum RadiusSpec {
+    All { radius: Scalar },
+    Expression { expression: String },
+}
+
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Node {
     Box {
@@ -162,16 +211,68 @@ pub enum Node {
     Sphere {
         radius: Scalar,
     },
+    Cylinder {
+        radius: Scalar,
+        height: Scalar,
+    },
+    Cone {
+        radius_bottom: Scalar,
+        radius_top: Scalar,
+        height: Scalar,
+    },
+    Torus {
+        major_radius: Scalar,
+        minor_radius: Scalar,
+    },
+    Wedge {
+        width: Scalar,
+        length: Scalar,
+        height: Scalar,
+        top_width: Scalar,
+    },
+    Extrude {
+        profile: Profile,
+        height: Scalar,
+    },
+    Revolve {
+        profile: Profile,
+        angle: Angle,
+    },
+    Sweep {
+        profile: Profile,
+        path: Path,
+        #[serde(default)]
+        mode: SweepMode,
+    },
+    Loft {
+        sections: Vec<Path>,
+        #[serde(default)]
+        ruled: bool,
+    },
     Fuse {
+        parts: Vec<Operand>,
+    },
+    Cut {
+        base: Operand,
+        tools: Vec<Operand>,
+    },
+    Common {
         parts: Vec<Operand>,
     },
     Transform {
         target: Operand,
         ops: Vec<TransformOp>,
     },
+    Fillet {
+        target: Operand,
+        #[serde(default)]
+        kind: FilletKind,
+        radius: RadiusSpec,
+    },
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
     pub parts: Vec<Node>,

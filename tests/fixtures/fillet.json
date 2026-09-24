@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "fillet",
+      "kind": "fillet",
+      "target": {
+        "type": "fuse",
+        "parts": [
+          {
+            "type": "transform",
+            "target": { "type": "box", "width": 20, "length": 20, "height": 5 },
+            "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } }]
+          },
+          { "type": "cylinder", "radius": 5, "height": 10 }
+        ]
+      },
+      "radius": {
+        "type": "expression",
+        "expression": "if edge.is_vertical { 2.0 } else { 0.0 }"
+      }
+    }
+  ]
+}

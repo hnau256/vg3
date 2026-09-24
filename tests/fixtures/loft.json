@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "loft",
+      "ruled": true,
+      "sections": [
+        {
+          "start": { "x": -2, "y": -2, "z": 0 },
+          "edges": [
+            { "type": "line", "to": { "x": 2, "y": -2, "z": 0 } },
+            { "type": "line", "to": { "x": 2, "y": 2, "z": 0 } },
+            { "type": "line", "to": { "x": -2, "y": 2, "z": 0 } }
+          ]
+        },
+        {
+          "start": { "x": -1, "y": -1, "z": 10 },
+          "edges": [
+            { "type": "line", "to": { "x": 1, "y": -1, "z": 10 } },
+            { "type": "line", "to": { "x": 1, "y": 1, "z": 10 } },
+            { "type": "line", "to": { "x": -1, "y": 1, "z": 10 } }
+          ]
+        }
+      ]
+    }
+  ]
+}

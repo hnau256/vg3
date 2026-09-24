@@ -28,11 +28,11 @@ Kotlin-фронтенд (типизированный DSL)
         │
         │  ┌──────────────────────────── конвейер vg3 ────────────────────────────┐
         └─▶│  1. parse       2. evaluate              3. export                     │
-           │  str -> Model   Model -> Vec<Part>       Vec<Part> -> bytes/string   │
+           │  str -> Model   Model -> Vec<Part>       Vec<Part> -> bytes          │
            └───────────────────────────────────────────────────────────────────────┘
         │
         ▼
-      STEP / STL
+      STL (STEP — в планах)
 ```
 
 ### Три шага (единый поток)
@@ -41,7 +41,7 @@ Kotlin-фронтенд (типизированный DSL)
 |---|---|---|---|
 | 1. parse | `parse(&str) -> Result<Model>` | `model` | JSON → доменное дерево; канонизация в типах |
 | 2. evaluate | `evaluate(&Model) -> Result<Vec<Part>>` | `engine` | обход дерева, вызовы OCCT, построение шейпов |
-| 3. export | `export(&[Part], Format, &Path) -> Result<()>` | `export` | запись шейпов в STEP/STL |
+| 3. export | `export(&[Part], Format, &Path, &ExportOptions) -> Result<()>` | `export` | запись шейпов |
 
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируются
 **корневые** `Part` — те, на которые никто не ссылается.
@@ -53,12 +53,16 @@ src/
   lib.rs      — публичный фасад: model, engine, export
   model.rs    — доменная модель (IR-типы + serde) и parse (str -> Model)
   engine.rs   — OCCT-процессор: evaluate (Model -> Vec<Part>)
-  export.rs   — экспортёр: export (Vec<Part> -> STEP/STL)
+  export.rs   — экспортёр: export (Vec<Part> -> bytes)
   sys.rs      — тонкий cxx-мост к C++-слою (приватный)
   error.rs    — единый Error + Result
   main.rs     — CLI: parse -> evaluate -> export
 native/
   occt.h/.cpp — C++-слой: по функции на операцию OCCT
+tests/
+  geometry.rs — «золотые» тесты по геометрическим свойствам
+  errors.rs   — тесты ошибок/валидации
+  fixtures/   — JSON-модели
 ```
 
 Границы модулей жёсткие: `model` не знает про OCCT, `engine` не знает про JSON, `export` не знает про IR.
@@ -67,61 +71,99 @@ native/
 ### Доменная модель (`model`)
 
 Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах). Это осознанный
-компромисс: меньше слоёв, быстрее старт. При необходимости разделения на «wire + domain» это делается
-локально позже (сейчас — нет).
+компромисс: меньше слоёв, быстрее старт.
 
 - `Model { version, parts: Vec<Node> }` — верхний уровень.
-- `Node` — узел IR: примитивы (`box`, `sphere`, …), генерация (`extrude`, …), булевы (`fuse`, `cut`,
-  `common`), трансформации (`transform`), `fillet`.
+- `Node` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
 - `Operand` — ссылка: `Index(usize)` (назад в `parts`) **или** `Inline(Box<Node>)`.
+- `Profile`/`Path` и `Curve2`/`Curve3` (`line`/`arc`/`spline`).
 - Канонические скаляры/геометрия: `Scalar`, `Angle`, `Point2`, `Point3`, `Vector3`, `Normal3`.
 
 ### Канонизация — в типах
 
 Канонизация выполняется **при десериализации, в самих типах** (`TryFrom`/`Deserialize`), а не отдельным
-проходом по дереву. После `parse` дерево всегда каноническое — значит, ключ кэша канонический.
+проходом по дереву. После `parse` дерево всегда каноническое.
 
 - `Scalar` — конечное число, `−0 → +0`.
-- `Angle` — приведение `mod 2π`.
+- `Angle` — конечное число, `−0 → +0`; **не** приводится mod 2π (иначе полный оборот `revolve` на 2π
+  схлопнулся бы в 0).
 - `Normal3` — нормируется в единичный, знак **сохраняется**, нулевой вектор → ошибка.
-- `Point2/3`, `Vector3` — компоненты суть `Scalar` (значит канонизированы).
+- `Point2/3`, `Vector3` — компоненты суть `Scalar`.
+
+Все типы реализуют `Hash` по каноническому значению — это задел под будущий кэш (Merkle-ключ).
 
 ### OCCT-процессор (`engine`)
 
-`evaluate` обходит дерево и строит шейпы:
+`evaluate`:
 
-1. Собирает множество индексов, на которые есть ссылки (рекурсивно, включая inline-узлы).
-2. Корни = индексы без входящих ссылок; каждый корень вычисляется в `Part`.
-3. `Operand::Index(i)` проверяется на `i < current` (ссылки только назад; иначе — ошибка).
-4. Каждая операция OCCT проверяется: `IsDone()` и `BRepCheck_Analyzer`; при проблеме — явная ошибка.
+1. **Валидирует ссылки** по всему дереву (включая inline-узлы): `index < current` для каждого операнда;
+   иначе — ошибка. Проверяются все узлы, а не только корни.
+2. Собирает множество индексов, на которые есть ссылки; **корни** = индексы без входящих ссылок.
+3. Вычисляет каждый корень в `Part`.
+4. После **каждой** операции OCCT — проверка: `IsDone()` и валидность (`BRepCheck_Analyzer`), а также
+   инвариант **«`Part` состоит только из `Solid`»** (`is_solids_only`). При проблеме — явная ошибка.
 
 `Part` — построенная сущность (обёртка над нативным шейпом), то, что уходит в экспорт. Не путать с IR-узлом
-`Node` (описанием).
+`Node` (описанием). `Part` умеет `solid_count()`, `volume()`, `bounding_box()` (используется в тестах).
 
 ### Нативный слой (`native` + `sys`)
 
-- `sys.rs` — `cxx::bridge`: объявления функций и opaque-тип `Shape`. Приватный, наружу не торчит.
+- `sys.rs` — `cxx::bridge`: объявления функций и opaque-типы (`Shape`, `WireBuilder`, `CompoundBuilder`,
+  `LoftBuilder`). Приватный, наружу не торчит.
 - `native/occt.{h,cpp}` — C++-слой, **по одной функции на операцию OCCT**
-  (`BRepPrimAPI_MakeBox`, `BRepAlgoAPI_Fuse`, `BRepBuilderAPI_Transform`, `StlAPI_Writer`, …).
-- Логика — в OCCT; C++-слой только транслирует Rust-вызовы в OCCT и конвертирует ошибки в исключения,
-  которые cxx превращает в `Result`.
+  (`BRepPrimAPI_*`, `BRepAlgoAPI_*`, `BRepPrimAPI_MakePrism/MakeRevol`, `BRepOffsetAPI_MakePipeShell`,
+  `BRepOffsetAPI_ThruSections`, `BRepFilletAPI_MakeFillet/MakeChamfer`, `BRepBuilderAPI_*`, `StlAPI_Writer`).
+- Логика — в OCCT; C++-слой транслирует Rust-вызовы в OCCT и конвертирует ошибки в исключения, которые
+  cxx превращает в `Result`.
 - Сборка (`build.rs`) линкует OCCT (путь из `OCCT_DIR` или Homebrew) и компилирует мост.
+
+### Выражения (Rhai)
+
+Радиус `fillet` может быть выражением на **Rhai** с переменной `edge` (`length`, `curve_type`,
+`is_vertical`, `is_horizontal`, `direction`, `radius`, `start`, `end`). Векторы/точки — объекты с полями.
+Лимит `max_operations` = 10 000, IO не регистрируется. Результат — число; `≤ 0` → ребро пропускается;
+не число / NaN → ошибка.
+
+**Seam-рёбра не участвуют**: шов поверхности (артефакт параметризации) не попадает в контекст и не
+скругляется (OCCT не умеет скруглять швы).
 
 ### CLI (`main`)
 
 ```
-vg3 <input.json> <output.stl>
+vg3 <input.json> <output.stl> [--tolerance <value>]
 ```
 
 `main` ровно повторяет три шага библиотеки:
 
 ```rust
-let model = vg3::model::parse(&source)?;                 // 1. str   -> Model
-let parts = vg3::engine::evaluate(&model)?;              // 2. Model -> Vec<Part>
-vg3::export::export(&parts, Format::Stl, path)?;         // 3. Parts -> bytes
+let model = vg3::model::parse(&source)?;                              // 1. str   -> Model
+let parts = vg3::engine::evaluate(&model)?;                           // 2. Model -> Vec<Part>
+vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Parts -> bytes
 ```
 
-Настройки экспорта (STL tolerance, STEP schema) — параметры CLI/библиотеки, **не** часть модели.
+`--tolerance` — линейная деформация триангуляции STL (по умолчанию `0.1`). Несколько корневых `Part`
+пишутся в **один** файл (общий triangle soup через `Compound`).
+
+## Реализовано
+
+- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`.
+- **Генерация тел**: `extrude`, `revolve` (ось Y, полный оборот = 2π), `sweep` (`follow`/`rigid`),
+  `loft` (`ruled`).
+- **Булевы**: `fuse`, `cut`, `common`.
+- **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix` (4×4 row-major).
+- **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
+- **Кривые**: `line`, `arc` (через 3 точки), `spline` (интерполяция).
+- **Экспорт**: STL (бинарный).
+
+## Решения (зафиксировано)
+
+- **`Angle` не mod 2π** — иначе полный оборот невыразим. Цена: `rotate` на `θ` и `θ+2π` — разные ключи
+  кэша при одинаковом результате (избыточность, не ошибка).
+- **Rhai без `? :`** — тернарного оператора нет; в каноне используется `if cond { a } else { b }`.
+- **Швы пропускаются** — seam-рёбра не видны в выражениях и не скругляются.
+- **Один файл на все корни** — STL пишется как единый soup.
+- **STL сейчас, STEP позже** — схема STEP (AP214/…) станет CLI-параметром.
+- **Кэш отложен**, но типы `Hash`-able и обход чистый — встраивается без ломки API.
 
 ## Принципы
 
@@ -141,14 +183,15 @@ vg3::export::export(&parts, Format::Stl, path)?;         // 3. Parts -> bytes
 
 ```sh
 cargo build
-cargo run -- tests/fixtures/box.json out.stl
+cargo run -- tests/fixtures/fillet.json out.stl
+cargo run -- tests/fixtures/box.json out.stl --tolerance 0.05
+cargo test
 ```
 
 ## Статус
 
-Скелет собран: модульная структура, канонические типы, `parse`, `engine` (вертикаль `box`/`sphere`/`fuse`/
-`transform.translate`) и `export` в STL работают end-to-end. Формат IR зафиксирован — см. [FORMAT.md](FORMAT.md).
+Rust-движок реализован целиком по [FORMAT.md](FORMAT.md): весь IR, геометрия, экспорт в STL,
+«золотые» тесты по геометрическим свойствам (объём, bbox, число solid'ов). Kotlin-фронтенд — отдельно,
+позже.
 
-Дальше: остальные примитивы и операции (`extrude`/`revolve`/`sweep`/`loft`, `cut`/`common`, `rotate`/`mirror`/
-`scale`/`matrix`, `fillet`), профили (`Profile`/`Path`, `Curve2`/`Curve3`), выражения Rhai, STEP-экспорт,
-кэш по каноническому ключу, Kotlin-фронтенд.
+Дальше: STEP-экспорт (схема — CLI-параметр), кэш по каноническому ключу, Kotlin-DSL.

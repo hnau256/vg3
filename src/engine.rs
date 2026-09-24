@@ -1,9 +1,13 @@
 use std::collections::HashSet;
+use std::pin::Pin;
 
 use cxx::UniquePtr;
 
 use crate::error::{Error, Result};
-use crate::model::{Model, Node, Operand, TransformOp};
+use crate::model::{
+    Curve, Curve2, Curve3, FilletKind, Model, Node, Operand, Path, Point2, Point3, Profile,
+    RadiusSpec, SweepMode, TransformOp,
+};
 use crate::sys::ffi;
 
 pub struct Part {
@@ -14,9 +18,33 @@ impl Part {
     pub(crate) fn shape(&self) -> &ffi::Shape {
         self.shape.as_ref().expect("shape handle is never null")
     }
+
+    pub fn solid_count(&self) -> usize {
+        ffi::solid_count(self.shape())
+    }
+
+    pub fn volume(&self) -> f64 {
+        ffi::volume(self.shape())
+    }
+
+    pub fn bounding_box(&self) -> [f64; 6] {
+        let values = ffi::bounding_box(self.shape());
+        let mut bounds = [0.0; 6];
+        bounds.copy_from_slice(&values[..6]);
+        bounds
+    }
+}
+
+fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
+    if !ffi::is_solids_only(&shape) {
+        return Err(Error::NotASolid);
+    }
+    Ok(Part { shape })
 }
 
 pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
+    validate_references(model)?;
+
     let mut referenced = HashSet::new();
     for node in &model.parts {
         collect_references(node, &mut referenced);
@@ -31,21 +59,89 @@ pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
     Ok(roots)
 }
 
-fn collect_references(node: &Node, referenced: &mut HashSet<usize>) {
+fn validate_references(model: &Model) -> Result<()> {
+    for (index, node) in model.parts.iter().enumerate() {
+        validate_node(node, index)?;
+    }
+    Ok(())
+}
+
+fn validate_node(node: &Node, current: usize) -> Result<()> {
     match node {
-        Node::Box { .. } | Node::Sphere { .. } => {}
-        Node::Fuse { parts } => {
+        Node::Box { .. }
+        | Node::Sphere { .. }
+        | Node::Cylinder { .. }
+        | Node::Cone { .. }
+        | Node::Torus { .. }
+        | Node::Wedge { .. }
+        | Node::Extrude { .. }
+        | Node::Revolve { .. }
+        | Node::Sweep { .. }
+        | Node::Loft { .. } => Ok(()),
+        Node::Fuse { parts } | Node::Common { parts } => {
             for operand in parts {
-                collect_references_from_operand(operand, referenced);
+                validate_operand(operand, current)?;
             }
+            Ok(())
         }
-        Node::Transform { target, .. } => {
-            collect_references_from_operand(target, referenced);
+        Node::Cut { base, tools } => {
+            validate_operand(base, current)?;
+            for operand in tools {
+                validate_operand(operand, current)?;
+            }
+            Ok(())
+        }
+        Node::Transform { target, .. } | Node::Fillet { target, .. } => {
+            validate_operand(target, current)
         }
     }
 }
 
-fn collect_references_from_operand(operand: &Operand, referenced: &mut HashSet<usize>) {
+fn validate_operand(operand: &Operand, current: usize) -> Result<()> {
+    match operand {
+        Operand::Index(index) => {
+            if *index >= current {
+                Err(Error::InvalidReference {
+                    index: *index,
+                    current,
+                })
+            } else {
+                Ok(())
+            }
+        }
+        Operand::Inline(node) => validate_node(node, current),
+    }
+}
+
+fn collect_references(node: &Node, referenced: &mut HashSet<usize>) {
+    match node {
+        Node::Box { .. }
+        | Node::Sphere { .. }
+        | Node::Cylinder { .. }
+        | Node::Cone { .. }
+        | Node::Torus { .. }
+        | Node::Wedge { .. }
+        | Node::Extrude { .. }
+        | Node::Revolve { .. }
+        | Node::Sweep { .. }
+        | Node::Loft { .. } => {}
+        Node::Fuse { parts } | Node::Common { parts } => {
+            for operand in parts {
+                collect_operand(operand, referenced);
+            }
+        }
+        Node::Cut { base, tools } => {
+            collect_operand(base, referenced);
+            for operand in tools {
+                collect_operand(operand, referenced);
+            }
+        }
+        Node::Transform { target, .. } => collect_operand(target, referenced),
+        Node::Fillet { target, .. } => collect_operand(target, referenced),
+    }
+}
+
+fn collect_operand(operand: &Operand, referenced: &mut HashSet<usize>) {
     match operand {
         Operand::Index(index) => {
             referenced.insert(*index);
@@ -60,58 +156,338 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             width,
             length,
             height,
-        } => Ok(Part {
-            shape: ffi::make_box(width.value(), length.value(), height.value())?,
-        }),
-        Node::Sphere { radius } => Ok(Part {
-            shape: ffi::make_sphere(radius.value())?,
-        }),
-        Node::Fuse { parts: operands } => evaluate_fuse(operands, parts, current),
-        Node::Transform { target, ops } => evaluate_transform(target, ops, parts, current),
+        } => make_part(ffi::make_box(
+            width.value(),
+            length.value(),
+            height.value(),
+        )?),
+        Node::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
+        Node::Cylinder { radius, height } => {
+            make_part(ffi::make_cylinder(radius.value(), height.value())?)
+        }
+        Node::Cone {
+            radius_bottom,
+            radius_top,
+            height,
+        } => make_part(ffi::make_cone(
+            radius_bottom.value(),
+            radius_top.value(),
+            height.value(),
+        )?),
+        Node::Torus {
+            major_radius,
+            minor_radius,
+        } => make_part(ffi::make_torus(
+            major_radius.value(),
+            minor_radius.value(),
+        )?),
+        Node::Wedge {
+            width,
+            length,
+            height,
+            top_width,
+        } => make_part(ffi::make_wedge(
+            width.value(),
+            length.value(),
+            height.value(),
+            top_width.value(),
+        )?),
+        Node::Fuse { parts: operands } => {
+            fold_boolean(operands, parts, current, |a, b| Ok(ffi::fuse(a, b)?))
+        }
+        Node::Cut { base, tools } => {
+            let mut result = evaluate_operand(base, parts, current)?;
+            for tool in tools {
+                let next = evaluate_operand(tool, parts, current)?;
+                result = make_part(ffi::cut(result.shape(), next.shape())?)?;
+            }
+            Ok(result)
+        }
+        Node::Common { parts: operands } => {
+            fold_boolean(operands, parts, current, |a, b| Ok(ffi::common(a, b)?))
+        }
+        Node::Transform { target, ops } => {
+            let mut result = evaluate_operand(target, parts, current)?;
+            for op in ops {
+                result = apply_transform(result, op)?;
+            }
+            Ok(result)
+        }
+        Node::Extrude { profile, height } => {
+            let wire = build_profile_wire(profile)?;
+            make_part(ffi::extrude(&wire, height.value())?)
+        }
+        Node::Revolve { profile, angle } => {
+            let wire = build_profile_wire(profile)?;
+            make_part(ffi::revolve(&wire, angle.value())?)
+        }
+        Node::Sweep {
+            profile,
+            path,
+            mode,
+        } => {
+            let profile_wire = build_profile_wire(profile)?;
+            let spine = build_path_wire(path, false)?;
+            let follow = matches!(mode, SweepMode::Follow);
+            make_part(ffi::sweep(&profile_wire, &spine, follow)?)
+        }
+        Node::Loft { sections, ruled } => {
+            if sections.len() < 2 {
+                return Err(Error::LoftNeedsTwoSections);
+            }
+            let mut builder = ffi::new_loft_builder(*ruled);
+            for section in sections {
+                let wire = build_path_wire(section, true)?;
+                builder.pin_mut().add(&wire);
+            }
+            make_part(builder.pin_mut().finish())
+        }
+        Node::Fillet {
+            target,
+            kind,
+            radius,
+        } => evaluate_fillet(target, *kind, radius, parts, current),
     }
 }
 
-fn evaluate_fuse(operands: &[Operand], parts: &[Node], current: usize) -> Result<Part> {
+fn fold_boolean<F>(
+    operands: &[Operand],
+    parts: &[Node],
+    current: usize,
+    combine: F,
+) -> Result<Part>
+where
+    F: Fn(&ffi::Shape, &ffi::Shape) -> Result<UniquePtr<ffi::Shape>>,
+{
     let mut iter = operands.iter();
     let first = iter.next().ok_or(Error::MissingOperand)?;
     let mut accumulator = evaluate_operand(first, parts, current)?;
     for operand in iter {
         let next = evaluate_operand(operand, parts, current)?;
-        let fused = ffi::fuse(accumulator.shape(), next.shape())?;
-        accumulator = Part { shape: fused };
+        accumulator = make_part(combine(accumulator.shape(), next.shape())?)?;
     }
     Ok(accumulator)
 }
 
-fn evaluate_transform(
+fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
+    match op {
+        TransformOp::Translate { value } => make_part(ffi::translate(
+            part.shape(),
+            value.dx.value(),
+            value.dy.value(),
+            value.dz.value(),
+        )?),
+        TransformOp::Rotate {
+            center,
+            axis,
+            angle,
+        } => make_part(ffi::rotate(
+            part.shape(),
+            center.x.value(),
+            center.y.value(),
+            center.z.value(),
+            axis.dx.value(),
+            axis.dy.value(),
+            axis.dz.value(),
+            angle.value(),
+        )?),
+        TransformOp::Mirror { center, normal } => make_part(ffi::mirror(
+            part.shape(),
+            center.x.value(),
+            center.y.value(),
+            center.z.value(),
+            normal.dx.value(),
+            normal.dy.value(),
+            normal.dz.value(),
+        )?),
+        TransformOp::Scale { x, y, z } => {
+            make_part(ffi::scale(part.shape(), x.value(), y.value(), z.value())?)
+        }
+        TransformOp::Matrix { m } => {
+            let values: Vec<f64> = m.iter().map(|scalar| scalar.value()).collect();
+            make_part(ffi::apply_matrix(part.shape(), &values)?)
+        }
+    }
+}
+
+fn evaluate_fillet(
     target: &Operand,
-    ops: &[TransformOp],
+    kind: FilletKind,
+    radius: &RadiusSpec,
     parts: &[Node],
     current: usize,
 ) -> Result<Part> {
-    let mut part = evaluate_operand(target, parts, current)?;
-    for op in ops {
-        part = apply_transform(part, op)?;
+    let part = evaluate_operand(target, parts, current)?;
+    let shape = part.shape();
+    let engine = expression_engine();
+    let mut values = Vec::new();
+    for solid in 0..ffi::solid_count(shape) {
+        for edge in 0..ffi::solid_edge_count(shape, solid) {
+            let data = ffi::solid_edge_data(shape, solid, edge);
+            let value = match radius {
+                RadiusSpec::All { radius } => radius.value(),
+                RadiusSpec::Expression { expression } => {
+                    evaluate_expression(&engine, expression, &data)?
+                }
+            };
+            values.push(value);
+        }
     }
-    Ok(part)
+    let kind_code = match kind {
+        FilletKind::Fillet => 0,
+        FilletKind::Chamfer => 1,
+    };
+    make_part(ffi::fillet(shape, kind_code, &values)?)
 }
 
-fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
-    match op {
-        TransformOp::Translate { value } => {
-            let shape = ffi::translate(
-                part.shape(),
-                value.dx.value(),
-                value.dy.value(),
-                value.dz.value(),
-            )?;
-            Ok(Part { shape })
-        }
-        TransformOp::Rotate { .. } => Err(Error::NotImplemented("transform op: rotate")),
-        TransformOp::Mirror { .. } => Err(Error::NotImplemented("transform op: mirror")),
-        TransformOp::Scale { .. } => Err(Error::NotImplemented("transform op: scale")),
-        TransformOp::Matrix { .. } => Err(Error::NotImplemented("transform op: matrix")),
+fn expression_engine() -> rhai::Engine {
+    let mut engine = rhai::Engine::new();
+    engine.set_max_operations(10_000);
+    engine
+}
+
+fn evaluate_expression(engine: &rhai::Engine, expression: &str, data: &[f64]) -> Result<f64> {
+    let mut scope = rhai::Scope::new();
+    scope.push_constant("edge", build_edge(data));
+    let result = engine
+        .eval_expression_with_scope::<rhai::Dynamic>(&mut scope, expression)
+        .map_err(|error| Error::Expression(format!("{expression}: {error}")))?;
+    let value = if let Some(number) = result.clone().try_cast::<f64>() {
+        number
+    } else if let Some(number) = result.clone().try_cast::<i64>() {
+        number as f64
+    } else {
+        return Err(Error::Expression(format!(
+            "{expression}: result is not a number"
+        )));
+    };
+    if value.is_nan() {
+        return Err(Error::Expression(format!("{expression}: result is NaN")));
     }
+    Ok(value)
+}
+
+fn build_edge(data: &[f64]) -> rhai::Map {
+    let mut edge = rhai::Map::new();
+    edge.insert("length".into(), rhai::Dynamic::from(data[0]));
+    edge.insert(
+        "curve_type".into(),
+        rhai::Dynamic::from(curve_type_name(data[1]).to_string()),
+    );
+    edge.insert("is_vertical".into(), rhai::Dynamic::from(data[2] != 0.0));
+    edge.insert("is_horizontal".into(), rhai::Dynamic::from(data[3] != 0.0));
+
+    let mut direction = rhai::Map::new();
+    direction.insert("dx".into(), rhai::Dynamic::from(data[4]));
+    direction.insert("dy".into(), rhai::Dynamic::from(data[5]));
+    direction.insert("dz".into(), rhai::Dynamic::from(data[6]));
+    edge.insert("direction".into(), rhai::Dynamic::from(direction));
+
+    edge.insert("radius".into(), rhai::Dynamic::from(data[7]));
+
+    let mut start = rhai::Map::new();
+    start.insert("x".into(), rhai::Dynamic::from(data[8]));
+    start.insert("y".into(), rhai::Dynamic::from(data[9]));
+    start.insert("z".into(), rhai::Dynamic::from(data[10]));
+    edge.insert("start".into(), rhai::Dynamic::from(start));
+
+    let mut end = rhai::Map::new();
+    end.insert("x".into(), rhai::Dynamic::from(data[11]));
+    end.insert("y".into(), rhai::Dynamic::from(data[12]));
+    end.insert("z".into(), rhai::Dynamic::from(data[13]));
+    edge.insert("end".into(), rhai::Dynamic::from(end));
+
+    edge
+}
+
+fn curve_type_name(code: f64) -> &'static str {
+    match code as i32 {
+        0 => "line",
+        1 => "arc",
+        _ => "spline",
+    }
+}
+
+fn build_profile_wire(profile: &Profile) -> Result<UniquePtr<ffi::Shape>> {
+    if profile.edges.is_empty() {
+        return Err(Error::EmptyContour);
+    }
+    let mut builder = ffi::new_wire_builder();
+    builder
+        .pin_mut()
+        .start(profile.start.x.value(), profile.start.y.value(), 0.0);
+    for edge in &profile.edges {
+        add_curve2(builder.pin_mut(), edge)?;
+    }
+    Ok(builder.pin_mut().finish(true))
+}
+
+fn build_path_wire(path: &Path, closed: bool) -> Result<UniquePtr<ffi::Shape>> {
+    if path.edges.is_empty() {
+        return Err(Error::EmptyContour);
+    }
+    let mut builder = ffi::new_wire_builder();
+    builder.pin_mut().start(
+        path.start.x.value(),
+        path.start.y.value(),
+        path.start.z.value(),
+    );
+    for edge in &path.edges {
+        add_curve3(builder.pin_mut(), edge)?;
+    }
+    Ok(builder.pin_mut().finish(closed))
+}
+
+fn add_curve3(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve3) -> Result<()> {
+    match edge {
+        Curve::Line { to } => builder.line(to.x.value(), to.y.value(), to.z.value()),
+        Curve::Arc { via, to } => builder.arc(
+            via.x.value(),
+            via.y.value(),
+            via.z.value(),
+            to.x.value(),
+            to.y.value(),
+            to.z.value(),
+        ),
+        Curve::Spline { points } => builder.spline(&flatten3(points)),
+    }
+    Ok(())
+}
+
+fn flatten3(points: &[Point3]) -> Vec<f64> {
+    let mut flat = Vec::with_capacity(points.len() * 3);
+    for point in points {
+        flat.push(point.x.value());
+        flat.push(point.y.value());
+        flat.push(point.z.value());
+    }
+    flat
+}
+
+fn add_curve2(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve2) -> Result<()> {
+    match edge {
+        Curve::Line { to } => builder.line(to.x.value(), to.y.value(), 0.0),
+        Curve::Arc { via, to } => builder.arc(
+            via.x.value(),
+            via.y.value(),
+            0.0,
+            to.x.value(),
+            to.y.value(),
+            0.0,
+        ),
+        Curve::Spline { points } => builder.spline(&flatten2(points)),
+    }
+    Ok(())
+}
+
+fn flatten2(points: &[Point2]) -> Vec<f64> {
+    let mut flat = Vec::with_capacity(points.len() * 3);
+    for point in points {
+        flat.push(point.x.value());
+        flat.push(point.y.value());
+        flat.push(0.0);
+    }
+    flat
 }
 
 fn evaluate_operand(operand: &Operand, parts: &[Node], current: usize) -> Result<Part> {

@@ -20,8 +20,17 @@ pub enum Error {
     #[error("node requires at least one operand")]
     MissingOperand,
 
-    #[error("not implemented yet: {0}")]
-    NotImplemented(&'static str),
+    #[error("operation result is not composed solely of solids")]
+    NotASolid,
+
+    #[error("contour has no edges")]
+    EmptyContour,
+
+    #[error("loft requires at least two sections")]
+    LoftNeedsTwoSections,
+
+    #[error("expression error: {0}")]
+    Expression(String),
 
     #[error("opencascade error: {0}")]
     Native(#[from] cxx::Exception),

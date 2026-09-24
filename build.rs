@@ -10,9 +10,12 @@ const OCCT_TOOLKITS: &[&str] = &[
     "TKGeomAlgo",
     "TKTopAlgo",
     "TKPrim",
+    "TKBO",
+    "TKBool",
+    "TKFillet",
+    "TKOffset",
     "TKMesh",
     "TKDESTL",
-    "TKBO",
 ];
 
 fn resolve_occt_directory() -> PathBuf {

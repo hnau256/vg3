@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "fillet",
+      "kind": "chamfer",
+      "target": { "type": "box", "width": 10, "length": 10, "height": 10 },
+      "radius": { "type": "all", "radius": 1 }
+    }
+  ]
+}
