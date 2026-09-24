@@ -51,13 +51,17 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
 }
 
 pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
-    validate_references(model)?;
-
+    // One pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
-    for node in &model.parts {
-        collect_references(node, &mut referenced);
+    for (index, node) in model.parts.iter().enumerate() {
+        node.try_for_each_operand(|operand| {
+            validate_index(operand, index)?;
+            referenced.insert(operand);
+            Ok(())
+        })?;
     }
 
+    // Roots are the nodes nobody references.
     let mut roots = Vec::new();
     for (index, node) in model.parts.iter().enumerate() {
         if !referenced.contains(&index) {
@@ -67,80 +71,11 @@ pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
     Ok(roots)
 }
 
-fn validate_references(model: &Model) -> Result<()> {
-    for (index, node) in model.parts.iter().enumerate() {
-        validate_node(node, index)?;
-    }
-    Ok(())
-}
-
-fn validate_node(node: &Node, current: usize) -> Result<()> {
-    match node {
-        Node::Box { .. }
-        | Node::Sphere { .. }
-        | Node::Cylinder { .. }
-        | Node::Cone { .. }
-        | Node::Torus { .. }
-        | Node::Wedge { .. }
-        | Node::Halfspace
-        | Node::Extrude { .. }
-        | Node::Revolve { .. }
-        | Node::Sweep { .. }
-        | Node::Loft { .. } => Ok(()),
-        Node::Fuse { parts } | Node::Common { parts } => {
-            for index in parts {
-                validate_index(*index, current)?;
-            }
-            Ok(())
-        }
-        Node::Cut { base, tools } => {
-            validate_index(*base, current)?;
-            for index in tools {
-                validate_index(*index, current)?;
-            }
-            Ok(())
-        }
-        Node::Transform { target, .. } | Node::Fillet { target, .. } => {
-            validate_index(*target, current)
-        }
-    }
-}
-
 fn validate_index(index: usize, current: usize) -> Result<()> {
     if index >= current {
         Err(Error::InvalidReference { index, current })
     } else {
         Ok(())
-    }
-}
-
-fn collect_references(node: &Node, referenced: &mut HashSet<usize>) {
-    match node {
-        Node::Box { .. }
-        | Node::Sphere { .. }
-        | Node::Cylinder { .. }
-        | Node::Cone { .. }
-        | Node::Torus { .. }
-        | Node::Wedge { .. }
-        | Node::Halfspace
-        | Node::Extrude { .. }
-        | Node::Revolve { .. }
-        | Node::Sweep { .. }
-        | Node::Loft { .. } => {}
-        Node::Fuse { parts } | Node::Common { parts } => {
-            for index in parts {
-                referenced.insert(*index);
-            }
-        }
-        Node::Cut { base, tools } => {
-            referenced.insert(*base);
-            for index in tools {
-                referenced.insert(*index);
-            }
-        }
-        Node::Transform { target, .. } | Node::Fillet { target, .. } => {
-            referenced.insert(*target);
-        }
     }
 }
 
@@ -187,20 +122,9 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             top_width.value(),
         )?),
         Node::Halfspace => make_part(ffi::make_halfspace()?),
-        Node::Fuse { parts: operands } => {
-            fold_boolean(operands, parts, current, |a, b| Ok(ffi::fuse(a, b)?))
-        }
-        Node::Cut { base, tools } => {
-            let mut result = operand(*base, parts, current)?;
-            for tool in tools {
-                let next = operand(*tool, parts, current)?;
-                result = make_part(ffi::cut(result.shape(), next.shape())?)?;
-            }
-            Ok(result)
-        }
-        Node::Common { parts: operands } => {
-            fold_boolean(operands, parts, current, |a, b| Ok(ffi::common(a, b)?))
-        }
+        Node::Fuse { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::fuse(a, b)?)),
+        Node::Cut { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::cut(a, b)?)),
+        Node::Common { .. } => fold_operands(node, parts, current, |a, b| Ok(ffi::common(a, b)?)),
         Node::Transform { target, ops } => {
             let mut result = operand(*target, parts, current)?;
             for op in ops {
@@ -245,8 +169,10 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
     }
 }
 
-fn fold_boolean<F>(
-    operands: &[usize],
+/// Folds a binary operation left-to-right over a node's operands (e.g. `fuse`/`cut`/`common`).
+/// Operand traversal is centralized in [`Node::try_for_each_operand`].
+fn fold_operands<F>(
+    node: &Node,
     parts: &[Node],
     current: usize,
     combine: F,
@@ -254,14 +180,16 @@ fn fold_boolean<F>(
 where
     F: Fn(&ffi::Shape, &ffi::Shape) -> Result<UniquePtr<ffi::Shape>>,
 {
-    let mut iter = operands.iter();
-    let first = *iter.next().ok_or(Error::MissingOperand)?;
-    let mut accumulator = operand(first, parts, current)?;
-    for &index in iter {
+    let mut accumulator: Option<Part> = None;
+    node.try_for_each_operand(|index| {
         let next = operand(index, parts, current)?;
-        accumulator = make_part(combine(accumulator.shape(), next.shape())?)?;
-    }
-    Ok(accumulator)
+        accumulator = Some(match accumulator.take() {
+            Some(previous) => make_part(combine(previous.shape(), next.shape())?)?,
+            None => next,
+        });
+        Ok(())
+    })?;
+    accumulator.ok_or(Error::MissingOperand)
 }
 
 fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {

@@ -294,3 +294,23 @@ pub fn parse(source: &str) -> Result<Model> {
     }
     Ok(model)
 }
+
+impl Node {
+    /// Applies `visit` to each operand (dependency) index, in evaluation order.
+    ///
+    /// Single source of truth for "where are a node's operands": validation, reachability and
+    /// evaluation all traverse the tree through this method.
+    pub fn try_for_each_operand(&self, mut visit: impl FnMut(usize) -> Result<()>) -> Result<()> {
+        match self {
+            Node::Fuse { parts } | Node::Common { parts } => {
+                parts.iter().try_for_each(|&index| visit(index))
+            }
+            Node::Cut { base, tools } => {
+                visit(*base)?;
+                tools.iter().try_for_each(|&index| visit(index))
+            }
+            Node::Transform { target, .. } | Node::Fillet { target, .. } => visit(*target),
+            _ => Ok(()),
+        }
+    }
+}
