@@ -1,10 +1,11 @@
 {
   "version": 1,
   "parts": [
+    { "type": "box", "width": 20, "length": 20, "height": 10 },
     {
       "type": "fillet",
       "kind": "fillet",
-      "target": { "type": "box", "width": 20, "length": 20, "height": 10 },
+      "target": 0,
       "radius": {
         "type": "expression",
         "expression": "if edge.is_vertical { 2.0 } else { 0.0 }"

@@ -1,12 +1,8 @@
 {
   "version": 1,
   "parts": [
-    {
-      "type": "fuse",
-      "parts": [
-        { "type": "box", "width": 20, "length": 20, "height": 5 },
-        { "type": "sphere", "radius": 5 }
-      ]
-    }
+    { "type": "box", "width": 20, "length": 20, "height": 5 },
+    { "type": "sphere", "radius": 5 },
+    { "type": "fuse", "parts": [0, 1] }
   ]
 }

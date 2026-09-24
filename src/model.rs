@@ -161,13 +161,6 @@ pub struct Path {
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
-#[serde(untagged)]
-pub enum Operand {
-    Index(usize),
-    Inline(Box<Node>),
-}
-
-#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransformOp {
     Translate {
@@ -266,21 +259,21 @@ pub enum Node {
         ruled: bool,
     },
     Fuse {
-        parts: Vec<Operand>,
+        parts: Vec<usize>,
     },
     Cut {
-        base: Operand,
-        tools: Vec<Operand>,
+        base: usize,
+        tools: Vec<usize>,
     },
     Common {
-        parts: Vec<Operand>,
+        parts: Vec<usize>,
     },
     Transform {
-        target: Operand,
+        target: usize,
         ops: Vec<TransformOp>,
     },
     Fillet {
-        target: Operand,
+        target: usize,
         #[serde(default)]
         kind: FilletKind,
         radius: RadiusSpec,

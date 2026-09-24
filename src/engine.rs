@@ -5,8 +5,8 @@ use cxx::UniquePtr;
 
 use crate::error::{Error, Result};
 use crate::model::{
-    Curve2, Curve3, FilletKind, Model, Node, Operand, Path, Point2, Point3, Profile, RadiusSpec,
-    SweepMode, TransformOp,
+    Curve2, Curve3, FilletKind, Model, Node, Path, Point2, Point3, Profile, RadiusSpec, SweepMode,
+    TransformOp,
 };
 use crate::sys::ffi;
 
@@ -88,37 +88,29 @@ fn validate_node(node: &Node, current: usize) -> Result<()> {
         | Node::Sweep { .. }
         | Node::Loft { .. } => Ok(()),
         Node::Fuse { parts } | Node::Common { parts } => {
-            for operand in parts {
-                validate_operand(operand, current)?;
+            for index in parts {
+                validate_index(*index, current)?;
             }
             Ok(())
         }
         Node::Cut { base, tools } => {
-            validate_operand(base, current)?;
-            for operand in tools {
-                validate_operand(operand, current)?;
+            validate_index(*base, current)?;
+            for index in tools {
+                validate_index(*index, current)?;
             }
             Ok(())
         }
         Node::Transform { target, .. } | Node::Fillet { target, .. } => {
-            validate_operand(target, current)
+            validate_index(*target, current)
         }
     }
 }
 
-fn validate_operand(operand: &Operand, current: usize) -> Result<()> {
-    match operand {
-        Operand::Index(index) => {
-            if *index >= current {
-                Err(Error::InvalidReference {
-                    index: *index,
-                    current,
-                })
-            } else {
-                Ok(())
-            }
-        }
-        Operand::Inline(node) => validate_node(node, current),
+fn validate_index(index: usize, current: usize) -> Result<()> {
+    if index >= current {
+        Err(Error::InvalidReference { index, current })
+    } else {
+        Ok(())
     }
 }
 
@@ -136,27 +128,19 @@ fn collect_references(node: &Node, referenced: &mut HashSet<usize>) {
         | Node::Sweep { .. }
         | Node::Loft { .. } => {}
         Node::Fuse { parts } | Node::Common { parts } => {
-            for operand in parts {
-                collect_operand(operand, referenced);
+            for index in parts {
+                referenced.insert(*index);
             }
         }
         Node::Cut { base, tools } => {
-            collect_operand(base, referenced);
-            for operand in tools {
-                collect_operand(operand, referenced);
+            referenced.insert(*base);
+            for index in tools {
+                referenced.insert(*index);
             }
         }
-        Node::Transform { target, .. } => collect_operand(target, referenced),
-        Node::Fillet { target, .. } => collect_operand(target, referenced),
-    }
-}
-
-fn collect_operand(operand: &Operand, referenced: &mut HashSet<usize>) {
-    match operand {
-        Operand::Index(index) => {
-            referenced.insert(*index);
+        Node::Transform { target, .. } | Node::Fillet { target, .. } => {
+            referenced.insert(*target);
         }
-        Operand::Inline(node) => collect_references(node, referenced),
     }
 }
 
@@ -207,9 +191,9 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             fold_boolean(operands, parts, current, |a, b| Ok(ffi::fuse(a, b)?))
         }
         Node::Cut { base, tools } => {
-            let mut result = evaluate_operand(base, parts, current)?;
+            let mut result = operand(*base, parts, current)?;
             for tool in tools {
-                let next = evaluate_operand(tool, parts, current)?;
+                let next = operand(*tool, parts, current)?;
                 result = make_part(ffi::cut(result.shape(), next.shape())?)?;
             }
             Ok(result)
@@ -218,7 +202,7 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             fold_boolean(operands, parts, current, |a, b| Ok(ffi::common(a, b)?))
         }
         Node::Transform { target, ops } => {
-            let mut result = evaluate_operand(target, parts, current)?;
+            let mut result = operand(*target, parts, current)?;
             for op in ops {
                 result = apply_transform(result, op)?;
             }
@@ -257,12 +241,12 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             target,
             kind,
             radius,
-        } => evaluate_fillet(target, *kind, radius, parts, current),
+        } => evaluate_fillet(*target, *kind, radius, parts, current),
     }
 }
 
 fn fold_boolean<F>(
-    operands: &[Operand],
+    operands: &[usize],
     parts: &[Node],
     current: usize,
     combine: F,
@@ -271,10 +255,10 @@ where
     F: Fn(&ffi::Shape, &ffi::Shape) -> Result<UniquePtr<ffi::Shape>>,
 {
     let mut iter = operands.iter();
-    let first = iter.next().ok_or(Error::MissingOperand)?;
-    let mut accumulator = evaluate_operand(first, parts, current)?;
-    for operand in iter {
-        let next = evaluate_operand(operand, parts, current)?;
+    let first = *iter.next().ok_or(Error::MissingOperand)?;
+    let mut accumulator = operand(first, parts, current)?;
+    for &index in iter {
+        let next = operand(index, parts, current)?;
         accumulator = make_part(combine(accumulator.shape(), next.shape())?)?;
     }
     Ok(accumulator)
@@ -322,13 +306,13 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
 }
 
 fn evaluate_fillet(
-    target: &Operand,
+    target: usize,
     kind: FilletKind,
     radius: &RadiusSpec,
     parts: &[Node],
     current: usize,
 ) -> Result<Part> {
-    let part = evaluate_operand(target, parts, current)?;
+    let part = operand(target, parts, current)?;
     let shape = part.shape();
     let engine = expression_engine();
     let mut values = Vec::new();
@@ -506,17 +490,9 @@ fn flatten2(points: &[Point2]) -> Vec<f64> {
     flat
 }
 
-fn evaluate_operand(operand: &Operand, parts: &[Node], current: usize) -> Result<Part> {
-    match operand {
-        Operand::Index(index) => {
-            if *index >= current {
-                return Err(Error::InvalidReference {
-                    index: *index,
-                    current,
-                });
-            }
-            evaluate_node(&parts[*index], parts, *index)
-        }
-        Operand::Inline(node) => evaluate_node(node, parts, current),
+fn operand(index: usize, parts: &[Node], current: usize) -> Result<Part> {
+    if index >= current {
+        return Err(Error::InvalidReference { index, current });
     }
+    evaluate_node(&parts[index], parts, index)
 }
