@@ -98,17 +98,26 @@ fn fillet_removes_material_from_vertical_edges() {
 }
 
 #[test]
-fn png_export_writes_a_valid_image() {
+fn export_config_renders_a_png() {
     let parts = build("box.json");
-    let mut options = vg3::export::ExportOptions::default();
-    options.image.size = 64;
-    let path = std::env::temp_dir().join("vg3_box_render.png");
-    vg3::export::export(&parts, vg3::export::Format::Png, &path, &options).expect("renders");
+    let path = std::env::temp_dir().join("vg3_config_render.png");
+    let config = vg3::export::ExportConfig::from_json(&format!(
+        r#"{{ "type": "png", "path": {:?}, "size": 64 }}"#,
+        path.to_str().unwrap()
+    ))
+    .expect("config parses");
+    config.export(&parts).expect("renders");
     let bytes = std::fs::read(&path).expect("image exists");
     assert_eq!(&bytes[..8], &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]);
     let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
     assert_eq!(width, 64);
     let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn export_config_rejects_unknown_parameters() {
+    let source = r#"{ "type": "stl", "path": "out.stl", "nonsense": 1 }"#;
+    assert!(vg3::export::ExportConfig::from_json(source).is_err());
 }
 
 #[test]

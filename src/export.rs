@@ -1,17 +1,13 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use cxx::UniquePtr;
+use serde::Deserialize;
 
 use crate::engine::Part;
 use crate::error::{Error, Result};
+use crate::model::Scalar;
 use crate::render::{self, RenderOptions};
 use crate::sys::ffi;
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Format {
-    Stl,
-    Png,
-}
 
 #[derive(Clone, Copy, Debug)]
 pub struct ExportOptions {
@@ -32,6 +28,85 @@ pub fn export(parts: &[Part], format: Format, path: &Path, options: &ExportOptio
     match format {
         Format::Stl => export_stl(parts, path, options.tolerance),
         Format::Png => export_png(parts, path, options),
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Format {
+    Stl,
+    Png,
+}
+
+fn default_tolerance() -> Scalar {
+    Scalar::try_from(0.1).expect("0.1 is finite")
+}
+
+fn default_size() -> u32 {
+    512
+}
+
+fn default_azimuth() -> Scalar {
+    Scalar::try_from(35.0).expect("35 is finite")
+}
+
+fn default_elevation() -> Scalar {
+    Scalar::try_from(25.0).expect("25 is finite")
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ExportConfig {
+    Stl {
+        path: PathBuf,
+        #[serde(default = "default_tolerance")]
+        tolerance: Scalar,
+    },
+    Png {
+        path: PathBuf,
+        #[serde(default = "default_size")]
+        size: u32,
+        #[serde(default = "default_azimuth")]
+        azimuth: Scalar,
+        #[serde(default = "default_elevation")]
+        elevation: Scalar,
+    },
+}
+
+impl ExportConfig {
+    pub fn from_json(source: &str) -> Result<Self> {
+        Ok(serde_json::from_str(source)?)
+    }
+
+    pub fn export(&self, parts: &[Part]) -> Result<()> {
+        match self {
+            ExportConfig::Stl { path, tolerance } => export(
+                parts,
+                Format::Stl,
+                path,
+                &ExportOptions {
+                    tolerance: tolerance.value(),
+                    ..ExportOptions::default()
+                },
+            ),
+            ExportConfig::Png {
+                path,
+                size,
+                azimuth,
+                elevation,
+            } => export(
+                parts,
+                Format::Png,
+                path,
+                &ExportOptions {
+                    image: RenderOptions {
+                        size: *size,
+                        azimuth: azimuth.value(),
+                        elevation: elevation.value(),
+                    },
+                    ..ExportOptions::default()
+                },
+            ),
+        }
     }
 }
 

@@ -130,21 +130,32 @@ tests/
 ### CLI (`main`)
 
 ```
-vg3 <input.json> <output.stl|output.png> [--tolerance <value>] [--png-size <px>] [--png-az <deg>] [--png-el <deg>]
+vg3 <model.json> <export.json>
 ```
 
-Формат определяется по расширению вывода: `.stl` — STL, `.png` — рендер.
-
-`main` ровно повторяет три шага библиотеки:
+Модель (IR) и **конфиг экспорта** — два отдельных JSON-файла. `main` ровно повторяет шаги библиотеки:
 
 ```rust
-let model = vg3::model::parse(&source)?;                              // 1. str   -> Model
-let parts = vg3::engine::evaluate(&model)?;                           // 2. Model -> Vec<Part>
-vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Parts -> bytes
+let model = vg3::model::parse(&model_source)?;         // 1. str   -> Model
+let parts = vg3::engine::evaluate(&model)?;            // 2. Model -> Vec<Part>
+let config = ExportConfig::from_json(&export_source)?; //     конфиг экспорта
+config.export(&parts)?;                                // 3. Parts -> файлы
 ```
 
-`--tolerance` — линейная деформация триангуляции STL (по умолчанию `0.1`). Несколько корневых `Part`
-пишутся в **один** файл (общий triangle soup через `Compound`).
+### Конфиг экспорта
+
+Размеченное объединение по `type`; у каждого варианта свои параметры. Десериализуется типизированно
+(канонизация через `Scalar`, лишние поля — ошибка).
+
+```jsonc
+{ "type": "stl", "path": "out.stl", "tolerance": 0.1 }
+{ "type": "png", "path": "out.png", "size": 512, "azimuth": 35, "elevation": 25 }
+```
+
+- `stl`: `path`, `tolerance` (по умолчанию `0.1`) — линейная деформация триангуляции.
+- `png`: `path`, `size` (512), `azimuth` (35), `elevation` (25) — вид камеры.
+
+Несколько корневых `Part` пишутся в **один** файл (общий `Compound`).
 
 ## Реализовано
 
