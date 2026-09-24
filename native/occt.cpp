@@ -18,6 +18,7 @@
 #include <BRepFilletAPI_MakeChamfer.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
 #include <BRepGProp.hxx>
+#include <BRepLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
@@ -28,9 +29,14 @@
 #include <BRepBndLib.hxx>
 #include <GProp_GProps.hxx>
 #include <GC_MakeArcOfCircle.hxx>
+#include <GCE2d_MakeSegment.hxx>
+#include <Geom2d_Curve.hxx>
 #include <GeomAPI_Interpolate.hxx>
 #include <Geom_BSplineCurve.hxx>
+#include <Geom_CylindricalSurface.hxx>
 #include <Geom_TrimmedCurve.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Pnt2d.hxx>
 #include <TColgp_HArray1OfPnt.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
@@ -432,6 +438,62 @@ void WireBuilder::spline(rust::Slice<const double> points) {
     current_point_ = end;
 }
 
+void WireBuilder::helix(double pitch, double height, bool right_handed) {
+    constexpr double kPi = 3.14159265358979323846;
+    if (pitch <= 0.0 || height <= 0.0) {
+        throw std::runtime_error("helix requires a positive pitch and height");
+    }
+    const double radius = std::sqrt(
+        current_point_.X() * current_point_.X() + current_point_.Y() * current_point_.Y()
+    );
+    if (radius <= kPointTolerance) {
+        throw std::runtime_error("helix requires a start point off the Z axis");
+    }
+    const double phase = std::atan2(current_point_.Y(), current_point_.X());
+    const double base = current_point_.Z();
+    const double turns = height / pitch;
+    const double direction = right_handed ? 1.0 : -1.0;
+
+    Handle(Geom_CylindricalSurface) surface =
+        new Geom_CylindricalSurface(gp_Ax3(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)), radius);
+
+    const auto add_segment = [&](double u0, double v0, double u1, double v1) {
+        GCE2d_MakeSegment segment(gp_Pnt2d(u0, v0), gp_Pnt2d(u1, v1));
+        BRepBuilderAPI_MakeEdge make_edge(segment.Value(), surface);
+        if (!make_edge.IsDone()) {
+            throw std::runtime_error("cannot build a helix edge");
+        }
+        add_edge(make_edge.Edge());
+    };
+
+    const int whole_turns = static_cast<int>(std::floor(turns));
+    for (int turn = 0; turn < whole_turns; ++turn) {
+        add_segment(
+            phase + direction * 2.0 * kPi * turn,
+            base + pitch * turn,
+            phase + direction * 2.0 * kPi * (turn + 1),
+            base + pitch * (turn + 1)
+        );
+    }
+    if (turns - static_cast<double>(whole_turns) > 1e-9) {
+        add_segment(
+            phase + direction * 2.0 * kPi * whole_turns,
+            base + pitch * whole_turns,
+            phase + direction * 2.0 * kPi * turns,
+            base + height
+        );
+    }
+
+    const gp_Pnt end(
+        radius * std::cos(phase + direction * 2.0 * kPi * turns),
+        radius * std::sin(phase + direction * 2.0 * kPi * turns),
+        base + height
+    );
+    BRepBuilderAPI_MakeVertex make_vertex(end);
+    current_vertex_ = make_vertex.Vertex();
+    current_point_ = end;
+}
+
 std::unique_ptr<Shape> WireBuilder::finish(bool closed) {
     if (!started_) {
         throw std::runtime_error("wire has no start point");
@@ -447,6 +509,7 @@ std::unique_ptr<Shape> WireBuilder::finish(bool closed) {
         throw std::runtime_error("contour has no edges");
     }
     const TopoDS_Shape shape = wire_.Shape();
+    BRepLib::BuildCurves3d(shape);
     ensure_valid(shape);
     return std::make_unique<Shape>(shape);
 }
@@ -504,7 +567,7 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
         BRepOffsetAPI_MakePipeShell pipe(spine_wire);
         if (follow) {
-            pipe.SetMode(Standard_False);
+            pipe.SetMode(Standard_True);
         } else {
             BRepAdaptor_CompCurve curve(spine_wire);
             gp_Pnt point;
@@ -512,8 +575,17 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
             curve.D1(curve.FirstParameter(), point, tangent);
             pipe.SetMode(gp_Ax2(point, gp_Dir(tangent)));
         }
+        BRepAdaptor_CompCurve start_curve(spine_wire);
+        gp_Pnt start_point;
+        gp_Vec start_tangent;
+        start_curve.D1(start_curve.FirstParameter(), start_point, start_tangent);
+        gp_Trsf translation;
+        translation.SetTranslation(gp_Vec(start_point.X(), start_point.Y(), start_point.Z()));
+        BRepBuilderAPI_Transform transform(profile.topods(), translation, true);
+        const TopoDS_Shape placed_profile = transform.Shape();
+
         pipe.SetTransitionMode(BRepBuilderAPI_RightCorner);
-        pipe.Add(profile.topods(), Standard_False, Standard_False);
+        pipe.Add(placed_profile, Standard_False, Standard_False);
         pipe.Build();
         if (!pipe.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakePipeShell did not complete");

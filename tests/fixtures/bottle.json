@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "fuse",
+      "parts": [
+        {
+          "type": "fillet",
+          "kind": "fillet",
+          "target": {
+            "type": "extrude",
+            "height": 70,
+            "profile": {
+              "start": { "x": -25, "y": 0 },
+              "edges": [
+                { "type": "line", "to": { "x": -25, "y": -7.5 } },
+                { "type": "arc", "via": { "x": 0, "y": -15 }, "to": { "x": 25, "y": -7.5 } },
+                { "type": "line", "to": { "x": 25, "y": 0 } },
+                { "type": "line", "to": { "x": 25, "y": 7.5 } },
+                { "type": "arc", "via": { "x": 0, "y": 15 }, "to": { "x": -25, "y": 7.5 } }
+              ]
+            }
+          },
+          "radius": {
+            "type": "expression",
+            "expression": "if edge.is_vertical { 2.5 } else { 0.0 }"
+          }
+        },
+        {
+          "type": "transform",
+          "target": { "type": "cylinder", "radius": 7.5, "height": 7 },
+          "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 70 } }]
+        }
+      ]
+    }
+  ]
+}

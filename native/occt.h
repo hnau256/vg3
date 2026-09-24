@@ -59,6 +59,8 @@ public:
 
     void spline(rust::Slice<const double> points);
 
+    void helix(double pitch, double height, bool right_handed);
+
     std::unique_ptr<Shape> finish(bool closed);
 
 private:

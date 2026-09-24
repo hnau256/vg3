@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "extrude",
+      "height": 5,
+      "profile": {
+        "start": { "x": 0, "y": 0 },
+        "edges": [
+          { "type": "line", "to": { "x": 10, "y": 0 } },
+          { "type": "line", "to": { "x": 10, "y": 10 } },
+          { "type": "line", "to": { "x": 0, "y": 10 } }
+        ]
+      }
+    }
+  ]
+}

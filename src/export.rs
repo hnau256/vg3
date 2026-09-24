@@ -32,7 +32,7 @@ fn export_stl(parts: &[Part], path: &Path, tolerance: f64) -> Result<()> {
     if parts.is_empty() {
         return Ok(());
     }
-    let compound = build_compound(parts);
+    let compound = build_compound(parts)?;
     let path = path
         .to_str()
         .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
@@ -43,10 +43,10 @@ fn export_stl(parts: &[Part], path: &Path, tolerance: f64) -> Result<()> {
     }
 }
 
-fn build_compound(parts: &[Part]) -> UniquePtr<ffi::Shape> {
+fn build_compound(parts: &[Part]) -> Result<UniquePtr<ffi::Shape>> {
     let mut builder = ffi::new_compound_builder();
     for part in parts {
-        builder.pin_mut().push(part.shape());
+        builder.pin_mut().push(part.shape())?;
     }
-    builder.pin_mut().finish()
+    Ok(builder.pin_mut().finish()?)
 }

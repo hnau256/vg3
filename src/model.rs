@@ -122,14 +122,29 @@ impl<'de> Deserialize<'de> for Normal3 {
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum Curve<P> {
-    Line { to: P },
-    Arc { via: P, to: P },
-    Spline { points: Vec<P> },
+pub enum Curve2 {
+    Line { to: Point2 },
+    Arc { via: Point2, to: Point2 },
+    Spline { points: Vec<Point2> },
 }
 
-pub type Curve2 = Curve<Point2>;
-pub type Curve3 = Curve<Point3>;
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Curve3 {
+    Line { to: Point3 },
+    Arc { via: Point3, to: Point3 },
+    Spline { points: Vec<Point3> },
+    Helix {
+        pitch: Scalar,
+        height: Scalar,
+        #[serde(default = "default_right_handed")]
+        right_handed: bool,
+    },
+}
+
+fn default_right_handed() -> bool {
+    true
+}
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]

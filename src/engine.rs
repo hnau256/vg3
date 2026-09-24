@@ -5,8 +5,8 @@ use cxx::UniquePtr;
 
 use crate::error::{Error, Result};
 use crate::model::{
-    Curve, Curve2, Curve3, FilletKind, Model, Node, Operand, Path, Point2, Point3, Profile,
-    RadiusSpec, SweepMode, TransformOp,
+    Curve2, Curve3, FilletKind, Model, Node, Operand, Path, Point2, Point3, Profile, RadiusSpec,
+    SweepMode, TransformOp,
 };
 use crate::sys::ffi;
 
@@ -238,9 +238,9 @@ fn evaluate_node(node: &Node, parts: &[Node], current: usize) -> Result<Part> {
             let mut builder = ffi::new_loft_builder(*ruled);
             for section in sections {
                 let wire = build_path_wire(section, true)?;
-                builder.pin_mut().add(&wire);
+                builder.pin_mut().add(&wire)?;
             }
-            make_part(builder.pin_mut().finish())
+            make_part(builder.pin_mut().finish()?)
         }
         Node::Fillet {
             target,
@@ -415,11 +415,11 @@ fn build_profile_wire(profile: &Profile) -> Result<UniquePtr<ffi::Shape>> {
     let mut builder = ffi::new_wire_builder();
     builder
         .pin_mut()
-        .start(profile.start.x.value(), profile.start.y.value(), 0.0);
+        .start(profile.start.x.value(), profile.start.y.value(), 0.0)?;
     for edge in &profile.edges {
         add_curve2(builder.pin_mut(), edge)?;
     }
-    Ok(builder.pin_mut().finish(true))
+    Ok(builder.pin_mut().finish(true)?)
 }
 
 fn build_path_wire(path: &Path, closed: bool) -> Result<UniquePtr<ffi::Shape>> {
@@ -431,25 +431,30 @@ fn build_path_wire(path: &Path, closed: bool) -> Result<UniquePtr<ffi::Shape>> {
         path.start.x.value(),
         path.start.y.value(),
         path.start.z.value(),
-    );
+    )?;
     for edge in &path.edges {
         add_curve3(builder.pin_mut(), edge)?;
     }
-    Ok(builder.pin_mut().finish(closed))
+    Ok(builder.pin_mut().finish(closed)?)
 }
 
 fn add_curve3(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve3) -> Result<()> {
     match edge {
-        Curve::Line { to } => builder.line(to.x.value(), to.y.value(), to.z.value()),
-        Curve::Arc { via, to } => builder.arc(
+        Curve3::Line { to } => builder.line(to.x.value(), to.y.value(), to.z.value())?,
+        Curve3::Arc { via, to } => builder.arc(
             via.x.value(),
             via.y.value(),
             via.z.value(),
             to.x.value(),
             to.y.value(),
             to.z.value(),
-        ),
-        Curve::Spline { points } => builder.spline(&flatten3(points)),
+        )?,
+        Curve3::Spline { points } => builder.spline(&flatten3(points))?,
+        Curve3::Helix {
+            pitch,
+            height,
+            right_handed,
+        } => builder.helix(pitch.value(), height.value(), *right_handed)?,
     }
     Ok(())
 }
@@ -466,16 +471,16 @@ fn flatten3(points: &[Point3]) -> Vec<f64> {
 
 fn add_curve2(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve2) -> Result<()> {
     match edge {
-        Curve::Line { to } => builder.line(to.x.value(), to.y.value(), 0.0),
-        Curve::Arc { via, to } => builder.arc(
+        Curve2::Line { to } => builder.line(to.x.value(), to.y.value(), 0.0)?,
+        Curve2::Arc { via, to } => builder.arc(
             via.x.value(),
             via.y.value(),
             0.0,
             to.x.value(),
             to.y.value(),
             0.0,
-        ),
-        Curve::Spline { points } => builder.spline(&flatten2(points)),
+        )?,
+        Curve2::Spline { points } => builder.spline(&flatten2(points))?,
     }
     Ok(())
 }

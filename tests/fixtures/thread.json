@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "type": "fuse",
+      "parts": [
+        { "type": "cylinder", "radius": 4, "height": 10 },
+        {
+          "type": "sweep",
+          "mode": "follow",
+          "profile": {
+            "start": { "x": 1.082532, "y": 0 },
+            "edges": [
+              { "type": "line", "to": { "x": -0.541266, "y": 0.46875 } },
+              { "type": "line", "to": { "x": -0.541266, "y": 0.78125 } },
+              { "type": "line", "to": { "x": 1.082532, "y": 1.25 } }
+            ]
+          },
+          "path": {
+            "start": { "x": 3.188094, "y": 0, "z": 0 },
+            "edges": [{ "type": "helix", "pitch": 1.25, "height": 10 }]
+          }
+        }
+      ]
+    }
+  ]
+}

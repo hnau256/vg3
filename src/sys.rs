@@ -10,17 +10,17 @@ pub(crate) mod ffi {
 
         fn new_compound_builder() -> UniquePtr<CompoundBuilder>;
 
-        fn push(self: Pin<&mut CompoundBuilder>, shape: &Shape);
+        fn push(self: Pin<&mut CompoundBuilder>, shape: &Shape) -> Result<()>;
 
-        fn finish(self: Pin<&mut CompoundBuilder>) -> UniquePtr<Shape>;
+        fn finish(self: Pin<&mut CompoundBuilder>) -> Result<UniquePtr<Shape>>;
 
         type WireBuilder;
 
         fn new_wire_builder() -> UniquePtr<WireBuilder>;
 
-        fn start(self: Pin<&mut WireBuilder>, x: f64, y: f64, z: f64);
+        fn start(self: Pin<&mut WireBuilder>, x: f64, y: f64, z: f64) -> Result<()>;
 
-        fn line(self: Pin<&mut WireBuilder>, x: f64, y: f64, z: f64);
+        fn line(self: Pin<&mut WireBuilder>, x: f64, y: f64, z: f64) -> Result<()>;
 
         fn arc(
             self: Pin<&mut WireBuilder>,
@@ -30,11 +30,14 @@ pub(crate) mod ffi {
             to_x: f64,
             to_y: f64,
             to_z: f64,
-        );
+        ) -> Result<()>;
 
-        fn spline(self: Pin<&mut WireBuilder>, points: &[f64]);
+        fn spline(self: Pin<&mut WireBuilder>, points: &[f64]) -> Result<()>;
 
-        fn finish(self: Pin<&mut WireBuilder>, closed: bool) -> UniquePtr<Shape>;
+        fn helix(self: Pin<&mut WireBuilder>, pitch: f64, height: f64, right_handed: bool)
+            -> Result<()>;
+
+        fn finish(self: Pin<&mut WireBuilder>, closed: bool) -> Result<UniquePtr<Shape>>;
 
         fn make_box(width: f64, length: f64, height: f64) -> Result<UniquePtr<Shape>>;
 
@@ -67,9 +70,9 @@ pub(crate) mod ffi {
 
         fn new_loft_builder(ruled: bool) -> UniquePtr<LoftBuilder>;
 
-        fn add(self: Pin<&mut LoftBuilder>, section: &Shape);
+        fn add(self: Pin<&mut LoftBuilder>, section: &Shape) -> Result<()>;
 
-        fn finish(self: Pin<&mut LoftBuilder>) -> UniquePtr<Shape>;
+        fn finish(self: Pin<&mut LoftBuilder>) -> Result<UniquePtr<Shape>>;
 
         fn bounding_box(shape: &Shape) -> Vec<f64>;
 

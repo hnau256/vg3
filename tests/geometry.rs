@@ -98,6 +98,28 @@ fn fillet_removes_material_from_vertical_edges() {
 }
 
 #[test]
+fn helical_thread_adds_a_ridge_to_the_cylinder() {
+    let parts = build("thread.json");
+    assert_eq!(parts.len(), 1);
+    assert_eq!(parts[0].solid_count(), 1);
+    let volume = parts[0].volume();
+    let cylinder = std::f64::consts::PI * 16.0 * 10.0;
+    assert!(
+        volume > cylinder && volume < cylinder + 20.0,
+        "expected a cylinder plus a thread ridge, got {volume}"
+    );
+}
+
+#[test]
+fn opencascade_bottle_builds() {
+    let parts = build("bottle.json");
+    assert_eq!(parts.len(), 1);
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_bounds(&parts[0], [-25.0, -15.0, 0.0, 25.0, 15.0, 77.0]);
+    assert_close(parts[0].volume(), 89275.89, 1.0);
+}
+
+#[test]
 fn chamfer_on_a_box_removes_material() {
     let parts = build("chamfer.json");
     assert_eq!(parts[0].solid_count(), 1);
