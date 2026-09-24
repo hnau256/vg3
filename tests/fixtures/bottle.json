@@ -30,6 +30,22 @@
           "type": "transform",
           "target": { "type": "cylinder", "radius": 7.5, "height": 7 },
           "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 70 } }]
+        },
+        {
+          "type": "sweep",
+          "mode": "follow",
+          "profile": {
+            "start": { "x": 1.299038, "y": 0 },
+            "edges": [
+              { "type": "line", "to": { "x": -0.649519, "y": 0.5625 } },
+              { "type": "line", "to": { "x": -0.649519, "y": 0.9375 } },
+              { "type": "line", "to": { "x": 1.299038, "y": 1.5 } }
+            ]
+          },
+          "path": {
+            "start": { "x": 7.5, "y": 0, "z": 70 },
+            "edges": [{ "type": "helix", "pitch": 1.5, "height": 7 }]
+          }
         }
       ]
     }

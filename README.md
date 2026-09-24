@@ -165,9 +165,9 @@ vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Part
 
 ### Интеграционные проверки
 
-- **Бутылка из туториала OCCT** (`bottle.json`): профиль → `extrude` → `fillet` вертикальных рёбер
-  (r=2.5) → горлышко-цилиндр (r=7.5, h=7) → `fuse`. Тест `opencascade_bottle_builds` (число solid'ов,
-  bbox, объём). Hollow (`shell`) вне v1 (см. §7 FORMAT.md).
+- **Бутылка из туториала OCCT** (`bottle.json`): скруглённый профиль → `extrude` → `fillet` вертикальных
+  рёбер (r=2.5) → горлышко-цилиндр (r=7.5, h=7) с **резьбой** (`sweep` трапеции по `helix`) → `fuse`.
+  Тест `opencascade_bottle_builds` (число solid'ов, bbox, объём). Hollow (`shell`) вне v1 (см. §7 FORMAT.md).
 - **Резьба** — см. выше.
 
 ### Просмотр (dev)

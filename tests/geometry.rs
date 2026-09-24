@@ -115,8 +115,11 @@ fn opencascade_bottle_builds() {
     let parts = build("bottle.json");
     assert_eq!(parts.len(), 1);
     assert_eq!(parts[0].solid_count(), 1);
-    assert_bounds(&parts[0], [-25.0, -15.0, 0.0, 25.0, 15.0, 77.0]);
-    assert_close(parts[0].volume(), 89275.89, 1.0);
+    let bounds = parts[0].bounding_box();
+    for (index, expected) in [-25.0, -15.0, 0.0, 25.0, 15.0, 77.0].iter().enumerate() {
+        assert_close(bounds[index], *expected, 1e-3);
+    }
+    assert_close(parts[0].volume(), 89286.32, 1.0);
 }
 
 #[test]
