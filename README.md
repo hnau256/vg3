@@ -32,7 +32,7 @@ Kotlin-фронтенд (типизированный DSL)
            └───────────────────────────────────────────────────────────────────────┘
         │
         ▼
-      STL (STEP — в планах)
+   STL / PNG (STEP — в планах)
 ```
 
 ### Три шага (единый поток)
@@ -41,7 +41,7 @@ Kotlin-фронтенд (типизированный DSL)
 |---|---|---|---|
 | 1. parse | `parse(&str) -> Result<Model>` | `model` | JSON → доменное дерево; канонизация в типах |
 | 2. evaluate | `evaluate(&Model) -> Result<Vec<Part>>` | `engine` | обход дерева, вызовы OCCT, построение шейпов |
-| 3. export | `export(&[Part], Format, &Path, &ExportOptions) -> Result<()>` | `export` | запись шейпов |
+| 3. export | `export(&[Part], Format, &Path, &ExportOptions) -> Result<()>` | `export` | STL / рендер PNG |
 
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируются
 **корневые** `Part` — те, на которые никто не ссылается.
@@ -130,8 +130,10 @@ tests/
 ### CLI (`main`)
 
 ```
-vg3 <input.json> <output.stl> [--tolerance <value>]
+vg3 <input.json> <output.stl|output.png> [--tolerance <value>] [--png-size <px>] [--png-az <deg>] [--png-el <deg>]
 ```
+
+Формат определяется по расширению вывода: `.stl` — STL, `.png` — рендер.
 
 `main` ровно повторяет три шага библиотеки:
 
@@ -155,7 +157,8 @@ vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Part
 - **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
 - **Кривые**: `line`, `arc` (через 3 точки), `spline` (интерполяция), `helix` (точная винтовая линия —
   pcurve на цилиндре + `BRepLib::BuildCurves3d`, по ребру на виток).
-- **Экспорт**: STL (бинарный).
+- **Экспорт**: STL (бинарный), PNG (рендер: триангуляция из OCCT + собственный z-буфер-растеризатор,
+  без OpenGL — работает headless).
 
 ### Резьба
 
@@ -171,10 +174,13 @@ vg3::export::export(&parts, Format::Stl, path, &options)?;            // 3. Part
   Тест `opencascade_bottle_builds` (число solid'ов, bbox, объём). Hollow (`shell`) вне v1 (см. §7 FORMAT.md).
 - **Резьба** — см. выше.
 
-### Просмотр (dev)
+### Просмотр
 
-`tools/render_stl.py <model.stl> <out.png>` — программный рендер STL в PNG (ортографическая проекция,
-z-буфер, плоскостное затенение). Только для разработки: не часть канонического конвейера.
+`vg3 model.json model.png [--png-size <px>] [--png-az <deg>] [--png-el <deg>]` — рендер в PNG
+(ортопроекция, z-буфер, плоскостное затенение). Триангуляцию даёт OCCT, рисует собственный
+растеризатор — без OpenGL, работает headless. PNG собирается встроенным энкодером (без зависимостей).
+
+`tools/render_stl.py <file.stl> <out.png>` — то же для произвольного STL (dev-утилита).
 
 ## Решения (зафиксировано)
 
@@ -205,7 +211,7 @@ z-буфер, плоскостное затенение). Только для р
 ```sh
 cargo build
 cargo run -- tests/fixtures/fillet.json out.stl
-cargo run -- tests/fixtures/box.json out.stl --tolerance 0.05
+cargo run -- tests/fixtures/bottle.json bottle.png --png-az 30 --png-el 22
 cargo test
 ```
 

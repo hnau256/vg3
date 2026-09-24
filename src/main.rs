@@ -8,7 +8,10 @@ fn main() -> ExitCode {
     let (input, output, options) = match parse_arguments(&arguments) {
         Some(parsed) => parsed,
         None => {
-            eprintln!("usage: vg3 <input.json> <output.stl> [--tolerance <value>]");
+            eprintln!(
+                "usage: vg3 <input.json> <output.stl|output.png> \
+                 [--tolerance <value>] [--png-size <px>] [--png-az <deg>] [--png-el <deg>]"
+            );
             return ExitCode::from(2);
         }
     };
@@ -26,13 +29,24 @@ fn parse_arguments(arguments: &[String]) -> Option<(String, String, ExportOption
     let mut options = ExportOptions::default();
     let mut index = 0;
     while index < arguments.len() {
-        let argument = &arguments[index];
-        if argument == "--tolerance" {
-            index += 1;
-            let value = arguments.get(index)?.parse::<f64>().ok()?;
-            options.tolerance = value;
-        } else {
-            positional.push(argument.clone());
+        match arguments[index].as_str() {
+            "--tolerance" => {
+                index += 1;
+                options.tolerance = arguments.get(index)?.parse().ok()?;
+            }
+            "--png-size" => {
+                index += 1;
+                options.image.size = arguments.get(index)?.parse().ok()?;
+            }
+            "--png-az" => {
+                index += 1;
+                options.image.azimuth = arguments.get(index)?.parse().ok()?;
+            }
+            "--png-el" => {
+                index += 1;
+                options.image.elevation = arguments.get(index)?.parse().ok()?;
+            }
+            argument => positional.push(argument.to_string()),
         }
         index += 1;
     }
@@ -46,6 +60,13 @@ fn run(input: &str, output: &str, options: &ExportOptions) -> vg3::Result<()> {
     let source = std::fs::read_to_string(input)?;
     let model = vg3::model::parse(&source)?;
     let parts = vg3::engine::evaluate(&model)?;
-    vg3::export::export(&parts, Format::Stl, Path::new(output), options)?;
+    vg3::export::export(&parts, format_for(output), Path::new(output), options)?;
     Ok(())
+}
+
+fn format_for(path: &str) -> Format {
+    match Path::new(path).extension().and_then(|extension| extension.to_str()) {
+        Some(extension) if extension.eq_ignore_ascii_case("png") => Format::Png,
+        _ => Format::Stl,
+    }
 }

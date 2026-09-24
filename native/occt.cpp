@@ -40,7 +40,10 @@
 #include <Geom_TrimmedCurve.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Pnt2d.hxx>
+#include <Poly_Triangulation.hxx>
 #include <TColgp_HArray1OfPnt.hxx>
+#include <TopAbs.hxx>
+#include <TopLoc_Location.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
@@ -637,6 +640,44 @@ std::unique_ptr<Shape> LoftBuilder::finish() {
 
 std::unique_ptr<LoftBuilder> new_loft_builder(bool ruled) {
     return std::make_unique<LoftBuilder>(ruled);
+}
+
+rust::Vec<double> triangulation(const Shape& shape, double tolerance) {
+    try {
+        const TopoDS_Shape& topods = shape.topods();
+        const Standard_Real deflection = tolerance > 0.0 ? tolerance : 0.1;
+        BRepMesh_IncrementalMesh mesher(topods, deflection, Standard_False, 0.1, Standard_True);
+
+        rust::Vec<double> data;
+        for (TopExp_Explorer explorer(topods, TopAbs_FACE); explorer.More(); explorer.Next()) {
+            const TopoDS_Face face = TopoDS::Face(explorer.Current());
+            TopLoc_Location location;
+            const Handle(Poly_Triangulation) mesh = BRep_Tool::Triangulation(face, location);
+            if (mesh.IsNull()) {
+                continue;
+            }
+            const gp_Trsf transformation = location.Transformation();
+            for (Standard_Integer index = 1; index <= mesh->NbTriangles(); ++index) {
+                Standard_Integer n1 = 0;
+                Standard_Integer n2 = 0;
+                Standard_Integer n3 = 0;
+                mesh->Triangle(index).Get(n1, n2, n3);
+                if (face.Orientation() == TopAbs_REVERSED) {
+                    std::swap(n2, n3);
+                }
+                const Standard_Integer nodes[3] = {n1, n2, n3};
+                for (const Standard_Integer node : nodes) {
+                    const gp_Pnt point = mesh->Node(node).Transformed(transformation);
+                    data.push_back(point.X());
+                    data.push_back(point.Y());
+                    data.push_back(point.Z());
+                }
+            }
+        }
+        return data;
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
 }
 
 rust::Vec<double> bounding_box(const Shape& shape) {

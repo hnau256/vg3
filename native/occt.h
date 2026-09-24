@@ -115,6 +115,8 @@ private:
 
 std::unique_ptr<LoftBuilder> new_loft_builder(bool ruled);
 
+rust::Vec<double> triangulation(const Shape& shape, double tolerance);
+
 rust::Vec<double> bounding_box(const Shape& shape);
 
 double volume(const Shape& shape);

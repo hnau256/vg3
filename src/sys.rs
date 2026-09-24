@@ -76,6 +76,8 @@ pub(crate) mod ffi {
 
         fn finish(self: Pin<&mut LoftBuilder>) -> Result<UniquePtr<Shape>>;
 
+        fn triangulation(shape: &Shape, tolerance: f64) -> Result<Vec<f64>>;
+
         fn bounding_box(shape: &Shape) -> Vec<f64>;
 
         fn volume(shape: &Shape) -> f64;

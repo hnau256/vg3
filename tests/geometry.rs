@@ -98,6 +98,20 @@ fn fillet_removes_material_from_vertical_edges() {
 }
 
 #[test]
+fn png_export_writes_a_valid_image() {
+    let parts = build("box.json");
+    let mut options = vg3::export::ExportOptions::default();
+    options.image.size = 64;
+    let path = std::env::temp_dir().join("vg3_box_render.png");
+    vg3::export::export(&parts, vg3::export::Format::Png, &path, &options).expect("renders");
+    let bytes = std::fs::read(&path).expect("image exists");
+    assert_eq!(&bytes[..8], &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]);
+    let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
+    assert_eq!(width, 64);
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
 fn halfspace_cuts_away_material_on_the_reference_side() {
     let parts = build("halfspace.json");
     assert_eq!(parts.len(), 1);
