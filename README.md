@@ -115,20 +115,22 @@ IR-узлом `Node` (описанием).
 
 ### Кэш
 
-**Трейт `Cache<K, V>`** (`src/cache.rs`): `get`/`put` + provided `get_or_put`/`wrap_with`. Движок
-принимает кэш параметром — `evaluate(model, cache)`; конкретная реализация:
+**Трейт `Cache<K, V>`** (`src/cache.rs`): `get`/`put` + provided `get_or_put`/`wrap_with`. Реализации —
+`Noop`, `Memory<K, V>` и `store::Disk<K, V, C>` (файлы). Склейка: `back.wrap_with(front)` — чтение
+`front`→`back`, запись в оба (CLI: `disk.wrap_with(memory)`).
 
-- `cache::Noop` — ничего не хранит (сборка «с нуля»);
-- `cache::Memory<K, V>` — `HashMap`;
-- `store::Disk` — BREP-файлы (`OCCT BRepTools`); включён по умолчанию, папка — из конфига работы;
-- склейка `back.wrap_with(front)`: чтение — сначала `front`, потом `back`, запись — в оба
-  (CLI: `disk.wrap_with(memory)`).
+**Кэш не знает домена** и выносится в отдельную библиотеку. `Disk` работает с **байтами**: значения
+превращает **`Codec<T>`** — это и есть «iso» (`encode`/`decode`, пара (де)сериализаций одним объектом;
+в std готового нет — есть только трейды-обёртки вроде `monocle`, но здесь достаточно своего пары
+методов). Ключ лишь отдаёт байты для имени файла (`AsRef<[u8]>`).
 
-Ключ узла — **Merkle**: структуру обходит тот же `try_map` (`U = Key`) → `Node<Key>` → **BLAKE3** от
-`версия ‖ Node<Key>` (`src/key.rs`; версия = формат/движок/OCCT, чтобы кэш не переиспользовался при
-смене семантики). Ключ — деталь `get_or_evaluate`, наружу не выходит.
+**Домен живёт в `engine`**: `BrepCodec: Codec<Part>` (BREP через нативные потоки `BRepTools`) и
+Merkle-обход узла (`key_of`, знает `Node`). Ключ — `key::fingerprint<T: Hash>` (generic BLAKE3);
+версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался при смене семантики.
 
-`cache.rs` не знает ни модели, ни `Part` — только трейт; `key.rs` — единственное место, знающее `Node`.
+В движок передаётся **не кэш, а фабрика**: `evaluate(model, |codec| …)` — движок сам отдаёт свой
+`BrepCodec`, а фабрика строит кэш (например, `|codec| Disk::new(dir, codec).wrap_with(Memory::default())`).
+Так (де)сериализация — ответственность движка, а кэш остаётся носителем.
 
 ### Нативный слой (`native` + `sys`)
 

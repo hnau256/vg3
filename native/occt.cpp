@@ -1,6 +1,7 @@
 #include "occt.h"
 
 #include <cmath>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -58,6 +59,7 @@
 #include <Standard_Version.hxx>
 #include <StlAPI_Writer.hxx>
 #include <TopAbs_ShapeEnum.hxx>
+#include <TopTools_FormatVersion.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
@@ -949,23 +951,43 @@ std::unique_ptr<Shape> fillet(
     }
 }
 
-bool write_brep(const Shape& shape, rust::Str path) {
-    const std::string file(path.data(), path.size());
-    return BRepTools::Write(shape.topods(), file.c_str());
+rust::Vec<std::uint8_t> brep_encode(const Shape& shape) {
+    try {
+        std::ostringstream stream;
+        BRepTools::Write(
+            shape.topods(),
+            stream,
+            Standard_False,
+            Standard_False,
+            TopTools_FormatVersion_CURRENT
+        );
+        const std::string data = stream.str();
+        rust::Vec<std::uint8_t> bytes;
+        bytes.reserve(data.size());
+        for (const char byte : data) {
+            bytes.push_back(static_cast<std::uint8_t>(byte));
+        }
+        return bytes;
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
 }
 
-std::unique_ptr<Shape> read_brep(rust::Str path) {
-    const std::string file(path.data(), path.size());
-    TopoDS_Shape shape;
-    BRep_Builder builder;
-    if (!BRepTools::Read(shape, file.c_str(), builder)) {
-        throw std::runtime_error("cannot read BREP file");
+std::unique_ptr<Shape> brep_decode(rust::Slice<const std::uint8_t> bytes) {
+    try {
+        const std::string data(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        std::istringstream stream(data);
+        TopoDS_Shape shape;
+        BRep_Builder builder;
+        BRepTools::Read(shape, stream, builder);
+        if (shape.IsNull()) {
+            throw std::runtime_error("BREP data contains a null shape");
+        }
+        ensure_valid(shape);
+        return std::make_unique<Shape>(shape);
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
     }
-    if (shape.IsNull()) {
-        throw std::runtime_error("BREP file contains a null shape");
-    }
-    ensure_valid(shape);
-    return std::make_unique<Shape>(shape);
 }
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance) {

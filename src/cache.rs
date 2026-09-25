@@ -32,6 +32,13 @@ pub trait Cache<K, V> {
     }
 }
 
+/// A two-way conversion between `T` and bytes — the pair of closures a disk store would otherwise
+/// need, bundled into a single entity (an `Iso`: `encode` / `decode`).
+pub trait Codec<T> {
+    fn encode(&self, value: &T) -> Result<Vec<u8>>;
+    fn decode(&self, bytes: &[u8]) -> Result<T>;
+}
+
 /// Stores nothing: evaluation always runs from scratch.
 #[derive(Default)]
 pub struct Noop;

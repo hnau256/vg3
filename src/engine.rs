@@ -62,7 +62,14 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
     Ok(Part(Rc::new(PartShape { shape: unified })))
 }
 
-pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Part>> {
+/// Evaluates the model's roots. The cache is not passed in directly: the engine owns the
+/// `Part` <-> bytes codec (its `BrepCodec`), hands it to `make_cache`, and uses whatever cache the
+/// factory builds. This keeps the cache fully unaware of the domain model.
+pub fn evaluate<C, F>(model: &Model, make_cache: F) -> Result<Vec<Part>>
+where
+    C: Cache<Key, Part>,
+    F: FnOnce(BrepCodec) -> C,
+{
     // One `try_map` pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
     for (index, node) in model.parts.iter().enumerate() {
@@ -74,14 +81,28 @@ pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec
     }
 
     // Roots are the nodes nobody references.
+    let mut cache = make_cache(BrepCodec);
     let parts = &model.parts;
     let mut roots = Vec::new();
     for (index, node) in parts.iter().enumerate() {
         if !referenced.contains(&index) {
-            roots.push(get_or_evaluate(node, parts, cache)?);
+            roots.push(get_or_evaluate(node, parts, &mut cache)?);
         }
     }
     Ok(roots)
+}
+
+/// `Part` <-> bytes, as OpenCASCADE BREP — the engine's own codec for the disk cache.
+pub struct BrepCodec;
+
+impl crate::cache::Codec<Part> for BrepCodec {
+    fn encode(&self, part: &Part) -> Result<Vec<u8>> {
+        Ok(ffi::brep_encode(part.shape())?)
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Result<Part> {
+        Ok(Part::from_shape(ffi::brep_decode(bytes)?))
+    }
 }
 
 /// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
@@ -104,7 +125,7 @@ fn get_or_evaluate<C: Cache<Key, Part>>(
 /// References are `index < current` (checked in [`evaluate`]), so `parts[operand]` is in range.
 fn key_of(node: &Node<usize>, parts: &[Node<usize>]) -> Result<Key> {
     let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand], parts))?;
-    Ok(key::node_key(&mapped))
+    Ok(key::fingerprint(&mapped))
 }
 
 fn validate_index(index: usize, current: usize) -> Result<()> {
@@ -447,22 +468,71 @@ mod tests {
         Scalar::try_from(value).expect("finite")
     }
 
+    fn box_node(size: f64) -> Node<usize> {
+        Node::Box {
+            width: scalar(size),
+            length: scalar(size),
+            height: scalar(size),
+        }
+    }
+
+    fn build(
+        model: &Model,
+        make_cache: impl FnOnce(BrepCodec) -> crate::cache::Memory<Key, Part>,
+    ) -> Vec<Part> {
+        evaluate(model, make_cache).expect("builds")
+    }
+
+    fn box_part(size: f64) -> Part {
+        build(
+            &Model {
+                version: 1,
+                parts: vec![box_node(size)],
+            },
+            |_| crate::cache::Memory::default(),
+        )
+        .pop()
+        .expect("one root")
+    }
+
     #[test]
     fn identical_subtrees_are_built_once() {
-        let box_node = || Node::Box {
-            width: scalar(2.0),
-            length: scalar(2.0),
-            height: scalar(2.0),
-        };
         let model = Model {
             version: 1,
-            parts: vec![box_node(), box_node()],
+            parts: vec![box_node(2.0), box_node(2.0)],
         };
-        let parts = evaluate(&model, &mut crate::cache::Memory::default()).expect("builds");
+        let parts = build(&model, |_| crate::cache::Memory::default());
         assert_eq!(parts.len(), 2);
         assert!(
             Rc::ptr_eq(&parts[0].0, &parts[1].0),
             "the cache must reuse an identical node"
         );
+    }
+
+    #[test]
+    fn engine_reads_from_disk() {
+        let directory = std::env::temp_dir().join("vg3-engine-disk-test");
+        let _ = std::fs::remove_dir_all(&directory);
+
+        // Poison the key of a 2x2x2 box with a 1x1x1 box: if the engine consults the disk layer,
+        // the result must be the small box.
+        let model = Model {
+            version: 1,
+            parts: vec![box_node(2.0)],
+        };
+        let key = key_of(&model.parts[0], &model.parts).expect("key");
+        let mut disk = crate::store::Disk::new(directory.clone(), BrepCodec);
+        disk.put(&key, &box_part(1.0));
+
+        let parts = evaluate(&model, |codec| {
+            crate::store::Disk::new(directory.clone(), codec)
+                .wrap_with(crate::cache::Memory::default())
+        })
+        .expect("builds");
+        assert!(
+            (parts[0].volume() - 1.0).abs() < 1e-9,
+            "engine must have read the disk entry"
+        );
+        let _ = std::fs::remove_dir_all(&directory);
     }
 }

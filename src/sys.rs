@@ -133,8 +133,8 @@ pub(crate) mod ffi {
 
         fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<bool>;
 
-        fn write_brep(shape: &Shape, path: &str) -> Result<bool>;
+        fn brep_encode(shape: &Shape) -> Result<Vec<u8>>;
 
-        fn read_brep(path: &str) -> Result<UniquePtr<Shape>>;
+        fn brep_decode(bytes: &[u8]) -> Result<UniquePtr<Shape>>;
     }
 }

@@ -34,11 +34,10 @@ fn run(model_path: &str, export_path: &str, run_path: Option<&str>) -> vg3::Resu
         None => RunConfig::default(),
     };
     let parts = match run_config.cache_dir() {
-        Some(directory) => vg3::engine::evaluate(
-            &model,
-            &mut Disk::at(directory).wrap_with(Memory::default()),
-        )?,
-        None => vg3::engine::evaluate(&model, &mut Memory::default())?,
+        Some(directory) => vg3::engine::evaluate(&model, move |codec| {
+            Disk::new(directory, codec).wrap_with(Memory::default())
+        })?,
+        None => vg3::engine::evaluate(&model, |_codec| Memory::default())?,
     };
 
     let export_source = std::fs::read_to_string(export_path)?;
