@@ -54,6 +54,7 @@
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepPrimAPI_MakeWedge.hxx>
 #include <Standard_Failure.hxx>
+#include <Standard_Version.hxx>
 #include <StlAPI_Writer.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp.hxx>
@@ -130,6 +131,10 @@ std::unique_ptr<Shape> CompoundBuilder::finish() {
 
 std::unique_ptr<CompoundBuilder> new_compound_builder() {
     return std::make_unique<CompoundBuilder>();
+}
+
+rust::String occt_version() {
+    return rust::String(OCC_VERSION_COMPLETE);
 }
 
 std::unique_ptr<Shape> make_box(double width, double length, double height) {

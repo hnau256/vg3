@@ -1,22 +1,29 @@
 use std::collections::HashSet;
 use std::pin::Pin;
+use std::rc::Rc;
 
 use cxx::UniquePtr;
 
+use crate::cache::Cache;
 use crate::error::{Error, Result};
+use crate::key::{self, Key};
 use crate::model::{
     Curve2, Curve3, FilletKind, Model, Node, Path, Point2, Point3, Profile, RadiusSpec, SweepMode,
     TransformOp,
 };
 use crate::sys::ffi;
 
-pub struct Part {
+/// A built shape (a compound of solids). Cheap to clone — operands and cache hits share it.
+#[derive(Clone)]
+pub struct Part(Rc<PartShape>);
+
+struct PartShape {
     shape: UniquePtr<ffi::Shape>,
 }
 
 impl Part {
     pub(crate) fn shape(&self) -> &ffi::Shape {
-        self.shape.as_ref().expect("shape handle is never null")
+        self.0.shape.as_ref().expect("shape handle is never null")
     }
 
     pub fn solid_count(&self) -> usize {
@@ -47,7 +54,7 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
     if !ffi::is_solids_only(&unified) {
         return Err(Error::NotASolid);
     }
-    Ok(Part { shape: unified })
+    Ok(Part(Rc::new(PartShape { shape: unified })))
 }
 
 pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
@@ -62,20 +69,37 @@ pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
     }
 
     // Roots are the nodes nobody references.
+    let parts = &model.parts;
+    let mut cache = Cache::default();
     let mut roots = Vec::new();
-    for (index, _) in model.parts.iter().enumerate() {
+    for (index, node) in parts.iter().enumerate() {
         if !referenced.contains(&index) {
-            roots.push(build(index, &model.parts)?);
+            roots.push(get_or_evaluate(node, parts, &mut cache)?);
         }
     }
     Ok(roots)
 }
 
-/// Recursively evaluates a node: `try_map` turns its operands into `Part`s (this is exactly where
-/// the cache will plug in), then `evaluate` turns the ready `Node<Part>` into a `Part`.
-fn build(index: usize, parts: &[Node<usize>]) -> Result<Part> {
-    let node: Node<Part> = parts[index].try_map(|operand| build(operand, parts))?;
-    node.evaluate()
+/// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
+/// here, right before use, and never leaving this function.
+fn get_or_evaluate(
+    node: &Node<usize>,
+    parts: &[Node<usize>],
+    cache: &mut Cache<Key, Part>,
+) -> Result<Part> {
+    let key = key_of(node, parts)?;
+    cache.get_or_put(key, |cache| {
+        let ready: Node<Part> =
+            node.try_map(|operand| get_or_evaluate(&parts[operand], parts, cache))?;
+        ready.evaluate()
+    })
+}
+
+/// The node's Merkle key `H(node ‖ operand_keys…)`, computed on demand (keys are not stored).
+/// References are `index < current` (checked in [`evaluate`]), so `parts[operand]` is in range.
+fn key_of(node: &Node<usize>, parts: &[Node<usize>]) -> Result<Key> {
+    let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand], parts))?;
+    Ok(key::node_key(&mapped))
 }
 
 fn validate_index(index: usize, current: usize) -> Result<()> {
@@ -407,4 +431,33 @@ fn flatten2(points: &[Point2]) -> Vec<f64> {
         flat.push(0.0);
     }
     flat
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Scalar;
+
+    fn scalar(value: f64) -> Scalar {
+        Scalar::try_from(value).expect("finite")
+    }
+
+    #[test]
+    fn identical_subtrees_are_built_once() {
+        let box_node = || Node::Box {
+            width: scalar(2.0),
+            length: scalar(2.0),
+            height: scalar(2.0),
+        };
+        let model = Model {
+            version: 1,
+            parts: vec![box_node(), box_node()],
+        };
+        let parts = evaluate(&model).expect("builds");
+        assert_eq!(parts.len(), 2);
+        assert!(
+            Rc::ptr_eq(&parts[0].0, &parts[1].0),
+            "the cache must reuse an identical node"
+        );
+    }
 }

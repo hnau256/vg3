@@ -12,6 +12,7 @@ name = "vg3"
 path = "src/main.rs"
 
 [dependencies]
+blake3 = "1"
 cxx = "1"
 rhai = "1"
 serde = { version = "1", features = ["derive"] }

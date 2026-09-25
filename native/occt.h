@@ -81,6 +81,8 @@ std::unique_ptr<CompoundBuilder> new_compound_builder();
 
 std::unique_ptr<WireBuilder> new_wire_builder();
 
+rust::String occt_version();
+
 std::unique_ptr<Shape> make_box(double width, double length, double height);
 
 std::unique_ptr<Shape> make_sphere(double radius);

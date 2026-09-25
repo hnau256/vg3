@@ -43,6 +43,8 @@ pub(crate) mod ffi {
 
         fn finish(self: Pin<&mut WireBuilder>, closed: bool) -> Result<UniquePtr<Shape>>;
 
+        fn occt_version() -> String;
+
         fn make_box(width: f64, length: f64, height: f64) -> Result<UniquePtr<Shape>>;
 
         fn make_sphere(radius: f64) -> Result<UniquePtr<Shape>>;
