@@ -38,6 +38,9 @@ pub enum Error {
     #[error("export failed: {0}")]
     Export(String),
 
+    #[error("cache error: {0}")]
+    Cache(String),
+
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
 }

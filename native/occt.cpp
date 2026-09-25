@@ -22,6 +22,7 @@
 #include <gp_Pln.hxx>
 #include <BRepGProp.hxx>
 #include <BRepLib.hxx>
+#include <BRepTools.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
@@ -946,6 +947,25 @@ std::unique_ptr<Shape> fillet(
     } catch (const Standard_Failure& failure) {
         rethrow_as_std_error(failure);
     }
+}
+
+bool write_brep(const Shape& shape, rust::Str path) {
+    const std::string file(path.data(), path.size());
+    return BRepTools::Write(shape.topods(), file.c_str());
+}
+
+std::unique_ptr<Shape> read_brep(rust::Str path) {
+    const std::string file(path.data(), path.size());
+    TopoDS_Shape shape;
+    BRep_Builder builder;
+    if (!BRepTools::Read(shape, file.c_str(), builder)) {
+        throw std::runtime_error("cannot read BREP file");
+    }
+    if (shape.IsNull()) {
+        throw std::runtime_error("BREP file contains a null shape");
+    }
+    ensure_valid(shape);
+    return std::make_unique<Shape>(shape);
 }
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance) {

@@ -16,6 +16,17 @@ use crate::sys::ffi;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Key([u8; 32]);
 
+impl Key {
+    /// Lowercase hex — used as the on-disk file name.
+    pub fn to_hex(self) -> String {
+        let mut out = String::with_capacity(64);
+        for byte in self.0 {
+            out.push_str(&format!("{byte:02x}"));
+        }
+        out
+    }
+}
+
 /// Fingerprints a node whose operands are already turned into their keys.
 pub fn node_key(node: &Node<Key>) -> Key {
     let mut hasher = Blake3Hasher(blake3::Hasher::new());

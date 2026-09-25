@@ -22,6 +22,11 @@ struct PartShape {
 }
 
 impl Part {
+    /// Wraps an already-built shape (used by the cache to revive a stored part).
+    pub(crate) fn from_shape(shape: UniquePtr<ffi::Shape>) -> Part {
+        Part(Rc::new(PartShape { shape }))
+    }
+
     pub(crate) fn shape(&self) -> &ffi::Shape {
         self.0.shape.as_ref().expect("shape handle is never null")
     }
@@ -57,7 +62,7 @@ fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
     Ok(Part(Rc::new(PartShape { shape: unified })))
 }
 
-pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
+pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Part>> {
     // One `try_map` pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
     for (index, node) in model.parts.iter().enumerate() {
@@ -70,22 +75,22 @@ pub fn evaluate(model: &Model) -> Result<Vec<Part>> {
 
     // Roots are the nodes nobody references.
     let parts = &model.parts;
-    let mut cache = Cache::default();
     let mut roots = Vec::new();
     for (index, node) in parts.iter().enumerate() {
         if !referenced.contains(&index) {
-            roots.push(get_or_evaluate(node, parts, &mut cache)?);
+            roots.push(get_or_evaluate(node, parts, cache)?);
         }
     }
     Ok(roots)
 }
 
 /// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
-/// here, right before use, and never leaving this function.
-fn get_or_evaluate(
+/// here, right before use, and never leaving this function. The cache is whatever the caller
+/// passed in — memory, disk, a layering of both, or nothing.
+fn get_or_evaluate<C: Cache<Key, Part>>(
     node: &Node<usize>,
     parts: &[Node<usize>],
-    cache: &mut Cache<Key, Part>,
+    cache: &mut C,
 ) -> Result<Part> {
     let key = key_of(node, parts)?;
     cache.get_or_put(key, |cache| {
@@ -453,7 +458,7 @@ mod tests {
             version: 1,
             parts: vec![box_node(), box_node()],
         };
-        let parts = evaluate(&model).expect("builds");
+        let parts = evaluate(&model, &mut crate::cache::Memory::default()).expect("builds");
         assert_eq!(parts.len(), 2);
         assert!(
             Rc::ptr_eq(&parts[0].0, &parts[1].0),

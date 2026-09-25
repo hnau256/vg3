@@ -180,4 +180,8 @@ std::unique_ptr<Shape> unify(const Shape& shape);
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance);
 
+bool write_brep(const Shape& shape, rust::Str path);
+
+std::unique_ptr<Shape> read_brep(rust::Str path);
+
 }  // namespace vg3

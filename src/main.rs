@@ -1,5 +1,6 @@
 use std::process::ExitCode;
 
+use vg3::cache::Cache;
 use vg3::export::ExportConfig;
 
 fn main() -> ExitCode {
@@ -20,7 +21,14 @@ fn main() -> ExitCode {
 fn run(model_path: &str, export_path: &str) -> vg3::Result<()> {
     let model_source = std::fs::read_to_string(model_path)?;
     let model = vg3::model::parse(&model_source)?;
-    let parts = vg3::engine::evaluate(&model)?;
+
+    // Cache: memory, backed by disk when `VG3_CACHE_DIR` is set.
+    let mut memory = vg3::cache::Memory::default();
+    let parts = match vg3::store::Disk::from_env() {
+        Some(disk) => vg3::engine::evaluate(&model, &mut disk.wrap_with(memory))?,
+        None => vg3::engine::evaluate(&model, &mut memory)?,
+    };
+
     let export_source = std::fs::read_to_string(export_path)?;
     let config = ExportConfig::from_json(&export_source)?;
     config.export(&parts)

@@ -132,5 +132,9 @@ pub(crate) mod ffi {
         fn unify(shape: &Shape) -> Result<UniquePtr<Shape>>;
 
         fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<bool>;
+
+        fn write_brep(shape: &Shape, path: &str) -> Result<bool>;
+
+        fn read_brep(path: &str) -> Result<UniquePtr<Shape>>;
     }
 }

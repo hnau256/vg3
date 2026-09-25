@@ -8,7 +8,7 @@ fn build(fixture: &str) -> Vec<Part> {
         .join(fixture);
     let source = std::fs::read_to_string(path).expect("fixture is readable");
     let model = vg3::model::parse(&source).expect("fixture parses");
-    engine::evaluate(&model).expect("fixture builds")
+    engine::evaluate(&model, &mut vg3::cache::Noop).expect("fixture builds")
 }
 
 fn assert_close(actual: f64, expected: f64, tolerance: f64) {
