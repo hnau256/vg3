@@ -14,11 +14,9 @@ pub struct Disk {
 }
 
 impl Disk {
-    /// Opens the cache directory from `VG3_CACHE_DIR` (so nothing is written behind the user's back).
-    pub fn from_env() -> Option<Disk> {
-        std::env::var_os("VG3_CACHE_DIR")
-            .map(PathBuf::from)
-            .map(|directory| Disk { directory })
+    /// Disk layer backed by `directory`.
+    pub fn at(directory: PathBuf) -> Disk {
+        Disk { directory }
     }
 
     fn path(&self, key: Key) -> PathBuf {
@@ -71,6 +69,7 @@ impl Cache<Key, Part> for Disk {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache::{Memory, Noop};
     use crate::key;
     use crate::model::{Model, Node, Scalar};
 
@@ -78,51 +77,90 @@ mod tests {
         Scalar::try_from(value).expect("finite")
     }
 
-    fn box_node() -> Node<usize> {
+    fn box_node(size: f64) -> Node<usize> {
         Node::Box {
-            width: scalar(1.0),
-            length: scalar(1.0),
-            height: scalar(1.0),
+            width: scalar(size),
+            length: scalar(size),
+            height: scalar(size),
         }
     }
 
-    fn box_key() -> Key {
+    fn box_key(size: f64) -> Key {
         key::node_key(&Node::Box {
-            width: scalar(1.0),
-            length: scalar(1.0),
-            height: scalar(1.0),
+            width: scalar(size),
+            length: scalar(size),
+            height: scalar(size),
         })
     }
 
-    fn clear() -> Disk {
-        let directory = std::env::temp_dir().join("vg3-disk-test");
+    fn build_box(size: f64) -> Part {
+        crate::engine::evaluate(
+            &Model {
+                version: 1,
+                parts: vec![box_node(size)],
+            },
+            &mut Noop,
+        )
+        .expect("builds")
+        .pop()
+        .expect("one root")
+    }
+
+    /// Each test gets its own directory (tests run in parallel).
+    fn disk(name: &str) -> Disk {
+        let directory = std::env::temp_dir().join(format!("vg3-disk-test-{name}"));
         let _ = std::fs::remove_dir_all(&directory);
-        Disk { directory }
+        Disk::at(directory)
     }
 
     #[test]
     fn put_and_get_round_trip() {
-        let mut disk = clear();
-        let part = crate::engine::evaluate(
-            &Model {
-                version: 1,
-                parts: vec![box_node()],
-            },
-            &mut crate::cache::Noop,
-        )
-        .expect("builds")
-        .pop()
-        .expect("one root");
-
-        let key = box_key();
-        disk.put(&key, &part);
-        assert!(disk.get(&key).is_some(), "stored entry must load back");
+        let mut disk = disk("round-trip");
+        let key = box_key(2.0);
+        disk.put(&key, &build_box(2.0));
+        let loaded = disk.get(&key).expect("hit");
+        assert!(
+            (loaded.volume() - 8.0).abs() < 1e-9,
+            "geometry must survive the round trip"
+        );
         let _ = std::fs::remove_dir_all(&disk.directory);
     }
 
     #[test]
     fn missing_entry_is_a_miss() {
-        let mut disk = clear();
-        assert!(disk.get(&box_key()).is_none());
+        let mut disk = disk("missing");
+        assert!(disk.get(&box_key(2.0)).is_none());
+    }
+
+    #[test]
+    fn corrupt_entry_is_dropped() {
+        let mut disk = disk("corrupt");
+        let key = box_key(2.0);
+        std::fs::create_dir_all(&disk.directory).expect("create dir");
+        let path = disk.path(key);
+        std::fs::write(&path, b"not a BREP file").expect("write garbage");
+        assert!(disk.get(&key).is_none(), "corrupt entry must miss");
+        assert!(!path.exists(), "corrupt entry must be dropped");
+        let _ = std::fs::remove_dir_all(&disk.directory);
+    }
+
+    #[test]
+    fn engine_reads_from_disk() {
+        let mut disk = disk("engine-reads");
+        let directory = disk.directory.clone();
+        // Poison the key of a 2x2x2 box with a 1x1x1 box: if the engine consults the disk, it must
+        // return the small box, proving the layering actually reads disk-backed entries.
+        disk.put(&box_key(2.0), &build_box(1.0));
+        let model = Model {
+            version: 1,
+            parts: vec![box_node(2.0)],
+        };
+        let parts = crate::engine::evaluate(&model, &mut disk.wrap_with(Memory::default()))
+            .expect("builds");
+        assert!(
+            (parts[0].volume() - 1.0).abs() < 1e-9,
+            "engine must have read the disk entry"
+        );
+        let _ = std::fs::remove_dir_all(&directory);
     }
 }

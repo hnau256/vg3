@@ -1,15 +1,21 @@
 use std::process::ExitCode;
 
-use vg3::cache::Cache;
+use vg3::cache::{Cache, Memory};
 use vg3::export::ExportConfig;
+use vg3::run::RunConfig;
+use vg3::store::Disk;
 
 fn main() -> ExitCode {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
-    if arguments.len() != 2 {
-        eprintln!("usage: vg3 <model.json> <export.json>");
+    if !(2..=3).contains(&arguments.len()) {
+        eprintln!("usage: vg3 <model.json> <export.json> [run.json]");
         return ExitCode::from(2);
     }
-    match run(&arguments[0], &arguments[1]) {
+    match run(
+        &arguments[0],
+        &arguments[1],
+        arguments.get(2).map(String::as_str),
+    ) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("vg3: {error}");
@@ -18,15 +24,21 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(model_path: &str, export_path: &str) -> vg3::Result<()> {
+fn run(model_path: &str, export_path: &str, run_path: Option<&str>) -> vg3::Result<()> {
     let model_source = std::fs::read_to_string(model_path)?;
     let model = vg3::model::parse(&model_source)?;
 
-    // Cache: memory, backed by disk when `VG3_CACHE_DIR` is set.
-    let mut memory = vg3::cache::Memory::default();
-    let parts = match vg3::store::Disk::from_env() {
-        Some(disk) => vg3::engine::evaluate(&model, &mut disk.wrap_with(memory))?,
-        None => vg3::engine::evaluate(&model, &mut memory)?,
+    // Cache: memory, backed by disk at the directory the run config resolves to.
+    let run_config = match run_path {
+        Some(path) => RunConfig::from_json(&std::fs::read_to_string(path)?)?,
+        None => RunConfig::default(),
+    };
+    let parts = match run_config.cache_dir() {
+        Some(directory) => vg3::engine::evaluate(
+            &model,
+            &mut Disk::at(directory).wrap_with(Memory::default()),
+        )?,
+        None => vg3::engine::evaluate(&model, &mut Memory::default())?,
     };
 
     let export_source = std::fs::read_to_string(export_path)?;

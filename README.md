@@ -120,7 +120,7 @@ IR-узлом `Node` (описанием).
 
 - `cache::Noop` — ничего не хранит (сборка «с нуля»);
 - `cache::Memory<K, V>` — `HashMap`;
-- `store::Disk` — BREP-файлы (`OCCT BRepTools`), включается `VG3_CACHE_DIR` (opt-in);
+- `store::Disk` — BREP-файлы (`OCCT BRepTools`); включён по умолчанию, папка — из конфига работы;
 - склейка `back.wrap_with(front)`: чтение — сначала `front`, потом `back`, запись — в оба
   (CLI: `disk.wrap_with(memory)`).
 
@@ -154,16 +154,17 @@ IR-узлом `Node` (описанием).
 ### CLI (`main`)
 
 ```
-vg3 <model.json> <export.json>
+vg3 <model.json> <export.json> [run.json]
 ```
 
-Модель (IR) и **конфиг экспорта** — два отдельных JSON-файла. `main` ровно повторяет шаги библиотеки:
+Три отдельных JSON-файла: IR‑модель, **конфиг экспорта** и необязательный **конфиг работы**. `main`:
 
 ```rust
-let model = vg3::model::parse(&model_source)?;         // 1. str   -> Model
-let parts = vg3::engine::evaluate(&model)?;            // 2. Model -> Vec<Part>
-let config = ExportConfig::from_json(&export_source)?; //     конфиг экспорта
-config.export(&parts)?;                                // 3. Parts -> файлы
+let model = vg3::model::parse(&model_source)?;              // 1. str   -> Model
+let run   = RunConfig::from_json(&run_source)?;             //     конфиг работы
+let parts = vg3::engine::evaluate(&model, &mut cache)?;     // 2. Model -> Vec<Part>
+let config = ExportConfig::from_json(&export_source)?;      //     конфиг экспорта
+config.export(&parts)?;                                     // 3. Parts -> файлы
 ```
 
 ### Конфиг экспорта
@@ -180,6 +181,20 @@ config.export(&parts)?;                                // 3. Parts -> файлы
 - `png`: `path`, `size` (512), `azimuth` (35), `elevation` (25) — вид камеры.
 
 Несколько корневых `Part` пишутся в **один** файл (общий `Compound`).
+
+### Конфиг работы
+
+Необязательный третий JSON — как запускать (сейчас: дисковый кэш). По умолчанию **включён** и пишет в
+системную папку кэша (`~/Library/Caches/vg3` на macOS, `~/.cache/vg3` на Linux, `%LOCALAPPDATA%\vg3`
+на Windows — не в `~`).
+
+```jsonc
+{}                                          // по умолчанию: диск включён, системная папка
+{ "cache": { "dir": "/tmp/vg3-cache" } }    // своя папка
+{ "cache": { "enabled": false } }           // только память
+```
+
+Приоритет папки: `cache.dir` → `VG3_CACHE_DIR` → системная папка.
 
 ## Реализовано
 
