@@ -9,7 +9,7 @@ mod value;
 
 pub use curve::{Curve2, Curve3, Path, Profile};
 pub use error::{Error, Result};
-pub use model::{parse, Model};
+pub use model::{parse, Export, Model};
 pub use node::Node;
 pub use op::{FilletKind, RadiusSpec, SweepMode, TransformOp};
-pub use value::{Angle, Normal3, Point2, Point3, Scalar, Vector3};
+pub use value::{Angle, Color, Normal3, Point2, Point3, Scalar, Vector3};

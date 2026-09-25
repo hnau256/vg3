@@ -1,6 +1,17 @@
 {
   "version": 1,
   "parts": [
-    { "type": "box", "width": 20, "length": 20, "height": 5 }
+    {
+      "type": "box",
+      "width": 20,
+      "length": 20,
+      "height": 5
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "box"
+    }
   ]
 }

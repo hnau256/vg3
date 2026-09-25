@@ -1,13 +1,41 @@
 {
   "version": 1,
   "parts": [
-    { "type": "box", "width": 10, "length": 10, "height": 10 },
-    { "type": "halfspace" },
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
+    {
+      "type": "halfspace"
+    },
     {
       "type": "transform",
       "target": 1,
-      "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } }]
+      "ops": [
+        {
+          "type": "translate",
+          "value": {
+            "dx": 0,
+            "dy": 0,
+            "dz": 5
+          }
+        }
+      ]
     },
-    { "type": "cut", "base": 0, "tools": [2] }
+    {
+      "type": "cut",
+      "base": 0,
+      "tools": [
+        2
+      ]
+    }
+  ],
+  "export": [
+    {
+      "index": 3,
+      "name": "halfspace"
+    }
   ]
 }

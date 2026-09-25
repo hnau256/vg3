@@ -1,14 +1,38 @@
 {
   "version": 1,
   "parts": [
-    { "type": "box", "width": 20, "length": 20, "height": 5 },
+    {
+      "type": "box",
+      "width": 20,
+      "length": 20,
+      "height": 5
+    },
     {
       "type": "transform",
       "target": 0,
-      "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } }]
+      "ops": [
+        {
+          "type": "translate",
+          "value": {
+            "dx": 0,
+            "dy": 0,
+            "dz": 5
+          }
+        }
+      ]
     },
-    { "type": "cylinder", "radius": 5, "height": 10 },
-    { "type": "fuse", "parts": [1, 2] },
+    {
+      "type": "cylinder",
+      "radius": 5,
+      "height": 10
+    },
+    {
+      "type": "fuse",
+      "parts": [
+        1,
+        2
+      ]
+    },
     {
       "type": "fillet",
       "kind": "fillet",
@@ -17,6 +41,12 @@
         "type": "expression",
         "expression": "if edge.is_vertical { 2.0 } else { 0.0 }"
       }
+    }
+  ],
+  "export": [
+    {
+      "index": 4,
+      "name": "fillet"
     }
   ]
 }

@@ -7,6 +7,6 @@ pub mod engine;
 pub mod export;
 pub mod render;
 
-pub use engine::{evaluate, BrepCodec, Part};
+pub use engine::{evaluate, BrepCodec, Output, Part};
 pub use error::{Error, Result};
 pub use export::{ExportConfig, ExportOptions, Format};

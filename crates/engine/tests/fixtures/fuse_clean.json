@@ -1,13 +1,44 @@
 {
   "version": 1,
   "parts": [
-    { "type": "box", "width": 10, "length": 10, "height": 10 },
-    { "type": "box", "width": 10, "length": 10, "height": 10 },
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
     {
       "type": "transform",
       "target": 1,
-      "ops": [{ "type": "translate", "value": { "dx": 10, "dy": 0, "dz": 0 } }]
+      "ops": [
+        {
+          "type": "translate",
+          "value": {
+            "dx": 10,
+            "dy": 0,
+            "dz": 0
+          }
+        }
+      ]
     },
-    { "type": "fuse", "parts": [0, 2] }
+    {
+      "type": "fuse",
+      "parts": [
+        0,
+        2
+      ]
+    }
+  ],
+  "export": [
+    {
+      "index": 3,
+      "name": "fuse_clean"
+    }
   ]
 }

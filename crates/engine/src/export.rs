@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use cxx::UniquePtr;
 use serde::Deserialize;
 
-use crate::engine::Part;
+use crate::engine::Output;
 use crate::error::{Error, Result};
 use crate::render::{self, RenderOptions};
 use crate::sys::ffi;
@@ -24,10 +24,15 @@ impl Default for ExportOptions {
     }
 }
 
-pub fn export(parts: &[Part], format: Format, path: &Path, options: &ExportOptions) -> Result<()> {
+pub fn export(
+    outputs: &[Output],
+    format: Format,
+    path: &Path,
+    options: &ExportOptions,
+) -> Result<()> {
     match format {
-        Format::Stl => export_stl(parts, path, options.tolerance),
-        Format::Png => export_png(parts, path, options),
+        Format::Stl => export_stl(outputs, path, options.tolerance),
+        Format::Png => export_png(outputs, path, options),
     }
 }
 
@@ -77,10 +82,10 @@ impl ExportConfig {
         Ok(serde_json::from_str(source)?)
     }
 
-    pub fn export(&self, parts: &[Part]) -> Result<()> {
+    pub fn export(&self, outputs: &[Output]) -> Result<()> {
         match self {
             ExportConfig::Stl { path, tolerance } => export(
-                parts,
+                outputs,
                 Format::Stl,
                 path,
                 &ExportOptions {
@@ -94,7 +99,7 @@ impl ExportConfig {
                 azimuth,
                 elevation,
             } => export(
-                parts,
+                outputs,
                 Format::Png,
                 path,
                 &ExportOptions {
@@ -110,11 +115,11 @@ impl ExportConfig {
     }
 }
 
-fn export_stl(parts: &[Part], path: &Path, tolerance: f64) -> Result<()> {
-    if parts.is_empty() {
+fn export_stl(outputs: &[Output], path: &Path, tolerance: f64) -> Result<()> {
+    if outputs.is_empty() {
         return Ok(());
     }
-    let compound = build_compound(parts)?;
+    let compound = build_compound(outputs)?;
     let path = path
         .to_str()
         .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
@@ -125,16 +130,21 @@ fn export_stl(parts: &[Part], path: &Path, tolerance: f64) -> Result<()> {
     }
 }
 
-fn export_png(parts: &[Part], path: &Path, options: &ExportOptions) -> Result<()> {
-    let compound = build_compound(parts)?;
-    let triangles = ffi::triangulation(&compound, options.tolerance)?;
-    render::render_png(&triangles, path, &options.image)
+fn export_png(outputs: &[Output], path: &Path, options: &ExportOptions) -> Result<()> {
+    let mut items = Vec::with_capacity(outputs.len());
+    for output in outputs {
+        items.push(render::Item {
+            color: output.color.map(|color| color.components()),
+            triangles: ffi::triangulation(output.part.shape(), options.tolerance)?,
+        });
+    }
+    render::render_png(&items, path, &options.image)
 }
 
-fn build_compound(parts: &[Part]) -> Result<UniquePtr<ffi::Shape>> {
+fn build_compound(outputs: &[Output]) -> Result<UniquePtr<ffi::Shape>> {
     let mut builder = ffi::new_compound_builder();
-    for part in parts {
-        builder.pin_mut().push(part.shape())?;
+    for output in outputs {
+        builder.pin_mut().push(output.part.shape())?;
     }
     Ok(builder.pin_mut().finish()?)
 }

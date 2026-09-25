@@ -1,10 +1,9 @@
 //! The `Node -> Part` transformation, and the Merkle key that the cache is keyed by.
 
-use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use vg3_cache::{Cache, Fingerprinter, Key};
-use vg3_model::{Model, Node};
+use vg3_model::{Color, Model, Node};
 
 use crate::error::{Error, Result};
 use crate::sys::ffi;
@@ -18,30 +17,37 @@ pub use part::{BrepCodec, Part};
 
 use op::Evaluate;
 
-/// Evaluates the model's roots using the given cache.
+/// An exported part: its built geometry plus the name and optional color from the `export` list.
+pub struct Output {
+    pub name: String,
+    pub color: Option<Color>,
+    pub part: Part,
+}
+
+/// Evaluates exactly what the model's `export` list names, in order, using the given cache.
 ///
 /// The cache is domain-agnostic; the engine's own `BrepCodec` (its `Part` <-> bytes conversion) is
 /// public so the caller can build a disk-backed cache with it.
-pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Part>> {
-    // One `try_map` pass over the arena: validate every reference and collect reachability.
-    let mut referenced = HashSet::new();
+pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Output>> {
+    // Validate every reference (`index < current`) up front.
     for (index, node) in model.parts.iter().enumerate() {
-        node.try_map(|operand| -> Result<()> {
-            validate_index(operand, index)?;
-            referenced.insert(operand);
-            Ok(())
-        })?;
+        node.try_map(|operand| -> Result<()> { validate_index(operand, index) })?;
     }
 
-    // Roots are the nodes nobody references.
     let parts = &model.parts;
-    let mut roots = Vec::new();
-    for (index, node) in parts.iter().enumerate() {
-        if !referenced.contains(&index) {
-            roots.push(get_or_evaluate(node, parts, cache)?);
-        }
+    let mut outputs = Vec::new();
+    for item in &model.export {
+        let node = parts.get(item.index).ok_or(Error::ExportIndex {
+            index: item.index,
+            parts: parts.len(),
+        })?;
+        outputs.push(Output {
+            name: item.name.clone(),
+            color: item.color,
+            part: get_or_evaluate(node, parts, cache)?,
+        });
     }
-    Ok(roots)
+    Ok(outputs)
 }
 
 /// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
@@ -91,7 +97,7 @@ fn validate_index(index: usize, current: usize) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vg3_model::Scalar;
+    use vg3_model::{Export, Scalar};
 
     fn scalar(value: f64) -> Scalar {
         Scalar::try_from(value).expect("finite")
@@ -105,32 +111,44 @@ mod tests {
         }
     }
 
-    fn build(model: &Model, cache: &mut impl Cache<Key, Part>) -> Vec<Part> {
-        evaluate(model, cache).expect("builds")
+    fn export(index: usize) -> Export {
+        Export {
+            index,
+            name: format!("p{index}"),
+            color: None,
+        }
+    }
+
+    fn model(parts: Vec<Node<usize>>) -> Model {
+        let export = (0..parts.len()).map(export).collect();
+        Model {
+            version: 1,
+            parts,
+            export,
+        }
     }
 
     fn box_part(size: f64) -> Part {
-        build(
-            &Model {
-                version: 1,
-                parts: vec![box_node(size)],
-            },
+        evaluate(
+            &model(vec![box_node(size)]),
             &mut vg3_cache::Memory::default(),
         )
+        .expect("builds")
         .pop()
         .expect("one root")
+        .part
     }
 
     #[test]
     fn identical_subtrees_are_built_once() {
-        let model = Model {
-            version: 1,
-            parts: vec![box_node(2.0), box_node(2.0)],
-        };
-        let parts = build(&model, &mut vg3_cache::Memory::default());
-        assert_eq!(parts.len(), 2);
+        let outputs = evaluate(
+            &model(vec![box_node(2.0), box_node(2.0)]),
+            &mut vg3_cache::Memory::default(),
+        )
+        .expect("builds");
+        assert_eq!(outputs.len(), 2);
         assert!(
-            parts[0].shares_storage(&parts[1]),
+            outputs[0].part.shares_storage(&outputs[1].part),
             "the cache must reuse an identical node"
         );
     }
@@ -142,22 +160,19 @@ mod tests {
 
         // Poison the key of a 2x2x2 box with a 1x1x1 box: if the engine consults the disk layer,
         // the result must be the small box.
-        let model = Model {
-            version: 1,
-            parts: vec![box_node(2.0)],
-        };
+        let model = model(vec![box_node(2.0)]);
         let key = key_of(&model.parts[0], &model.parts).expect("key");
         let mut disk = vg3_cache::Disk::new(directory.clone(), BrepCodec);
         disk.put(&key, &box_part(1.0));
 
-        let parts = evaluate(
+        let outputs = evaluate(
             &model,
             &mut vg3_cache::Disk::new(directory.clone(), BrepCodec)
                 .wrap_with(vg3_cache::Memory::default()),
         )
         .expect("builds");
         assert!(
-            (parts[0].volume() - 1.0).abs() < 1e-9,
+            (outputs[0].part.volume() - 1.0).abs() < 1e-9,
             "engine must have read the disk entry"
         );
         let _ = std::fs::remove_dir_all(&directory);

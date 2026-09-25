@@ -28,7 +28,7 @@ Kotlin-фронтенд (типизированный DSL)
         │
         │  ┌──────────────────────────── конвейер vg3 ────────────────────────────┐
         └─▶│  1. parse       2. evaluate              3. export                     │
-           │  str -> Model   Model -> Vec<Part>       Vec<Part> -> bytes          │
+           │  str -> Model   Model -> Vec<Output>     Vec<Output> -> bytes        │
            └───────────────────────────────────────────────────────────────────────┘
         │
         ▼
@@ -40,11 +40,12 @@ Kotlin-фронтенд (типизированный DSL)
 | Шаг | Сигнатура | Модуль | Что делает |
 |---|---|---|---|
 | 1. parse | `parse(&str) -> Result<Model>` | `model` | JSON → доменное дерево; канонизация в типах |
-| 2. evaluate | `evaluate(&Model) -> Result<Vec<Part>>` | `engine` | обход дерева, вызовы OCCT, построение шейпов |
-| 3. export | `export(&[Part], Format, &Path, &ExportOptions) -> Result<()>` | `export` | STL / рендер PNG |
+| 2. evaluate | `evaluate(&Model, &mut Cache) -> Result<Vec<Output>>` | `engine` | обход дерева, вызовы OCCT, построение шейпов |
+| 3. export | `export(&[Output], Format, &Path, &ExportOptions) -> Result<()>` | `export` | STL / рендер PNG |
 
-Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируются
-**корневые** `Part` — те, на которые никто не ссылается.
+Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируется
+то, что перечислено в `export` (в этом порядке): `Output` — это построенный `Part` вместе с `name` и
+опциональным `color`. Экспортируемый узел может быть и промежуточным.
 
 ### Крейты (Cargo workspace)
 
@@ -70,8 +71,9 @@ crates/
 Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах). Это осознанный
 компромисс: меньше слоёв, быстрее старт.
 
-- `Model { version, parts: Vec<Node> }` — верхний уровень; `parts` — плоская **арена** (все узлы в
-  топологическом порядке, ссылки — только назад).
+- `Model { version, parts: Vec<Node>, export: Vec<Export> }` — верхний уровень; `parts` — плоская
+  **арена** (все узлы в топологическом порядке, ссылки — только назад); `export` — явный список
+  выводимого (`index`/`name`/`color`).
 - `Node` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
 - Операнд — всегда `usize`: индекс назад в `parts`; inline-объектов нет.
 - `Profile`/`Path` и `Curve2`/`Curve3` (`line`/`arc`/`spline`).
@@ -94,8 +96,8 @@ crates/
 
 `evaluate`:
 
-1. **Валидирует ссылки** по всей арене (один `try_map`), попутно собирая множество ссылок. Проверяются
-   все узлы, а не только корни; **корни** = индексы без входящих ссылок.
+1. **Валидирует ссылки** по всей арене (один `try_map`): каждый операнд — `index < current`.
+   Проверяются все узлы, а не только экспортируемые.
 2. **Merkle-проход**: ключ узла — `H(версия ‖ узел ‖ ключи операндов…)`, bottom-up (ссылки назад ⇒
    ключи операндов уже готовы). Структуру обходит тот же `try_map` (`U = Key`).
 3. **Строит корни** (`build`): операнды берутся из кэша по ключу или строятся рекурсивно, затем
@@ -129,7 +131,7 @@ Merkle-обход узла (`key_of`, знает `Node`). Ключ — `Fingerpr
 
 ```rust
 let cache = Disk::new(dir, BrepCodec).wrap_with(Memory::default()); // или Memory::default()
-let parts = vg3_engine::evaluate(&model, &mut cache)?;
+let outputs = vg3_engine::evaluate(&model, &mut cache)?;
 ```
 
 Так (де)сериализация остаётся в движке, кэш — просто носитель, а `evaluate` не знает ни про диск,
@@ -167,9 +169,9 @@ vg3 <model.json> <export.json> [run.json]
 ```rust
 let model = vg3::model::parse(&model_source)?;              // 1. str   -> Model
 let run   = RunConfig::from_json(&run_source)?;             //     конфиг работы
-let parts = vg3::engine::evaluate(&model, &mut cache)?;     // 2. Model -> Vec<Part>
+let outputs = vg3::engine::evaluate(&model, &mut cache)?;   // 2. Model -> Vec<Output>
 let config = ExportConfig::from_json(&export_source)?;      //     конфиг экспорта
-config.export(&parts)?;                                     // 3. Parts -> файлы
+config.export(&outputs)?;                                   // 3. Outputs -> файлы
 ```
 
 ### Конфиг экспорта
@@ -185,7 +187,8 @@ config.export(&parts)?;                                     // 3. Parts -> фа�
 - `stl`: `path`, `tolerance` (по умолчанию `0.1`) — линейная деформация триангуляции.
 - `png`: `path`, `size` (512), `azimuth` (35), `elevation` (25) — вид камеры.
 
-Несколько корневых `Part` пишутся в **один** файл (общий `Compound`).
+Несколько экспортируемых `Part` пишутся в **один** файл (общий `Compound`). Цвет учитывает только PNG;
+STL его игнорирует.
 
 ### Конфиг работы
 
@@ -213,7 +216,7 @@ config.export(&parts)?;                                     // 3. Parts -> фа�
 - **Кривые**: `line`, `arc` (через 3 точки), `spline` (интерполяция), `helix` (точная винтовая линия —
   pcurve на цилиндре + `BRepLib::BuildCurves3d`, по ребру на виток).
 - **Экспорт**: STL (бинарный), PNG (рендер: триангуляция из OCCT + собственный z-буфер-растеризатор,
-  без OpenGL — работает headless).
+  без OpenGL — работает headless; цвет каждой части из `export`, отсутствие цвета — дефолтный).
 
 ### Резьба
 
@@ -243,7 +246,7 @@ config.export(&parts)?;                                     // 3. Parts -> фа�
   кэша при одинаковом результате (избыточность, не ошибка).
 - **Rhai без `? :`** — тернарного оператора нет; в каноне используется `if cond { a } else { b }`.
 - **Швы пропускаются** — seam-рёбра не видны в выражениях и не скругляются.
-- **Один файл на все корни** — STL пишется как единый soup.
+- **Один файл на все экспортируемые `Part`** — STL пишется как единый soup.
 - **STL сейчас, STEP позже** — схема STEP (AP214/…) станет CLI-параметром.
 - **Кэш — трейт `Cache`** (Noop/Memory/Disk + `wrap_with`), движок принимает его параметром.
   Merkle-ключ (BLAKE3 + версия) — деталь `get_or_evaluate`. Диск — opt-in через `VG3_CACHE_DIR`.

@@ -5,12 +5,41 @@
       "type": "extrude",
       "height": 3,
       "profile": {
-        "start": { "x": 5, "y": 0 },
+        "start": {
+          "x": 5,
+          "y": 0
+        },
         "edges": [
-          { "type": "arc", "via": { "x": 0, "y": 5 }, "to": { "x": -5, "y": 0 } },
-          { "type": "arc", "via": { "x": 0, "y": -5 }, "to": { "x": 5, "y": 0 } }
+          {
+            "type": "arc",
+            "via": {
+              "x": 0,
+              "y": 5
+            },
+            "to": {
+              "x": -5,
+              "y": 0
+            }
+          },
+          {
+            "type": "arc",
+            "via": {
+              "x": 0,
+              "y": -5
+            },
+            "to": {
+              "x": 5,
+              "y": 0
+            }
+          }
         ]
       }
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "circle_extrude"
     }
   ]
 }

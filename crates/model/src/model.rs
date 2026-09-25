@@ -4,12 +4,24 @@ use serde::Deserialize;
 
 use crate::error::{Error, Result};
 use crate::node::Node;
+use crate::value::Color;
+
+/// An explicit export entry: which part to output, its name and (optionally) its color.
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Export {
+    pub index: usize,
+    pub name: String,
+    #[serde(default)]
+    pub color: Option<Color>,
+}
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
     pub parts: Vec<Node<usize>>,
+    pub export: Vec<Export>,
 }
 
 pub fn parse(source: &str) -> Result<Model> {

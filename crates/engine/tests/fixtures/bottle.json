@@ -5,13 +5,54 @@
       "type": "extrude",
       "height": 70,
       "profile": {
-        "start": { "x": -25, "y": 0 },
+        "start": {
+          "x": -25,
+          "y": 0
+        },
         "edges": [
-          { "type": "line", "to": { "x": -25, "y": -7.5 } },
-          { "type": "arc", "via": { "x": 0, "y": -15 }, "to": { "x": 25, "y": -7.5 } },
-          { "type": "line", "to": { "x": 25, "y": 0 } },
-          { "type": "line", "to": { "x": 25, "y": 7.5 } },
-          { "type": "arc", "via": { "x": 0, "y": 15 }, "to": { "x": -25, "y": 7.5 } }
+          {
+            "type": "line",
+            "to": {
+              "x": -25,
+              "y": -7.5
+            }
+          },
+          {
+            "type": "arc",
+            "via": {
+              "x": 0,
+              "y": -15
+            },
+            "to": {
+              "x": 25,
+              "y": -7.5
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": 25,
+              "y": 0
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": 25,
+              "y": 7.5
+            }
+          },
+          {
+            "type": "arc",
+            "via": {
+              "x": 0,
+              "y": 15
+            },
+            "to": {
+              "x": -25,
+              "y": 7.5
+            }
+          }
         ]
       }
     },
@@ -24,28 +65,90 @@
         "expression": "if edge.is_vertical { 2.5 } else { 0.0 }"
       }
     },
-    { "type": "cylinder", "radius": 7.5, "height": 7 },
+    {
+      "type": "cylinder",
+      "radius": 7.5,
+      "height": 7
+    },
     {
       "type": "transform",
       "target": 2,
-      "ops": [{ "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 70 } }]
+      "ops": [
+        {
+          "type": "translate",
+          "value": {
+            "dx": 0,
+            "dy": 0,
+            "dz": 70
+          }
+        }
+      ]
     },
     {
       "type": "sweep",
       "mode": "follow",
       "profile": {
-        "start": { "x": 1.299038, "y": 0 },
+        "start": {
+          "x": 1.299038,
+          "y": 0
+        },
         "edges": [
-          { "type": "line", "to": { "x": -0.649519, "y": 0.5625 } },
-          { "type": "line", "to": { "x": -0.649519, "y": 0.9375 } },
-          { "type": "line", "to": { "x": 1.299038, "y": 1.5 } }
+          {
+            "type": "line",
+            "to": {
+              "x": -0.649519,
+              "y": 0.5625
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": -0.649519,
+              "y": 0.9375
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": 1.299038,
+              "y": 1.5
+            }
+          }
         ]
       },
       "path": {
-        "start": { "x": 7.5, "y": 0, "z": 70 },
-        "edges": [{ "type": "helix", "pitch": 1.5, "height": 7 }]
+        "start": {
+          "x": 7.5,
+          "y": 0,
+          "z": 70
+        },
+        "edges": [
+          {
+            "type": "helix",
+            "pitch": 1.5,
+            "height": 7
+          }
+        ]
       }
     },
-    { "type": "fuse", "parts": [1, 3, 4] }
+    {
+      "type": "fuse",
+      "parts": [
+        1,
+        3,
+        4
+      ]
+    }
+  ],
+  "export": [
+    {
+      "index": 5,
+      "name": "bottle",
+      "color": {
+        "r": 0.35,
+        "g": 0.6,
+        "b": 0.95
+      }
+    }
   ]
 }

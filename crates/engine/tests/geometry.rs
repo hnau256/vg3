@@ -2,13 +2,20 @@ use std::path::Path;
 
 use vg3_engine::engine::{self, Part};
 
-fn build(fixture: &str) -> Vec<Part> {
+fn build_outputs(fixture: &str) -> Vec<vg3_engine::Output> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
         .join(fixture);
     let source = std::fs::read_to_string(path).expect("fixture is readable");
     let model = vg3_model::parse(&source).expect("fixture parses");
     engine::evaluate(&model, &mut vg3_cache::Noop).expect("fixture builds")
+}
+
+fn build(fixture: &str) -> Vec<Part> {
+    build_outputs(fixture)
+        .into_iter()
+        .map(|output| output.part)
+        .collect()
 }
 
 fn assert_close(actual: f64, expected: f64, tolerance: f64) {
@@ -102,14 +109,14 @@ fn fillet_removes_material_from_vertical_edges() {
 
 #[test]
 fn export_config_renders_a_png() {
-    let parts = build("box.json");
+    let outputs = build_outputs("box.json");
     let path = std::env::temp_dir().join("vg3_config_render.png");
     let config = vg3_engine::export::ExportConfig::from_json(&format!(
         r#"{{ "type": "png", "path": {:?}, "size": 64 }}"#,
         path.to_str().unwrap()
     ))
     .expect("config parses");
-    config.export(&parts).expect("renders");
+    config.export(&outputs).expect("renders");
     let bytes = std::fs::read(&path).expect("image exists");
     assert_eq!(
         &bytes[..8],

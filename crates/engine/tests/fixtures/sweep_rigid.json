@@ -5,19 +5,57 @@
       "type": "sweep",
       "mode": "rigid",
       "profile": {
-        "start": { "x": -1, "y": -1 },
+        "start": {
+          "x": -1,
+          "y": -1
+        },
         "edges": [
-          { "type": "line", "to": { "x": 1, "y": -1 } },
-          { "type": "line", "to": { "x": 1, "y": 1 } },
-          { "type": "line", "to": { "x": -1, "y": 1 } }
+          {
+            "type": "line",
+            "to": {
+              "x": 1,
+              "y": -1
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "type": "line",
+            "to": {
+              "x": -1,
+              "y": 1
+            }
+          }
         ]
       },
       "path": {
-        "start": { "x": 0, "y": 0, "z": 0 },
+        "start": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
         "edges": [
-          { "type": "line", "to": { "x": 0, "y": 0, "z": 10 } }
+          {
+            "type": "line",
+            "to": {
+              "x": 0,
+              "y": 0,
+              "z": 10
+            }
+          }
         ]
       }
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sweep_rigid"
     }
   ]
 }

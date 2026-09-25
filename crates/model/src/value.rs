@@ -90,6 +90,21 @@ pub struct Normal3 {
     pub dz: Scalar,
 }
 
+/// An RGB color (`0..1` per component); used by exporters that support color.
+#[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Color {
+    pub r: Scalar,
+    pub g: Scalar,
+    pub b: Scalar,
+}
+
+impl Color {
+    pub fn components(self) -> [f64; 3] {
+        [self.r.value(), self.g.value(), self.b.value()]
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawNormal3 {

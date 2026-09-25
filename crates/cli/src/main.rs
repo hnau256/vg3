@@ -38,7 +38,7 @@ fn execute(
         Some(path) => RunConfig::from_json(&std::fs::read_to_string(path)?)?,
         None => RunConfig::default(),
     };
-    let parts = match run_config.cache_dir() {
+    let outputs = match run_config.cache_dir() {
         Some(directory) => vg3_engine::evaluate(
             &model,
             &mut Disk::new(directory, BrepCodec).wrap_with(Memory::default()),
@@ -47,6 +47,6 @@ fn execute(
     };
 
     let config = ExportConfig::from_json(&std::fs::read_to_string(export_path)?)?;
-    config.export(&parts)?;
+    config.export(&outputs)?;
     Ok(())
 }
