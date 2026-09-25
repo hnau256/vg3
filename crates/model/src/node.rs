@@ -153,14 +153,26 @@ impl<T: Clone> Node<T> {
                 ruled: *ruled,
             },
             Node::Fuse { parts } => Node::Fuse {
-                parts: parts.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
+                parts: parts
+                    .iter()
+                    .cloned()
+                    .map(&mut f)
+                    .collect::<std::result::Result<_, E>>()?,
             },
             Node::Cut { base, tools } => Node::Cut {
                 base: f(base.clone())?,
-                tools: tools.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
+                tools: tools
+                    .iter()
+                    .cloned()
+                    .map(&mut f)
+                    .collect::<std::result::Result<_, E>>()?,
             },
             Node::Common { parts } => Node::Common {
-                parts: parts.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
+                parts: parts
+                    .iter()
+                    .cloned()
+                    .map(&mut f)
+                    .collect::<std::result::Result<_, E>>()?,
             },
             Node::Transform { target, ops } => Node::Transform {
                 target: f(target.clone())?,

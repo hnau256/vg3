@@ -122,12 +122,18 @@ IR-узлом `Node` (описанием).
 методов). Ключ лишь отдаёт байты для имени файла (`AsRef<[u8]>`).
 
 **Домен живёт в `engine`**: `BrepCodec: Codec<Part>` (BREP через нативные потоки `BRepTools`) и
-Merkle-обход узла (`key_of`, знает `Node`). Ключ — `key::fingerprint<T: Hash>` (generic BLAKE3);
+Merkle-обход узла (`key_of`, знает `Node`). Ключ — `Fingerprinter::of(value)` (generic BLAKE3);
 версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался при смене семантики.
 
-В движок передаётся **не кэш, а фабрика**: `evaluate(model, |codec| …)` — движок сам отдаёт свой
-`BrepCodec`, а фабрика строит кэш (например, `|codec| Disk::new(dir, codec).wrap_with(Memory::default())`).
-Так (де)сериализация — ответственность движка, а кэш остаётся носителем.
+`BrepCodec` **публичен**, поэтому кэш собирается снаружи, и движку передаётся уже готовый кэш:
+
+```rust
+let cache = Disk::new(dir, BrepCodec).wrap_with(Memory::default()); // или Memory::default()
+let parts = vg3_engine::evaluate(&model, &mut cache)?;
+```
+
+Так (де)сериализация остаётся в движке, кэш — просто носитель, а `evaluate` не знает ни про диск,
+ни про BREP-кодек.
 
 ### Нативный слой (`native` + `sys`)
 

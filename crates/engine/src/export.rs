@@ -5,9 +5,9 @@ use serde::Deserialize;
 
 use crate::engine::Part;
 use crate::error::{Error, Result};
-use vg3_model::Scalar;
 use crate::render::{self, RenderOptions};
 use crate::sys::ffi;
+use vg3_model::Scalar;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ExportOptions {

@@ -18,14 +18,11 @@ pub use part::{BrepCodec, Part};
 
 use op::Evaluate;
 
-/// Evaluates the model's roots. The cache is not passed in directly: the engine owns the
-/// `Part` <-> bytes codec (its `BrepCodec`), hands it to `make_cache`, and uses whatever cache the
-/// factory builds. This keeps the cache fully unaware of the domain model.
-pub fn evaluate<C, F>(model: &Model, make_cache: F) -> Result<Vec<Part>>
-where
-    C: Cache<Key, Part>,
-    F: FnOnce(BrepCodec) -> C,
-{
+/// Evaluates the model's roots using the given cache.
+///
+/// The cache is domain-agnostic; the engine's own `BrepCodec` (its `Part` <-> bytes conversion) is
+/// public so the caller can build a disk-backed cache with it.
+pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Part>> {
     // One `try_map` pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
     for (index, node) in model.parts.iter().enumerate() {
@@ -37,12 +34,11 @@ where
     }
 
     // Roots are the nodes nobody references.
-    let mut cache = make_cache(BrepCodec);
     let parts = &model.parts;
     let mut roots = Vec::new();
     for (index, node) in parts.iter().enumerate() {
         if !referenced.contains(&index) {
-            roots.push(get_or_evaluate(node, parts, &mut cache)?);
+            roots.push(get_or_evaluate(node, parts, cache)?);
         }
     }
     Ok(roots)
@@ -109,11 +105,8 @@ mod tests {
         }
     }
 
-    fn build(
-        model: &Model,
-        make_cache: impl FnOnce(BrepCodec) -> vg3_cache::Memory<Key, Part>,
-    ) -> Vec<Part> {
-        evaluate(model, make_cache).expect("builds")
+    fn build(model: &Model, cache: &mut impl Cache<Key, Part>) -> Vec<Part> {
+        evaluate(model, cache).expect("builds")
     }
 
     fn box_part(size: f64) -> Part {
@@ -122,7 +115,7 @@ mod tests {
                 version: 1,
                 parts: vec![box_node(size)],
             },
-            |_| vg3_cache::Memory::default(),
+            &mut vg3_cache::Memory::default(),
         )
         .pop()
         .expect("one root")
@@ -134,7 +127,7 @@ mod tests {
             version: 1,
             parts: vec![box_node(2.0), box_node(2.0)],
         };
-        let parts = build(&model, |_| vg3_cache::Memory::default());
+        let parts = build(&model, &mut vg3_cache::Memory::default());
         assert_eq!(parts.len(), 2);
         assert!(
             parts[0].shares_storage(&parts[1]),
@@ -157,10 +150,11 @@ mod tests {
         let mut disk = vg3_cache::Disk::new(directory.clone(), BrepCodec);
         disk.put(&key, &box_part(1.0));
 
-        let parts = evaluate(&model, |codec| {
-            vg3_cache::Disk::new(directory.clone(), codec)
-                .wrap_with(vg3_cache::Memory::default())
-        })
+        let parts = evaluate(
+            &model,
+            &mut vg3_cache::Disk::new(directory.clone(), BrepCodec)
+                .wrap_with(vg3_cache::Memory::default()),
+        )
         .expect("builds");
         assert!(
             (parts[0].volume() - 1.0).abs() < 1e-9,

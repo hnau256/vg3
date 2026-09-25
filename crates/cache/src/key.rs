@@ -40,7 +40,11 @@ struct Blake3Hasher(blake3::Hasher);
 impl Hasher for Blake3Hasher {
     fn finish(&self) -> u64 {
         let digest = self.0.finalize();
-        u64::from_le_bytes(digest.as_bytes()[..8].try_into().expect("digest is 32 bytes"))
+        u64::from_le_bytes(
+            digest.as_bytes()[..8]
+                .try_into()
+                .expect("digest is 32 bytes"),
+        )
     }
 
     fn write(&mut self, bytes: &[u8]) {

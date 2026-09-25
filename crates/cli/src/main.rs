@@ -3,7 +3,7 @@ use std::process::ExitCode;
 
 use run::RunConfig;
 use vg3_cache::{Cache, Disk, Memory};
-use vg3_engine::ExportConfig;
+use vg3_engine::{BrepCodec, ExportConfig};
 
 mod run;
 
@@ -39,12 +39,11 @@ fn execute(
         None => RunConfig::default(),
     };
     let parts = match run_config.cache_dir() {
-        Some(directory) => {
-            vg3_engine::evaluate(&model, move |codec| {
-                Disk::new(directory, codec).wrap_with(Memory::default())
-            })?
-        }
-        None => vg3_engine::evaluate(&model, |_codec| Memory::default())?,
+        Some(directory) => vg3_engine::evaluate(
+            &model,
+            &mut Disk::new(directory, BrepCodec).wrap_with(Memory::default()),
+        )?,
+        None => vg3_engine::evaluate(&model, &mut Memory::default())?,
     };
 
     let config = ExportConfig::from_json(&std::fs::read_to_string(export_path)?)?;
