@@ -4,8 +4,6 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use crate::error::Result;
-
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct RunConfig {
@@ -31,8 +29,8 @@ impl Default for CacheConfig {
 }
 
 impl RunConfig {
-    pub fn from_json(source: &str) -> Result<Self> {
-        Ok(serde_json::from_str(source)?)
+    pub fn from_json(source: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(source)
     }
 
     /// Effective disk cache directory, or `None` when disk caching is off.

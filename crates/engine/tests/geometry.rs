@@ -1,14 +1,14 @@
 use std::path::Path;
 
-use vg3::engine::{self, Part};
+use vg3_engine::engine::{self, Part};
 
 fn build(fixture: &str) -> Vec<Part> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
         .join(fixture);
     let source = std::fs::read_to_string(path).expect("fixture is readable");
-    let model = vg3::model::parse(&source).expect("fixture parses");
-    engine::evaluate(&model, |_| vg3::cache::Noop).expect("fixture builds")
+    let model = vg3_model::parse(&source).expect("fixture parses");
+    engine::evaluate(&model, |_| vg3_cache::Noop).expect("fixture builds")
 }
 
 fn assert_close(actual: f64, expected: f64, tolerance: f64) {
@@ -104,7 +104,7 @@ fn fillet_removes_material_from_vertical_edges() {
 fn export_config_renders_a_png() {
     let parts = build("box.json");
     let path = std::env::temp_dir().join("vg3_config_render.png");
-    let config = vg3::export::ExportConfig::from_json(&format!(
+    let config = vg3_engine::export::ExportConfig::from_json(&format!(
         r#"{{ "type": "png", "path": {:?}, "size": 64 }}"#,
         path.to_str().unwrap()
     ))
@@ -123,7 +123,7 @@ fn export_config_renders_a_png() {
 #[test]
 fn export_config_rejects_unknown_parameters() {
     let source = r#"{ "type": "stl", "path": "out.stl", "nonsense": 1 }"#;
-    assert!(vg3::export::ExportConfig::from_json(source).is_err());
+    assert!(vg3_engine::export::ExportConfig::from_json(source).is_err());
 }
 
 #[test]

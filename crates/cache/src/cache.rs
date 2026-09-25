@@ -10,7 +10,11 @@ pub trait Cache<K, V> {
 
     /// Returns the cached value, or computes it with `compute` (which may re-enter this cache)
     /// and stores the result. The evaluation flow lives here, so implementations stay trivial.
-    fn get_or_put(&mut self, key: K, compute: impl FnOnce(&mut Self) -> Result<V>) -> Result<V>
+    fn get_or_put<E>(
+        &mut self,
+        key: K,
+        compute: impl FnOnce(&mut Self) -> std::result::Result<V, E>,
+    ) -> std::result::Result<V, E>
     where
         Self: Sized,
     {

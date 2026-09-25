@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::engine::Part;
 use crate::error::{Error, Result};
-use crate::model::Scalar;
+use vg3_model::Scalar;
 use crate::render::{self, RenderOptions};
 use crate::sys::ffi;
 

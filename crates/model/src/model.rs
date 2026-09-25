@@ -308,7 +308,10 @@ impl<T: Clone> Node<T> {
     /// This is the single source of truth for "where are a node's operands". Operand-level
     /// concerns — validation, reachability, evaluation (`Node<usize>` → `Node<Part>`) and,
     /// later, the cache key — are all expressed as a `try_map` over the arena.
-    pub fn try_map<U>(&self, mut f: impl FnMut(T) -> Result<U>) -> Result<Node<U>> {
+    pub fn try_map<U, E>(
+        &self,
+        mut f: impl FnMut(T) -> std::result::Result<U, E>,
+    ) -> std::result::Result<Node<U>, E> {
         Ok(match self {
             Node::Box {
                 width,
@@ -374,14 +377,14 @@ impl<T: Clone> Node<T> {
                 ruled: *ruled,
             },
             Node::Fuse { parts } => Node::Fuse {
-                parts: parts.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+                parts: parts.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
             },
             Node::Cut { base, tools } => Node::Cut {
                 base: f(base.clone())?,
-                tools: tools.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+                tools: tools.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
             },
             Node::Common { parts } => Node::Common {
-                parts: parts.iter().cloned().map(&mut f).collect::<Result<_>>()?,
+                parts: parts.iter().cloned().map(&mut f).collect::<std::result::Result<_, E>>()?,
             },
             Node::Transform { target, ops } => Node::Transform {
                 target: f(target.clone())?,

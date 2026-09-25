@@ -91,7 +91,7 @@ mod tests {
         fn decode(&self, bytes: &[u8]) -> Result<Vec<u8>> {
             let payload = bytes
                 .strip_prefix(MAGIC)
-                .ok_or_else(|| Error::Cache("bad magic".to_string()))?;
+                .ok_or_else(|| Error::Message("bad magic".to_string()))?;
             Ok(payload.to_vec())
         }
     }

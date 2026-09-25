@@ -46,27 +46,24 @@ Kotlin-фронтенд (типизированный DSL)
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируются
 **корневые** `Part` — те, на которые никто не ссылается.
 
-### Модули библиотеки
+### Крейты (Cargo workspace)
+
+Проект разбит на **4 независимых крейта** — в Rust это workspace-пакеты (аналог Gradle-проектов).
+Зависимости объявлены в `Cargo.toml`, и **компилятор физически не даёт** кэшу сослаться на доменные типы:
 
 ```
-src/
-  lib.rs      — публичный фасад: model, engine, export
-  model.rs    — доменная модель (IR-типы + serde) и parse (str -> Model)
-  engine.rs   — OCCT-процессор: evaluate (Model -> Vec<Part>)
-  export.rs   — экспортёр: export (Vec<Part> -> bytes)
-  sys.rs      — тонкий cxx-мост к C++-слою (приватный)
-  error.rs    — единый Error + Result
-  main.rs     — CLI: parse -> evaluate -> export
-native/
-  occt.h/.cpp — C++-слой: по функции на операцию OCCT
-tests/
-  geometry.rs — «золотые» тесты по геометрическим свойствам
-  errors.rs   — тесты ошибок/валидации
-  fixtures/   — JSON-модели
+crates/
+  cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk/Layered. Зависит только от blake3.
+  model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
+  engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
+                         Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
+  cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
 ```
 
-Границы модулей жёсткие: `model` не знает про OCCT, `engine` не знает про JSON, `export` не знает про IR.
-Связь — через типы (`Model`, `Part`).
+Граф зависимостей (`cargo tree`): `vg3-cache -> {}`, `vg3-model -> {}`,
+`vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`. То есть `vg3-cache` **не может**
+упомянуть `Node`/`Part` — это гарантируется, а не соглашение. Кэш выносится в отдельную библиотеку
+как есть.
 
 ### Доменная модель (`model`)
 

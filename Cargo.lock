@@ -647,11 +647,40 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 name = "vg3"
 version = "0.1.0"
 dependencies = [
+ "dirs",
+ "serde",
+ "serde_json",
+ "vg3-cache",
+ "vg3-engine",
+ "vg3-model",
+]
+
+[[package]]
+name = "vg3-cache"
+version = "0.1.0"
+dependencies = [
  "blake3",
+ "thiserror",
+]
+
+[[package]]
+name = "vg3-engine"
+version = "0.1.0"
+dependencies = [
  "cxx",
  "cxx-build",
- "dirs",
  "rhai",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "vg3-cache",
+ "vg3-model",
+]
+
+[[package]]
+name = "vg3-model"
+version = "0.1.0"
+dependencies = [
  "serde",
  "serde_json",
  "thiserror",

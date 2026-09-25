@@ -1,0 +1,16 @@
+[package]
+name = "vg3-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vg3-cache = { path = "../cache" }
+vg3-model = { path = "../model" }
+cxx = "1"
+rhai = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+
+[build-dependencies]
+cxx-build = "1"

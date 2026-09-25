@@ -1,16 +1,17 @@
 use std::collections::HashSet;
 use std::pin::Pin;
 use std::rc::Rc;
+use std::sync::OnceLock;
 
 use cxx::UniquePtr;
 
-use crate::cache::Cache;
-use crate::error::{Error, Result};
-use crate::key::{self, Key};
-use crate::model::{
+use vg3_cache::{Cache, Fingerprinter, Key};
+use vg3_model::{
     Curve2, Curve3, FilletKind, Model, Node, Path, Point2, Point3, Profile, RadiusSpec, SweepMode,
     TransformOp,
 };
+
+use crate::error::{Error, Result};
 use crate::sys::ffi;
 
 /// A built shape (a compound of solids). Cheap to clone — operands and cache hits share it.
@@ -73,7 +74,7 @@ where
     // One `try_map` pass over the arena: validate every reference and collect reachability.
     let mut referenced = HashSet::new();
     for (index, node) in model.parts.iter().enumerate() {
-        node.try_map(|operand| {
+        node.try_map(|operand| -> Result<()> {
             validate_index(operand, index)?;
             referenced.insert(operand);
             Ok(())
@@ -95,13 +96,15 @@ where
 /// `Part` <-> bytes, as OpenCASCADE BREP — the engine's own codec for the disk cache.
 pub struct BrepCodec;
 
-impl crate::cache::Codec<Part> for BrepCodec {
-    fn encode(&self, part: &Part) -> Result<Vec<u8>> {
-        Ok(ffi::brep_encode(part.shape())?)
+impl vg3_cache::Codec<Part> for BrepCodec {
+    fn encode(&self, part: &Part) -> vg3_cache::Result<Vec<u8>> {
+        ffi::brep_encode(part.shape()).map_err(|error| vg3_cache::Error::Message(error.to_string()))
     }
 
-    fn decode(&self, bytes: &[u8]) -> Result<Part> {
-        Ok(Part::from_shape(ffi::brep_decode(bytes)?))
+    fn decode(&self, bytes: &[u8]) -> vg3_cache::Result<Part> {
+        ffi::brep_decode(bytes)
+            .map(Part::from_shape)
+            .map_err(|error| vg3_cache::Error::Message(error.to_string()))
     }
 }
 
@@ -125,7 +128,20 @@ fn get_or_evaluate<C: Cache<Key, Part>>(
 /// References are `index < current` (checked in [`evaluate`]), so `parts[operand]` is in range.
 fn key_of(node: &Node<usize>, parts: &[Node<usize>]) -> Result<Key> {
     let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand], parts))?;
-    Ok(key::fingerprint(&mapped))
+    Ok(fingerprinter().of(&mapped))
+}
+
+/// Version seed mixed into every key: the tool version plus the OpenCASCADE version, so cached
+/// entries are not reused after a semantics change.
+fn fingerprinter() -> &'static Fingerprinter {
+    static FINGERPRINTER: OnceLock<Fingerprinter> = OnceLock::new();
+    FINGERPRINTER.get_or_init(|| {
+        Fingerprinter::new(format!(
+            "vg3-ir1; vg3 {}; occt {}",
+            env!("CARGO_PKG_VERSION"),
+            ffi::occt_version()
+        ))
+    })
 }
 
 fn validate_index(index: usize, current: usize) -> Result<()> {
@@ -136,8 +152,12 @@ fn validate_index(index: usize, current: usize) -> Result<()> {
     }
 }
 
-impl Node<Part> {
-    /// Applies the node's operation; all operands are already evaluated (see [`build`]).
+/// Applies a node's operation once all its operands are already evaluated.
+trait Evaluate {
+    fn evaluate(self) -> Result<Part>;
+}
+
+impl Evaluate for Node<Part> {
     fn evaluate(self) -> Result<Part> {
         match self {
             Node::Box {
@@ -462,7 +482,7 @@ fn flatten2(points: &[Point2]) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Scalar;
+    use vg3_model::Scalar;
 
     fn scalar(value: f64) -> Scalar {
         Scalar::try_from(value).expect("finite")
@@ -478,7 +498,7 @@ mod tests {
 
     fn build(
         model: &Model,
-        make_cache: impl FnOnce(BrepCodec) -> crate::cache::Memory<Key, Part>,
+        make_cache: impl FnOnce(BrepCodec) -> vg3_cache::Memory<Key, Part>,
     ) -> Vec<Part> {
         evaluate(model, make_cache).expect("builds")
     }
@@ -489,7 +509,7 @@ mod tests {
                 version: 1,
                 parts: vec![box_node(size)],
             },
-            |_| crate::cache::Memory::default(),
+            |_| vg3_cache::Memory::default(),
         )
         .pop()
         .expect("one root")
@@ -501,7 +521,7 @@ mod tests {
             version: 1,
             parts: vec![box_node(2.0), box_node(2.0)],
         };
-        let parts = build(&model, |_| crate::cache::Memory::default());
+        let parts = build(&model, |_| vg3_cache::Memory::default());
         assert_eq!(parts.len(), 2);
         assert!(
             Rc::ptr_eq(&parts[0].0, &parts[1].0),
@@ -521,12 +541,12 @@ mod tests {
             parts: vec![box_node(2.0)],
         };
         let key = key_of(&model.parts[0], &model.parts).expect("key");
-        let mut disk = crate::store::Disk::new(directory.clone(), BrepCodec);
+        let mut disk = vg3_cache::Disk::new(directory.clone(), BrepCodec);
         disk.put(&key, &box_part(1.0));
 
         let parts = evaluate(&model, |codec| {
-            crate::store::Disk::new(directory.clone(), codec)
-                .wrap_with(crate::cache::Memory::default())
+            vg3_cache::Disk::new(directory.clone(), codec)
+                .wrap_with(vg3_cache::Memory::default())
         })
         .expect("builds");
         assert!(

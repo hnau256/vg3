@@ -1,5 +1,5 @@
-use vg3::engine;
-use vg3::model;
+use vg3_engine::engine;
+use vg3_model as model;
 
 #[test]
 fn unsupported_version_is_rejected() {
@@ -11,14 +11,14 @@ fn unsupported_version_is_rejected() {
 fn forward_reference_is_rejected() {
     let source = r#"{ "version": 1, "parts": [ { "type": "fuse", "parts": [0] } ] }"#;
     let model = model::parse(source).expect("parses");
-    assert!(engine::evaluate(&model, |_| vg3::cache::Noop).is_err());
+    assert!(engine::evaluate(&model, |_| vg3_cache::Noop).is_err());
 }
 
 #[test]
 fn empty_model_is_valid() {
     let source = r#"{ "version": 1, "parts": [] }"#;
     let model = model::parse(source).expect("parses");
-    let parts = engine::evaluate(&model, |_| vg3::cache::Noop).expect("builds");
+    let parts = engine::evaluate(&model, |_| vg3_cache::Noop).expect("builds");
     assert!(parts.is_empty());
 }
 
@@ -32,7 +32,7 @@ fn unreferenced_nodes_are_all_exported() {
         ]
     }"#;
     let model = model::parse(source).expect("parses");
-    let parts = engine::evaluate(&model, |_| vg3::cache::Noop).expect("builds");
+    let parts = engine::evaluate(&model, |_| vg3_cache::Noop).expect("builds");
     assert_eq!(parts.len(), 2);
 }
 

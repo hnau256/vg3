@@ -1,9 +1,11 @@
+use std::error::Error;
 use std::process::ExitCode;
 
-use vg3::cache::{Cache, Memory};
-use vg3::export::ExportConfig;
-use vg3::run::RunConfig;
-use vg3::store::Disk;
+use run::RunConfig;
+use vg3_cache::{Cache, Disk, Memory};
+use vg3_engine::ExportConfig;
+
+mod run;
 
 fn main() -> ExitCode {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
@@ -11,7 +13,7 @@ fn main() -> ExitCode {
         eprintln!("usage: vg3 <model.json> <export.json> [run.json]");
         return ExitCode::from(2);
     }
-    match run(
+    match execute(
         &arguments[0],
         &arguments[1],
         arguments.get(2).map(String::as_str),
@@ -24,9 +26,12 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(model_path: &str, export_path: &str, run_path: Option<&str>) -> vg3::Result<()> {
-    let model_source = std::fs::read_to_string(model_path)?;
-    let model = vg3::model::parse(&model_source)?;
+fn execute(
+    model_path: &str,
+    export_path: &str,
+    run_path: Option<&str>,
+) -> Result<(), Box<dyn Error>> {
+    let model = vg3_model::parse(&std::fs::read_to_string(model_path)?)?;
 
     // Cache: memory, backed by disk at the directory the run config resolves to.
     let run_config = match run_path {
@@ -34,13 +39,15 @@ fn run(model_path: &str, export_path: &str, run_path: Option<&str>) -> vg3::Resu
         None => RunConfig::default(),
     };
     let parts = match run_config.cache_dir() {
-        Some(directory) => vg3::engine::evaluate(&model, move |codec| {
-            Disk::new(directory, codec).wrap_with(Memory::default())
-        })?,
-        None => vg3::engine::evaluate(&model, |_codec| Memory::default())?,
+        Some(directory) => {
+            vg3_engine::evaluate(&model, move |codec| {
+                Disk::new(directory, codec).wrap_with(Memory::default())
+            })?
+        }
+        None => vg3_engine::evaluate(&model, |_codec| Memory::default())?,
     };
 
-    let export_source = std::fs::read_to_string(export_path)?;
-    let config = ExportConfig::from_json(&export_source)?;
-    config.export(&parts)
+    let config = ExportConfig::from_json(&std::fs::read_to_string(export_path)?)?;
+    config.export(&parts)?;
+    Ok(())
 }
