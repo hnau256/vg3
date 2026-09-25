@@ -622,25 +622,50 @@ std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
 std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool follow) {
     try {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
-        BRepOffsetAPI_MakePipeShell pipe(spine_wire);
-        if (follow) {
-            pipe.SetMode(Standard_True);
-        } else {
-            BRepAdaptor_CompCurve curve(spine_wire);
-            gp_Pnt point;
-            gp_Vec tangent;
-            curve.D1(curve.FirstParameter(), point, tangent);
-            pipe.SetMode(gp_Ax2(point, gp_Dir(tangent)));
-        }
+
+        // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
+        // to the tangent. Section frame (documented in FORMAT.md): local X is radial — away from
+        // the Z axis — and local Y runs along +Z, so a profile swept along a helix about +Z
+        // becomes a thread ridge rather than a thin fin.
         BRepAdaptor_CompCurve start_curve(spine_wire);
         gp_Pnt start_point;
         gp_Vec start_tangent;
         start_curve.D1(start_curve.FirstParameter(), start_point, start_tangent);
-        gp_Trsf translation;
-        translation.SetTranslation(gp_Vec(start_point.X(), start_point.Y(), start_point.Z()));
-        BRepBuilderAPI_Transform transform(profile.topods(), translation, true);
+        if (start_tangent.Magnitude() <= gp::Resolution()) {
+            throw std::runtime_error("sweep spine has a zero tangent at its start");
+        }
+        const gp_Dir tangent(start_tangent);
+
+        const auto perpendicular_to_tangent = [&start_tangent](gp_Vec candidate) {
+            return candidate - start_tangent * (candidate.Dot(start_tangent)
+                                                / start_tangent.Dot(start_tangent));
+        };
+        gp_Vec radial = perpendicular_to_tangent(gp_Vec(start_point.X(), start_point.Y(), 0.0));
+        for (const gp_Vec& fallback :
+             {gp_Vec(0.0, 0.0, 1.0), gp_Vec(1.0, 0.0, 0.0), gp_Vec(0.0, 1.0, 0.0)}) {
+            if (radial.Magnitude() > gp::Resolution()) {
+                break;
+            }
+            radial = perpendicular_to_tangent(fallback);
+        }
+        if (radial.Magnitude() <= gp::Resolution()) {
+            throw std::runtime_error("cannot orient the sweep section at the spine start");
+        }
+
+        gp_Trsf placement;
+        placement.SetDisplacement(
+            gp_Ax3(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)),
+            gp_Ax3(start_point, tangent.Reversed(), gp_Dir(radial))
+        );
+        BRepBuilderAPI_Transform transform(profile.topods(), placement, true);
         const TopoDS_Shape placed_profile = transform.Shape();
 
+        BRepOffsetAPI_MakePipeShell pipe(spine_wire);
+        if (follow) {
+            pipe.SetMode(Standard_True);
+        } else {
+            pipe.SetMode(gp_Ax2(start_point, tangent));
+        }
         pipe.SetTransitionMode(BRepBuilderAPI_RightCorner);
         pipe.Add(placed_profile, Standard_False, Standard_False);
         pipe.Build();

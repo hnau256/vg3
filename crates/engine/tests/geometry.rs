@@ -159,7 +159,7 @@ fn helical_thread_adds_a_ridge_to_the_cylinder() {
     let volume = parts[0].volume();
     let cylinder = std::f64::consts::PI * 16.0 * 10.0;
     assert!(
-        volume > cylinder && volume < cylinder + 20.0,
+        volume > cylinder + 5.0 && volume < cylinder + 40.0,
         "expected a cylinder plus a thread ridge, got {volume}"
     );
 }
@@ -170,10 +170,10 @@ fn opencascade_bottle_builds() {
     assert_eq!(parts.len(), 1);
     assert_eq!(parts[0].solid_count(), 1);
     let bounds = parts[0].bounding_box();
-    for (index, expected) in [-25.0, -15.0, 0.0, 25.0, 15.0, 77.0].iter().enumerate() {
+    for (index, expected) in [-25.0, -15.0, 0.0, 25.0, 15.0, 77.4].iter().enumerate() {
         assert_close(bounds[index], *expected, 1e-3);
     }
-    assert_close(parts[0].volume(), 89286.32, 1.0);
+    assert_close(parts[0].volume(), 89419.46, 1.0);
 }
 
 #[test]
