@@ -176,19 +176,25 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 ### Конфиг экспорта
 
-Размеченное объединение по `type`; у каждого варианта свои параметры. Десериализуется типизированно
-(канонизация через `Scalar`, лишние поля — ошибка).
+Размеченное объединение по `format`; у каждого формата свои параметры. Раскладка вывода — общий для
+всех форматов объект `output`. Десериализуется типизированно (канонизация через `Scalar`, лишние
+поля — ошибка).
 
 ```jsonc
-{ "type": "stl", "path": "out.stl", "tolerance": 0.1 }
-{ "type": "png", "path": "out.png", "size": 512, "azimuth": 35, "elevation": 25 }
+{ "format": "stl", "output": { "type": "single", "filename": "out.stl" }, "tolerance": 0.1 }
+{ "format": "stl", "output": { "type": "multi", "path": "out" } }
+{ "format": "png", "output": { "type": "single", "filename": "out.png" }, "size": 512, "azimuth": 35, "elevation": 25 }
+{ "format": "png", "output": { "type": "multi", "path": "out" } }
 ```
 
-- `stl`: `path`, `tolerance` (по умолчанию `0.1`) — линейная деформация триангуляции.
-- `png`: `path`, `size` (512), `azimuth` (35), `elevation` (25) — вид камеры.
+- `output`: `single` — всё в один файл (`filename`); `multi` — по файлу на экспортируемую часть,
+  `<path>/<name>.<ext>` по `name` из `export` модели (каталог создаётся; пустое или повторяющееся
+  имя — ошибка).
+- `stl`: `tolerance` (по умолчанию `0.1`) — линейная деформация триангуляции.
+- `png`: `size` (512), `azimuth` (35), `elevation` (25) — вид камеры.
 
-Несколько экспортируемых `Part` пишутся в **один** файл (общий `Compound`). Цвет учитывает только PNG;
-STL его игнорирует.
+В `single` несколько экспортируемых `Part` пишутся в **один** файл (общий `Compound` / одно
+изображение). Цвет учитывает только PNG; STL его игнорирует.
 
 ### Конфиг работы
 
@@ -234,7 +240,8 @@ STL его игнорирует.
 
 ### Просмотр
 
-`vg3 model.json model.png [--png-size <px>] [--png-az <deg>] [--png-el <deg>]` — рендер в PNG
+`vg3 model.json export.json` с конфигом
+`{ "format": "png", "output": { "type": "single", "filename": "model.png" } }` — рендер в PNG
 (ортопроекция, z-буфер, плоскостное затенение). Триангуляцию даёт OCCT, рисует собственный
 растеризатор — без OpenGL, работает headless. PNG собирается встроенным энкодером (без зависимостей).
 
@@ -269,8 +276,8 @@ STL его игнорирует.
 
 ```sh
 cargo build
-cargo run -- tests/fixtures/fillet.json out.stl
-cargo run -- tests/fixtures/bottle.json bottle.png --png-az 30 --png-el 22
+echo '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }' > export.json
+cargo run -- crates/engine/tests/fixtures/fillet.json export.json
 cargo test
 ```
 

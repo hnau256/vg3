@@ -112,7 +112,8 @@ fn export_config_renders_a_png() {
     let outputs = build_outputs("box.json");
     let path = std::env::temp_dir().join("vg3_config_render.png");
     let config = vg3_engine::export::ExportConfig::from_json(&format!(
-        r#"{{ "type": "png", "path": {:?}, "size": 64 }}"#,
+        r#"{{ "format": "png", "size": 64,
+              "output": {{ "type": "single", "filename": {:?} }} }}"#,
         path.to_str().unwrap()
     ))
     .expect("config parses");
@@ -129,8 +130,73 @@ fn export_config_renders_a_png() {
 
 #[test]
 fn export_config_rejects_unknown_parameters() {
-    let source = r#"{ "type": "stl", "path": "out.stl", "nonsense": 1 }"#;
+    let source = r#"{ "format": "stl", "nonsense": 1,
+                      "output": { "type": "single", "filename": "out.stl" } }"#;
     assert!(vg3_engine::export::ExportConfig::from_json(source).is_err());
+}
+
+fn two_named_outputs() -> Vec<vg3_engine::Output> {
+    let source = r#"{
+        "version": 1,
+        "parts": [
+            { "type": "box", "width": 1, "length": 1, "height": 1 },
+            { "type": "sphere", "radius": 1 }
+        ],
+        "export": [
+            { "index": 0, "name": "cube" },
+            { "index": 1, "name": "ball" }
+        ]
+    }"#;
+    let model = vg3_model::parse(source).expect("parses");
+    engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds")
+}
+
+#[test]
+fn multi_output_writes_one_file_per_named_part() {
+    let outputs = two_named_outputs();
+    let directory = std::env::temp_dir().join("vg3_multi_export");
+    let _ = std::fs::remove_dir_all(&directory);
+
+    for (format, extension) in [("stl", "stl"), ("png", "png")] {
+        let config = vg3_engine::export::ExportConfig::from_json(&format!(
+            r#"{{ "format": "{format}",
+                  "output": {{ "type": "multi", "path": {:?} }} }}"#,
+            directory.to_str().unwrap()
+        ))
+        .expect("config parses");
+        config.export(&outputs).expect("exports");
+        for name in ["cube", "ball"] {
+            let file = directory.join(format!("{name}.{extension}"));
+            assert!(file.is_file(), "expected {file:?}");
+        }
+    }
+    let _ = std::fs::remove_dir_all(&directory);
+}
+
+#[test]
+fn multi_output_rejects_duplicate_names() {
+    let source = r#"{
+        "version": 1,
+        "parts": [
+            { "type": "box", "width": 1, "length": 1, "height": 1 },
+            { "type": "sphere", "radius": 1 }
+        ],
+        "export": [
+            { "index": 0, "name": "part" },
+            { "index": 1, "name": "part" }
+        ]
+    }"#;
+    let model = vg3_model::parse(source).expect("parses");
+    let outputs = engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds");
+    let directory = std::env::temp_dir().join("vg3_multi_export_dup");
+    let config = vg3_engine::export::ExportConfig::from_json(&format!(
+        r#"{{ "format": "stl",
+              "output": {{ "type": "multi", "path": {:?} }} }}"#,
+        directory.to_str().unwrap()
+    ))
+    .expect("config parses");
+    assert!(config.export(&outputs).is_err());
+    let _ = std::fs::remove_dir_all(&directory);
 }
 
 #[test]

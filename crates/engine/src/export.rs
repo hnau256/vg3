@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 use cxx::UniquePtr;
 use serde::Deserialize;
@@ -9,41 +10,58 @@ use crate::render::{self, RenderOptions};
 use crate::sys::ffi;
 use vg3_model::Scalar;
 
-#[derive(Clone, Copy, Debug)]
-pub struct ExportOptions {
-    pub tolerance: f64,
-    pub image: RenderOptions,
+/// Triangulation tolerance shared by the exporters that tessellate (STL, PNG).
+const DEFAULT_TOLERANCE: f64 = 0.1;
+
+/// How an exporter lays its results out on disk. Formats that can either emit one combined file or
+/// one file per part (STL, PNG) embed it as their `output` field; a format that is always a single
+/// file (a future STEP) simply would not have the field.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ExportLayout {
+    /// Everything into one file.
+    Single { filename: PathBuf },
+    /// One file per exported part — `<path>/<name>.<extension>` — named by the model's export list.
+    /// The directory is created if it does not exist.
+    Multi { path: PathBuf },
 }
 
-impl Default for ExportOptions {
-    fn default() -> Self {
-        ExportOptions {
-            tolerance: 0.1,
-            image: RenderOptions::default(),
+impl ExportLayout {
+    /// Splits the outputs into target files: one batch for `single`, one per part for `multi`.
+    fn batches<'a>(
+        &self,
+        outputs: &'a [Output],
+        extension: &str,
+    ) -> Result<Vec<(PathBuf, &'a [Output])>> {
+        match self {
+            ExportLayout::Single { filename } => Ok(vec![(filename.clone(), outputs)]),
+            ExportLayout::Multi { path } => {
+                std::fs::create_dir_all(path)?;
+                let mut names = HashSet::with_capacity(outputs.len());
+                let mut batches = Vec::with_capacity(outputs.len());
+                for output in outputs {
+                    if output.name.is_empty() {
+                        return Err(Error::Export(
+                            "multi output needs a non-empty name for every part".to_string(),
+                        ));
+                    }
+                    if !names.insert(output.name.as_str()) {
+                        return Err(Error::Export(format!(
+                            "multi output has a duplicate part name {:?}",
+                            output.name
+                        )));
+                    }
+                    let file = path.join(format!("{}.{extension}", output.name));
+                    batches.push((file, std::slice::from_ref(output)));
+                }
+                Ok(batches)
+            }
         }
     }
 }
 
-pub fn export(
-    outputs: &[Output],
-    format: Format,
-    path: &Path,
-    options: &ExportOptions,
-) -> Result<()> {
-    match format {
-        Format::Stl => export_stl(outputs, path, options.tolerance),
-        Format::Png => export_png(outputs, path, options),
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Format {
-    Stl,
-    Png,
-}
-
 fn default_tolerance() -> Scalar {
-    Scalar::try_from(0.1).expect("0.1 is finite")
+    Scalar::try_from(DEFAULT_TOLERANCE).expect("the default tolerance is finite")
 }
 
 fn default_size() -> u32 {
@@ -59,15 +77,15 @@ fn default_elevation() -> Scalar {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(tag = "format", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ExportConfig {
     Stl {
-        path: PathBuf,
+        output: ExportLayout,
         #[serde(default = "default_tolerance")]
         tolerance: Scalar,
     },
     Png {
-        path: PathBuf,
+        output: ExportLayout,
         #[serde(default = "default_size")]
         size: u32,
         #[serde(default = "default_azimuth")]
@@ -83,62 +101,56 @@ impl ExportConfig {
     }
 
     pub fn export(&self, outputs: &[Output]) -> Result<()> {
+        if outputs.is_empty() {
+            return Ok(());
+        }
         match self {
-            ExportConfig::Stl { path, tolerance } => export(
-                outputs,
-                Format::Stl,
-                path,
-                &ExportOptions {
-                    tolerance: tolerance.value(),
-                    ..ExportOptions::default()
-                },
-            ),
+            ExportConfig::Stl { output, tolerance } => {
+                export_stl(outputs, output, tolerance.value())
+            }
             ExportConfig::Png {
-                path,
+                output,
                 size,
                 azimuth,
                 elevation,
-            } => export(
+            } => export_png(
                 outputs,
-                Format::Png,
-                path,
-                &ExportOptions {
-                    image: RenderOptions {
-                        size: *size,
-                        azimuth: azimuth.value(),
-                        elevation: elevation.value(),
-                    },
-                    ..ExportOptions::default()
+                output,
+                &RenderOptions {
+                    size: *size,
+                    azimuth: azimuth.value(),
+                    elevation: elevation.value(),
                 },
             ),
         }
     }
 }
 
-fn export_stl(outputs: &[Output], path: &Path, tolerance: f64) -> Result<()> {
-    if outputs.is_empty() {
-        return Ok(());
+fn export_stl(outputs: &[Output], layout: &ExportLayout, tolerance: f64) -> Result<()> {
+    for (path, batch) in layout.batches(outputs, "stl")? {
+        let compound = build_compound(batch)?;
+        let path = path
+            .to_str()
+            .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
+        if !ffi::write_stl(&compound, path, tolerance)? {
+            return Err(Error::Export("StlAPI_Writer reported failure".to_string()));
+        }
     }
-    let compound = build_compound(outputs)?;
-    let path = path
-        .to_str()
-        .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
-    if ffi::write_stl(&compound, path, tolerance)? {
-        Ok(())
-    } else {
-        Err(Error::Export("StlAPI_Writer reported failure".to_string()))
-    }
+    Ok(())
 }
 
-fn export_png(outputs: &[Output], path: &Path, options: &ExportOptions) -> Result<()> {
-    let mut items = Vec::with_capacity(outputs.len());
-    for output in outputs {
-        items.push(render::Item {
-            color: output.color.map(|color| color.components()),
-            triangles: ffi::triangulation(output.part.shape(), options.tolerance)?,
-        });
+fn export_png(outputs: &[Output], layout: &ExportLayout, options: &RenderOptions) -> Result<()> {
+    for (path, batch) in layout.batches(outputs, "png")? {
+        let mut items = Vec::with_capacity(batch.len());
+        for output in batch {
+            items.push(render::Item {
+                color: output.color.map(|color| color.components()),
+                triangles: ffi::triangulation(output.part.shape(), DEFAULT_TOLERANCE)?,
+            });
+        }
+        render::render_png(&items, &path, options)?;
     }
-    render::render_png(&items, path, &options.image)
+    Ok(())
 }
 
 fn build_compound(outputs: &[Output]) -> Result<UniquePtr<ffi::Shape>> {
