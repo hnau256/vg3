@@ -74,6 +74,18 @@ impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for Memory<K, V> {
     }
 }
 
+/// Type-erased cache: lets a caller pick a concrete cache at run time while keeping one type — e.g.
+/// memory alone, or memory layered over disk, chosen by a configuration value.
+impl<K, V> Cache<K, V> for Box<dyn Cache<K, V>> {
+    fn get(&mut self, key: &K) -> Option<V> {
+        (**self).get(key)
+    }
+
+    fn put(&mut self, key: &K, value: &V) {
+        (**self).put(key, value);
+    }
+}
+
 /// Two caches glued: reads try `front` then `back`; writes go to both.
 pub struct Layered<Front, Back> {
     front: Front,
@@ -91,5 +103,46 @@ impl<K, V, Front: Cache<K, V>, Back: Cache<K, V>> Cache<K, V> for Layered<Front,
     fn put(&mut self, key: &K, value: &V) {
         self.front.put(key, value);
         self.back.put(key, value);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Delegation is observable through these counters.
+    #[derive(Default)]
+    struct Counting {
+        gets: usize,
+        puts: usize,
+        stored: Option<u8>,
+    }
+
+    impl Cache<u8, u8> for Counting {
+        fn get(&mut self, _key: &u8) -> Option<u8> {
+            self.gets += 1;
+            self.stored
+        }
+
+        fn put(&mut self, _key: &u8, value: &u8) {
+            self.puts += 1;
+            self.stored = Some(*value);
+        }
+    }
+
+    #[test]
+    fn a_boxed_cache_delegates() {
+        let mut cache: Box<dyn Cache<u8, u8>> = Box::new(Counting::default());
+        assert_eq!(cache.get(&1), None);
+        cache.put(&1, &2);
+        assert_eq!(cache.get(&1), Some(2));
+    }
+
+    #[test]
+    fn a_boxed_cache_computes_and_stores_through_get_or_put() {
+        let mut cache: Box<dyn Cache<u8, u8>> = Box::new(Memory::default());
+        let value = cache.get_or_put(1, |_| Ok::<u8, ()>(7)).expect("computes");
+        assert_eq!(value, 7);
+        assert_eq!(cache.get(&1), Some(7));
     }
 }

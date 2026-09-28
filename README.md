@@ -160,11 +160,22 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
 
 ### CLI (`main`)
 
+Три входа — IR‑модель, **конфиг экспорта** (обязателен) и необязательный **конфиг работы**. Каждый
+задаётся либо файлом, либо inline-JSON; `-` как путь означает stdin, а модель без `--model*` читается
+из stdin (пайп из фронтенда без временных файлов):
+
 ```
-vg3 <model.json> <export.json> [run.json]
+vg3 [--model-file <PATH> | --model-json <JSON>]
+    (--export-config-file <PATH> | --export-config-json <JSON>)
+    [--run-config-file <PATH> | --run-config-json <JSON>]
 ```
 
-Три отдельных JSON-файла: IR‑модель, **конфиг экспорта** и необязательный **конфиг работы**. `main`:
+```sh
+vg3 --model-file bottle.json --export-config-file export.json
+vg3 --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "bottle.png" } }' < bottle.json
+```
+
+`main`:
 
 ```rust
 let model = vg3::model::parse(&model_source)?;              // 1. str   -> Model
@@ -198,7 +209,8 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 ### Конфиг работы
 
-Необязательный третий JSON — как запускать (сейчас: дисковый кэш). По умолчанию **включён** и пишет в
+Необязательный третий вход (`--run-config-file` / `--run-config-json`) — как запускать (сейчас:
+дисковый кэш). По умолчанию **включён** и пишет в
 системную папку кэша (`~/Library/Caches/vg3` на macOS, `~/.cache/vg3` на Linux, `%LOCALAPPDATA%\vg3`
 на Windows — не в `~`).
 
@@ -240,8 +252,7 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 ### Просмотр
 
-`vg3 model.json export.json` с конфигом
-`{ "format": "png", "output": { "type": "single", "filename": "model.png" } }` — рендер в PNG
+`vg3 --model-file model.json --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "model.png" } }'` — рендер в PNG
 (ортопроекция, z-буфер, плоскостное затенение). Триангуляцию даёт OCCT, рисует собственный
 растеризатор — без OpenGL, работает headless. PNG собирается встроенным энкодером (без зависимостей).
 
@@ -276,8 +287,8 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 ```sh
 cargo build
-echo '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }' > export.json
-cargo run -- crates/engine/tests/fixtures/fillet.json export.json
+cargo run -- --model-file crates/engine/tests/fixtures/fillet.json \
+    --export-config-json '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }'
 cargo test
 ```
 
