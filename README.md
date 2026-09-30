@@ -114,8 +114,10 @@ IR-узлом `Node` (описанием).
 
 ### Кэш
 
-**Трейт `Cache<K, V>`** (`src/cache.rs`): `get`/`put` + provided `get_or_put`/`wrap_with`. Реализации —
-`Noop`, `Memory<K, V>` и `store::Disk<K, V, C>` (файлы). Склейка: `back.wrap_with(front)` — чтение
+**Трейт `Cache<K, V>`** (`src/cache.rs`): `get`/`put` + provided `wrap_with`; плюс свободная функция
+`get_or_put(cache, key, compute)` — «посчитать и положить», она же несёт поток вычисления. Трейт
+объектно-безопасен (`get`/`put` работают и на `dyn`). Реализации — `Noop`,
+`Memory<K, V>` и `store::Disk<K, V, C>` (файлы). Склейка: `back.wrap_with(front)` — чтение
 `front`→`back`, запись в оба (CLI: `disk.wrap_with(memory)`).
 
 **Кэш не знает домена** и выносится в отдельную библиотеку. `Disk` работает с **байтами**: значения

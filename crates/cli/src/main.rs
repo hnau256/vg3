@@ -4,8 +4,8 @@ use std::process::ExitCode;
 
 use clap::{ArgGroup, Parser};
 use run::RunConfig;
-use vg3_cache::{Cache, Disk, Key, Memory};
-use vg3_engine::{BrepCodec, ExportConfig, Part};
+use vg3_cache::{Cache, Disk, Memory};
+use vg3_engine::{BrepCodec, ExportConfig};
 
 mod run;
 
@@ -67,11 +67,16 @@ fn execute(args: &Args) -> Result<(), Box<dyn Error>> {
     };
 
     // Cache: memory alone, or memory backed by disk at the directory the run config resolves to.
-    let mut cache: Box<dyn Cache<Key, Part>> = match run_config.cache_dir() {
-        Some(directory) => Box::new(Disk::new(directory, BrepCodec).wrap_with(Memory::default())),
-        None => Box::new(Memory::default()),
+    let outputs = match run_config.cache_dir() {
+        Some(directory) => {
+            let mut cache = Disk::new(directory, BrepCodec).wrap_with(Memory::default());
+            vg3_engine::evaluate(&model, &mut cache)?
+        }
+        None => {
+            let mut cache = Memory::default();
+            vg3_engine::evaluate(&model, &mut cache)?
+        }
     };
-    let outputs = vg3_engine::evaluate(&model, &mut cache)?;
 
     let export_source = input(
         args.export_config_file.as_deref(),

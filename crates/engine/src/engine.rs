@@ -2,7 +2,7 @@
 
 use std::sync::OnceLock;
 
-use vg3_cache::{Cache, Fingerprinter, Key};
+use vg3_cache::{get_or_put, Cache, Fingerprinter, Key};
 use vg3_model::{Color, Model, Node};
 
 use crate::error::{Error, Result};
@@ -28,7 +28,7 @@ pub struct Output {
 ///
 /// The cache is domain-agnostic; the engine's own `BrepCodec` (its `Part` <-> bytes conversion) is
 /// public so the caller can build a disk-backed cache with it.
-pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec<Output>> {
+pub fn evaluate<C: Cache<Key, Part> + ?Sized>(model: &Model, cache: &mut C) -> Result<Vec<Output>> {
     // Validate every reference (`index < current`) up front.
     for (index, node) in model.parts.iter().enumerate() {
         node.try_map(|operand| -> Result<()> { validate_index(operand, index) })?;
@@ -53,13 +53,13 @@ pub fn evaluate<C: Cache<Key, Part>>(model: &Model, cache: &mut C) -> Result<Vec
 /// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
 /// here, right before use, and never leaving this function. The cache is whatever the caller
 /// passed in — memory, disk, a layering of both, or nothing.
-fn get_or_evaluate<C: Cache<Key, Part>>(
+fn get_or_evaluate<C: Cache<Key, Part> + ?Sized>(
     node: &Node<usize>,
     parts: &[Node<usize>],
     cache: &mut C,
 ) -> Result<Part> {
     let key = key_of(node, parts)?;
-    cache.get_or_put(key, |cache| {
+    get_or_put(cache, &key, |cache| {
         let ready: Node<Part> =
             node.try_map(|operand| get_or_evaluate(&parts[operand], parts, cache))?;
         ready.evaluate()

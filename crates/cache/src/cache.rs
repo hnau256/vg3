@@ -4,27 +4,12 @@ use std::hash::Hash;
 use crate::error::Result;
 
 /// Universal key/value cache. Implementations differ only in *where* entries live.
+///
+/// Only `get`/`put` are required, so `Cache` is object-safe: a caller can keep a single type — a
+/// `&mut dyn Cache` — while picking the concrete cache (memory, disk, layered, none) at run time.
 pub trait Cache<K, V> {
     fn get(&mut self, key: &K) -> Option<V>;
     fn put(&mut self, key: &K, value: &V);
-
-    /// Returns the cached value, or computes it with `compute` (which may re-enter this cache)
-    /// and stores the result. The evaluation flow lives here, so implementations stay trivial.
-    fn get_or_put<E>(
-        &mut self,
-        key: K,
-        compute: impl FnOnce(&mut Self) -> std::result::Result<V, E>,
-    ) -> std::result::Result<V, E>
-    where
-        Self: Sized,
-    {
-        if let Some(hit) = self.get(&key) {
-            return Ok(hit);
-        }
-        let value = compute(self)?;
-        self.put(&key, &value);
-        Ok(value)
-    }
 
     /// Glues two caches: `self` is the backing, `front` is consulted first —
     /// e.g. `disk.wrap_with(memory)`.
@@ -34,6 +19,27 @@ pub trait Cache<K, V> {
     {
         Layered { front, back: self }
     }
+}
+
+/// Returns the cached value, or computes it with `compute` (which may re-enter this cache) and
+/// stores the result. The evaluation flow lives here, so implementations stay trivial; being a free
+/// function rather than a method, it also works on a `&mut dyn Cache`.
+pub fn get_or_put<K, V, C, E>(
+    cache: &mut C,
+    key: &K,
+    compute: impl FnOnce(&mut C) -> std::result::Result<V, E>,
+) -> std::result::Result<V, E>
+where
+    K: Eq + Hash + Clone,
+    V: Clone,
+    C: Cache<K, V> + ?Sized,
+{
+    if let Some(hit) = cache.get(key) {
+        return Ok(hit);
+    }
+    let value = compute(cache)?;
+    cache.put(key, &value);
+    Ok(value)
 }
 
 /// A two-way conversion between `T` and bytes — the pair of closures a disk store would otherwise
@@ -74,18 +80,6 @@ impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for Memory<K, V> {
     }
 }
 
-/// Type-erased cache: lets a caller pick a concrete cache at run time while keeping one type — e.g.
-/// memory alone, or memory layered over disk, chosen by a configuration value.
-impl<K, V> Cache<K, V> for Box<dyn Cache<K, V>> {
-    fn get(&mut self, key: &K) -> Option<V> {
-        (**self).get(key)
-    }
-
-    fn put(&mut self, key: &K, value: &V) {
-        (**self).put(key, value);
-    }
-}
-
 /// Two caches glued: reads try `front` then `back`; writes go to both.
 pub struct Layered<Front, Back> {
     front: Front,
@@ -110,39 +104,24 @@ impl<K, V, Front: Cache<K, V>, Back: Cache<K, V>> Cache<K, V> for Layered<Front,
 mod tests {
     use super::*;
 
-    /// Delegation is observable through these counters.
-    #[derive(Default)]
-    struct Counting {
-        gets: usize,
-        puts: usize,
-        stored: Option<u8>,
-    }
-
-    impl Cache<u8, u8> for Counting {
-        fn get(&mut self, _key: &u8) -> Option<u8> {
-            self.gets += 1;
-            self.stored
-        }
-
-        fn put(&mut self, _key: &u8, value: &u8) {
-            self.puts += 1;
-            self.stored = Some(*value);
-        }
-    }
-
     #[test]
-    fn a_boxed_cache_delegates() {
-        let mut cache: Box<dyn Cache<u8, u8>> = Box::new(Counting::default());
+    fn a_trait_object_still_gets_and_puts() {
+        let mut memory = Memory::<u8, u8>::default();
+        let cache: &mut dyn Cache<u8, u8> = &mut memory;
         assert_eq!(cache.get(&1), None);
         cache.put(&1, &2);
         assert_eq!(cache.get(&1), Some(2));
     }
 
     #[test]
-    fn a_boxed_cache_computes_and_stores_through_get_or_put() {
-        let mut cache: Box<dyn Cache<u8, u8>> = Box::new(Memory::default());
-        let value = cache.get_or_put(1, |_| Ok::<u8, ()>(7)).expect("computes");
-        assert_eq!(value, 7);
-        assert_eq!(cache.get(&1), Some(7));
+    fn get_or_put_computes_once_then_hits() {
+        let mut memory = Memory::<u8, u8>::default();
+        let cache: &mut dyn Cache<u8, u8> = &mut memory;
+        assert_eq!(get_or_put(cache, &1, |_| Ok::<u8, ()>(7)), Ok(7));
+        assert_eq!(
+            get_or_put(cache, &1, |_| Ok::<u8, ()>(9)),
+            Ok(7),
+            "the cached value must win"
+        );
     }
 }
