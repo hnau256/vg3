@@ -8,6 +8,7 @@ use crate::value::Color;
 
 /// An explicit export entry: which part to output, its name and (optionally) its color.
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Export {
     pub index: usize,
@@ -17,6 +18,14 @@ pub struct Export {
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "schema",
+    schemars(
+        title = "vg3 IR model",
+        description = "Canonical intermediate representation (FORMAT.md, version 1)."
+    )
+)]
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,

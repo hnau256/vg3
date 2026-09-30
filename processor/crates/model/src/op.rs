@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::value::{Angle, Normal3, Point3, Scalar, Vector3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransformOp {
     Translate {
@@ -30,6 +31,7 @@ pub enum TransformOp {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum SweepMode {
     #[default]
@@ -38,6 +40,7 @@ pub enum SweepMode {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum FilletKind {
     #[default]
@@ -46,6 +49,7 @@ pub enum FilletKind {
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RadiusSpec {
     All { radius: Scalar },

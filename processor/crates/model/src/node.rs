@@ -7,6 +7,7 @@ use crate::op::{FilletKind, RadiusSpec, SweepMode, TransformOp};
 use crate::value::{Angle, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Node<T> {
     Box {

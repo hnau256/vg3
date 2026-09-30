@@ -7,6 +7,8 @@ use serde::Deserialize;
 use crate::error::{Error, Result};
 
 #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(with = "f64"))]
 #[serde(try_from = "f64")]
 pub struct Scalar(f64);
 
@@ -34,6 +36,8 @@ impl TryFrom<f64> for Scalar {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(with = "f64"))]
 #[serde(try_from = "f64")]
 pub struct Angle(f64);
 
@@ -61,6 +65,7 @@ impl TryFrom<f64> for Angle {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Point2 {
     pub x: Scalar,
@@ -68,6 +73,7 @@ pub struct Point2 {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Point3 {
     pub x: Scalar,
@@ -76,6 +82,7 @@ pub struct Point3 {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Vector3 {
     pub dx: Scalar,
@@ -84,6 +91,8 @@ pub struct Vector3 {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(deny_unknown_fields))]
 pub struct Normal3 {
     pub dx: Scalar,
     pub dy: Scalar,
@@ -92,6 +101,7 @@ pub struct Normal3 {
 
 /// An RGB color (`0..1` per component); used by exporters that support color.
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Color {
     pub r: Scalar,

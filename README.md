@@ -53,6 +53,7 @@ Kotlin-фронтенд (типизированный DSL)
 Зависимости объявлены в `Cargo.toml`, и **компилятор физически не даёт** кэшу сослаться на доменные типы:
 
 ```
+# репозиторий vg3
 processor/            # Rust-движок: самостоятельный Cargo workspace
   Cargo.toml
   Cargo.lock
@@ -62,12 +63,15 @@ processor/            # Rust-движок: самостоятельный Cargo 
     engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
                            Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
     cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
+    schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).
+scheme/               # сюда vg3-schema пишет vg3.schema.json (файл не коммитится)
+kt/                   # Kotlin-фронтенд (в разработке)
 ```
 
 Граф зависимостей (`cargo tree`): `vg3-cache -> {}`, `vg3-model -> {}`,
-`vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`. То есть `vg3-cache` **не может**
-упомянуть `Node`/`Part` — это гарантируется, а не соглашение. Кэш выносится в отдельную библиотеку
-как есть.
+`vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`, `vg3-schema -> {model}`. То есть
+`vg3-cache` **не может** упомянуть `Node`/`Part` — это гарантируется, а не соглашение. Кэш выносится в
+отдельную библиотеку как есть.
 
 ### Доменная модель (`model`)
 
@@ -81,6 +85,25 @@ processor/            # Rust-движок: самостоятельный Cargo 
 - Операнд — всегда `usize`: индекс назад в `parts`; inline-объектов нет.
 - `Profile`/`Path` и `Curve2`/`Curve3` (`line`/`arc`/`spline`).
 - Канонические скаляры/геометрия: `Scalar`, `Angle`, `Point2`, `Point3`, `Vector3`, `Normal3`.
+
+### Схема IR (`scheme/`)
+
+`scheme/vg3.schema.json` — JSON Schema (draft 2020-12) для IR, **генерируется из типов `model`**
+(`schemars`; те же serde-атрибуты, что и десериализация) — не пишется руками и не расходится с
+форматом. Дерево — `oneOf` по `type` (`const`-дискриминатор), структуры — `additionalProperties:false`,
+дефолты (`right_handed`, `ruled`) сохранены, операнды — целые `usize`.
+
+Файл — **вычисляемый артефакт**, в git не хранится (`.gitignore`; папка `scheme/` остаётся пустой через
+`.gitkeep`). Генерация (из `processor/`):
+
+```sh
+cargo run -p vg3-schema            # -> scheme/vg3.schema.json
+```
+
+Gradle-сборка (этап 3, `kt/`) сама запускает `vg3-schema` и забирает файл оттуда, поэтому схема и
+Kotlin-классы всегда строятся из одного ревиза Rust-модели и не могут разойтись. Схема — контракт, но
+**не** enforcement инвариантов: конечность `Scalar`, единичность `Normal3` выражаются только в типах,
+а не в JSON Schema.
 
 ### Канонизация — в типах
 

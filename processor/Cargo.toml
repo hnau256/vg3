@@ -5,4 +5,5 @@ members = [
     "crates/model",
     "crates/engine",
     "crates/cli",
+    "crates/schema",
 ]

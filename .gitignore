@@ -1,3 +1,4 @@
 .idea
 build
 /processor/target
+/scheme/vg3.schema.json
