@@ -53,12 +53,15 @@ Kotlin-фронтенд (типизированный DSL)
 Зависимости объявлены в `Cargo.toml`, и **компилятор физически не даёт** кэшу сослаться на доменные типы:
 
 ```
-crates/
-  cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk/Layered. Зависит только от blake3.
-  model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
-  engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
-                         Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
-  cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
+processor/            # Rust-движок: самостоятельный Cargo workspace
+  Cargo.toml
+  Cargo.lock
+  crates/
+    cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk/Layered. Зависит только от blake3.
+    model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
+    engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
+                           Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
+    cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
 ```
 
 Граф зависимостей (`cargo tree`): `vg3-cache -> {}`, `vg3-model -> {}`,
@@ -287,7 +290,10 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 Требуется OCCT (например, `brew install opencascade`). Если он не в стандартном месте — задать `OCCT_DIR`.
 
+Rust-движок живёт в `processor/` (самостоятельный Cargo workspace) — команды выполняются оттуда:
+
 ```sh
+cd processor
 cargo build
 cargo run -- --model-file crates/engine/tests/fixtures/fillet.json \
     --export-config-json '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }'
