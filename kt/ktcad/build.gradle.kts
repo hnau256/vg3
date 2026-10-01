@@ -7,12 +7,13 @@ plugins {
 }
 
 dependencies {
-    implementation(hnau.kotlinx.serialization.json)
+    api(hnau.kotlinx.serialization.json)
 }
 
 val processorDir = file("../../processor")
 val schemaFile = file("../../scheme/vg3.schema.json")
 val generatedKotlinDir = layout.buildDirectory.dir("generated/vg3/kotlin")
+val vg3Binary = file("../../processor/target/debug/vg3")
 
 val generateVg3Schema by tasks.registering(Exec::class) {
     group = "vg3"
@@ -47,6 +48,11 @@ kotlin {
     sourceSets.getByName("main").kotlin.srcDir(generatedKotlinDir)
 }
 
-tasks.named("compileKotlin") {
-    dependsOn(generateVg3Model)
+listOf("compileKotlin", "sourcesJar", "kotlinSourcesJar").forEach { taskName ->
+    tasks.named(taskName) { dependsOn(generateVg3Model) }
+}
+
+tasks.named<Test>("test") {
+    // Smoke test runs the `vg3` binary; keep the freshly built one on PATH for local runs.
+    environment("VG3_BIN", vg3Binary.absolutePath)
 }

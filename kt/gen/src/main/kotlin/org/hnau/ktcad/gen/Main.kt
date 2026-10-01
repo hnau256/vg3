@@ -25,6 +25,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
 private const val SCHEMA_PACKAGE = "org.hnau.ktcad.ir"
+private const val ROOT_NAME = "Model"
 private const val REF_PREFIX = "#/\$defs/"
 private const val DISCRIMINATOR = "type"
 
@@ -56,7 +57,11 @@ fun main(args: Array<String>) {
     definitions.forEach { (name, definition) ->
         buildFile(name, definition.jsonObject).writeTo(outputDir)
     }
-    println("vg3 codegen: wrote ${definitions.size} file(s) to ${outputDir.absolutePath}")
+
+    val rootDefinition = schema.filterKeys { it != "\$defs" }
+    buildFile(ROOT_NAME, JsonObject(rootDefinition)).writeTo(outputDir)
+
+    println("vg3 codegen: wrote ${definitions.size + 1} file(s) to ${outputDir.absolutePath}")
 }
 
 private fun buildFile(name: String, definition: JsonObject): FileSpec {
