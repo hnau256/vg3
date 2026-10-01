@@ -6,6 +6,25 @@ use serde::Deserialize;
 
 use crate::error::{Error, Result};
 
+/// A back-reference to an earlier node in the arena (`index < current`).
+///
+/// A plain newtype over `usize`: on the wire it is just an integer. Correctness (the reference
+/// points backwards) is checked during evaluation, not at construction.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(transparent)]
+pub struct Operand(usize);
+
+impl Operand {
+    pub fn new(index: usize) -> Self {
+        Operand(index)
+    }
+
+    pub fn value(self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(with = "f64"))]

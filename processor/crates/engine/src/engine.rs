@@ -3,7 +3,7 @@
 use std::sync::OnceLock;
 
 use vg3_cache::{get_or_put, Cache, Fingerprinter, Key};
-use vg3_model::{Color, Model, Node};
+use vg3_model::{Color, Model, Node, Operand};
 
 use crate::error::{Error, Result};
 use crate::sys::ffi;
@@ -31,14 +31,15 @@ pub struct Output {
 pub fn evaluate<C: Cache<Key, Part> + ?Sized>(model: &Model, cache: &mut C) -> Result<Vec<Output>> {
     // Validate every reference (`index < current`) up front.
     for (index, node) in model.parts.iter().enumerate() {
-        node.try_map(|operand| -> Result<()> { validate_index(operand, index) })?;
+        node.try_map(|operand| -> Result<()> { validate_index(operand.value(), index) })?;
     }
 
     let parts = &model.parts;
     let mut outputs = Vec::new();
     for item in &model.export {
-        let node = parts.get(item.index).ok_or(Error::ExportIndex {
-            index: item.index,
+        let index = item.index.value();
+        let node = parts.get(index).ok_or(Error::ExportIndex {
+            index,
             parts: parts.len(),
         })?;
         outputs.push(Output {
@@ -54,22 +55,22 @@ pub fn evaluate<C: Cache<Key, Part> + ?Sized>(model: &Model, cache: &mut C) -> R
 /// here, right before use, and never leaving this function. The cache is whatever the caller
 /// passed in — memory, disk, a layering of both, or nothing.
 fn get_or_evaluate<C: Cache<Key, Part> + ?Sized>(
-    node: &Node<usize>,
-    parts: &[Node<usize>],
+    node: &Node<Operand>,
+    parts: &[Node<Operand>],
     cache: &mut C,
 ) -> Result<Part> {
     let key = key_of(node, parts)?;
     get_or_put(cache, &key, |cache| {
         let ready: Node<Part> =
-            node.try_map(|operand| get_or_evaluate(&parts[operand], parts, cache))?;
+            node.try_map(|operand| get_or_evaluate(&parts[operand.value()], parts, cache))?;
         ready.evaluate()
     })
 }
 
 /// The node's Merkle key `H(node ‖ operand_keys…)`, computed on demand (keys are not stored).
 /// References are `index < current` (checked in [`evaluate`]), so `parts[operand]` is in range.
-fn key_of(node: &Node<usize>, parts: &[Node<usize>]) -> Result<Key> {
-    let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand], parts))?;
+fn key_of(node: &Node<Operand>, parts: &[Node<Operand>]) -> Result<Key> {
+    let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand.value()], parts))?;
     Ok(fingerprinter().of(&mapped))
 }
 
@@ -103,7 +104,7 @@ mod tests {
         Scalar::try_from(value).expect("finite")
     }
 
-    fn box_node(size: f64) -> Node<usize> {
+    fn box_node(size: f64) -> Node<Operand> {
         Node::Box {
             width: scalar(size),
             length: scalar(size),
@@ -113,13 +114,13 @@ mod tests {
 
     fn export(index: usize) -> Export {
         Export {
-            index,
+            index: Operand::new(index),
             name: format!("p{index}"),
             color: None,
         }
     }
 
-    fn model(parts: Vec<Node<usize>>) -> Model {
+    fn model(parts: Vec<Node<Operand>>) -> Model {
         let export = (0..parts.len()).map(export).collect();
         Model {
             version: 1,

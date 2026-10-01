@@ -4,14 +4,14 @@ use serde::Deserialize;
 
 use crate::error::{Error, Result};
 use crate::node::Node;
-use crate::value::Color;
+use crate::value::{Color, Operand};
 
 /// An explicit export entry: which part to output, its name and (optionally) its color.
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Export {
-    pub index: usize,
+    pub index: Operand,
     pub name: String,
     #[serde(default)]
     pub color: Option<Color>,
@@ -29,7 +29,7 @@ pub struct Export {
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
-    pub parts: Vec<Node<usize>>,
+    pub parts: Vec<Node<Operand>>,
     pub export: Vec<Export>,
 }
 
