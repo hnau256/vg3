@@ -25,4 +25,12 @@ class FormatSerializationTest {
         )
         assertEquals(expected, actual)
     }
+
+    @Test
+    fun step_is_a_single_file_without_layout() {
+        val format = Format.Step(filename = "out.step")
+        val actual = Json.parseToJsonElement(format.toJson())
+        val expected = Json.parseToJsonElement("""{ "format": "step", "filename": "out.step" }""")
+        assertEquals(expected, actual)
+    }
 }

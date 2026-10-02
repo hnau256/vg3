@@ -1,7 +1,7 @@
 # vg3 — Kotlin-фронтенд
 
 Типизированный Kotlin-DSL для построения моделей `vg3`: он собирает IR (плоскую арену узлов),
-сериализует его и запускает ядро `vg3` для экспорта в STL/PNG.
+сериализует его и запускает ядро `vg3` для экспорта в STL/STEP/PNG.
 
 Про ядро (Rust-движок + CLI) — в [корневом README](../README.md).
 
@@ -116,8 +116,9 @@ fun main() {
   (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
-- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, size?, azimuth?, elevation?)`**.
-- **`Output.Single(filename)`** / **`Output.Multi(path)`** — общая раскладка вывода для обоих форматов.
+- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, size?, azimuth?, elevation?)`** /
+  **`Format.Step(filename)`** (STEP всегда один файл, без `output`).
+- **`Output.Single(filename)`** / **`Output.Multi(path)`** — раскладка вывода для STL/PNG.
 
 ## Как это устроено
 

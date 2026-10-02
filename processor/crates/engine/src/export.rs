@@ -93,6 +93,10 @@ pub enum ExportConfig {
         #[serde(default = "default_elevation")]
         elevation: Scalar,
     },
+    /// STEP is always a single file (no `output` layout).
+    Step {
+        filename: PathBuf,
+    },
 }
 
 impl ExportConfig {
@@ -122,6 +126,7 @@ impl ExportConfig {
                     elevation: elevation.value(),
                 },
             ),
+            ExportConfig::Step { filename } => export_step(outputs, filename),
         }
     }
 }
@@ -135,6 +140,17 @@ fn export_stl(outputs: &[Output], layout: &ExportLayout, tolerance: f64) -> Resu
         if !ffi::write_stl(&compound, path, tolerance)? {
             return Err(Error::Export("StlAPI_Writer reported failure".to_string()));
         }
+    }
+    Ok(())
+}
+
+fn export_step(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
+    let compound = build_compound(outputs)?;
+    let path = filename
+        .to_str()
+        .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
+    if !ffi::write_step(&compound, path)? {
+        return Err(Error::Export("STEPControl_Writer reported failure".to_string()));
     }
     Ok(())
 }

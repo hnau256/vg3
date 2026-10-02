@@ -200,6 +200,8 @@ std::unique_ptr<Shape> unify(const Shape& shape);
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance);
 
+bool write_step(const Shape& shape, rust::Str path);
+
 rust::Vec<std::uint8_t> brep_encode(const Shape& shape);
 
 std::unique_ptr<Shape> brep_decode(rust::Slice<const std::uint8_t> bytes);

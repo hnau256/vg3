@@ -30,6 +30,13 @@ sealed interface Format {
         val azimuth: Double? = null,
         val elevation: Double? = null,
     ) : Format
+
+    /** STEP is always a single file (no `output` layout). */
+    @SerialName("step")
+    @Serializable
+    data class Step(
+        val filename: String,
+    ) : Format
 }
 
 /** How an exporter lays its results out on disk (`single` or `multi`). */
