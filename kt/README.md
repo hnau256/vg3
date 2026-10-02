@@ -95,6 +95,15 @@ fun main() {
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
   `extrude`, `revolve`, `sweep`, `loft`, `fuse`, `cut`, `common`, `transform`, `fillet`. Возвращают `Solid`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
+- **Булевы:** `+` (fuse), `-` (cut), `*` (common).
+- **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
+  `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
+  Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
+- **Контуры:** точки `p(x, y)` / `p(x, y, z)`;
+  `profile(x, y)` / `profile(Point2)` и `path(x, y, z)` / `path(Point3)` — стартовые точки;
+  далее цепочкой `lineTo` / `lineRel`, `arcTo` / `arcRel`, `splineTo` (абсолютные `…To` и относительные `…Rel`);
+  `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D), `polyline(...)` (3D), `Path.close()`.
+  Цепочку можно прервать в любой момент — получится готовый `Profile`/`Path`.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, size?, azimuth?, elevation?)`**.
