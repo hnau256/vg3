@@ -196,6 +196,15 @@ wedge(width, length, height, top_width)
 halfspace                           // бесконечный solid z ≤ 0; инструмент для cut
 ```
 
+```jsonc
+{ "type": "polyhedron",
+  "points": [ { "x": …, "y": …, "z": … }, … ],
+  "faces":  [ [ i, j, k, … ], … ] }   // каждая грань — индексы точек (≥ 3), по порядку
+```
+
+- `faces` ссылаются на позиции в `points`; грани замыкаются движком. Оболочка сшивается
+  (`BRepBuilderAPI_Sewing`) и превращается в solid — незамкнутый многогранник → ошибка.
+
 **Генерация тел:**
 
 ```jsonc
@@ -279,7 +288,7 @@ loft(sections, ruled)               // default false; секций ≥ 2
 
 ## Реализовано
 
-- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`.
+- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`, `polyhedron`.
 - **Генерация тел**: `extrude`, `revolve`, `sweep` (`follow`/`rigid`), `loft` (`ruled`).
 - **Булевы**: `fuse`, `cut`, `common`.
 - **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.

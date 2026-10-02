@@ -93,8 +93,8 @@ fun main() {
 ### API
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
-  `extrude`, `revolve`, `sweep`, `loft`, `fuse`, `cut`, `common`, `transform`, `fillet`, `offset`.
-  Возвращают `Solid`.
+  `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `fuse`, `cut`, `common`, `transform`, `fillet`,
+  `offset`. Возвращают `Solid`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common).
 - **`offset(distance)`** — утолщение (положительное) / утоньшение (отрицательное) тела.
@@ -110,6 +110,8 @@ fun main() {
   `Profile.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** — скругление
   (или `kind = CHAMFER`) постоянным радиусом либо Rhai-выражением на ребро.
+- **`polyhedron(faces)`** — многогранник из граней; каждая грань — список точек по порядку, общие точки
+  (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, size?, azimuth?, elevation?)`**.

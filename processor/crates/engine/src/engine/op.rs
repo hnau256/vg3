@@ -63,6 +63,22 @@ impl Evaluate for Node<Part> {
             Node::Offset { target, distance } => {
                 make_part(ffi::offset(target.shape(), distance.value())?)
             }
+            Node::Polyhedron { points, faces } => {
+                let positions: Vec<f64> = points
+                    .iter()
+                    .flat_map(|point| [point.x.value(), point.y.value(), point.z.value()])
+                    .collect();
+                let mut indices: Vec<u32> = Vec::new();
+                let mut offsets: Vec<u32> = Vec::with_capacity(faces.len() + 1);
+                offsets.push(0);
+                for face in &faces {
+                    for &point in face {
+                        indices.push(point as u32);
+                    }
+                    offsets.push(indices.len() as u32);
+                }
+                make_part(ffi::make_polyhedron(&positions, &indices, &offsets)?)
+            }
             Node::Extrude { profile, height } => {
                 let wire = build_profile_wire(&profile)?;
                 make_part(ffi::extrude(&wire, height.value())?)

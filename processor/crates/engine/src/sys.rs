@@ -64,6 +64,12 @@ pub(crate) mod ffi {
 
         fn make_halfspace() -> Result<UniquePtr<Shape>>;
 
+        fn make_polyhedron(
+            points: &[f64],
+            face_indices: &[u32],
+            face_offsets: &[u32],
+        ) -> Result<UniquePtr<Shape>>;
+
         fn extrude(profile: &Shape, height: f64) -> Result<UniquePtr<Shape>>;
 
         fn revolve(profile: &Shape, angle: f64) -> Result<UniquePtr<Shape>>;

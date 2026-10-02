@@ -97,6 +97,12 @@ std::unique_ptr<Shape> make_wedge(double width, double length, double height, do
 
 std::unique_ptr<Shape> make_halfspace();
 
+std::unique_ptr<Shape> make_polyhedron(
+    rust::Slice<const double> points,
+    rust::Slice<const std::uint32_t> face_indices,
+    rust::Slice<const std::uint32_t> face_offsets
+);
+
 std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle);

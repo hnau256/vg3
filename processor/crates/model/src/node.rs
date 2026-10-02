@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::curve::{Path, Profile};
 use crate::op::{FilletKind, RadiusSpec, SweepMode, TransformOp};
-use crate::value::{Angle, Scalar};
+use crate::value::{Angle, Point3, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -74,6 +74,10 @@ pub enum Node<T> {
     Offset {
         target: T,
         distance: Scalar,
+    },
+    Polyhedron {
+        points: Vec<Point3>,
+        faces: Vec<Vec<usize>>,
     },
     Fillet {
         target: T,
@@ -186,6 +190,10 @@ impl<T: Clone> Node<T> {
             Node::Offset { target, distance } => Node::Offset {
                 target: f(target.clone())?,
                 distance: *distance,
+            },
+            Node::Polyhedron { points, faces } => Node::Polyhedron {
+                points: points.clone(),
+                faces: faces.clone(),
             },
             Node::Fillet {
                 target,

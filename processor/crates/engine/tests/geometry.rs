@@ -42,6 +42,14 @@ fn box_has_expected_volume_and_bounds() {
 }
 
 #[test]
+fn polyhedron_builds_a_unit_cube() {
+    let parts = build("polyhedron.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), 1.0, 1e-6);
+    assert_bounds(&parts[0], [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]);
+}
+
+#[test]
 fn offset_grows_the_solid_in_every_direction() {
     let parts = build("offset.json");
     assert_eq!(parts[0].solid_count(), 1);
