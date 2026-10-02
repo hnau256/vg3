@@ -32,7 +32,9 @@ class NodeSerializationTest {
 
     @Test
     fun operands_are_plain_integers() {
-        val actual = Json.parseToJsonElement(json.encodeToString(Node.serializer(), Node.Fuse(parts = listOf(0, 1))))
+        val actual = Json.parseToJsonElement(
+            json.encodeToString(Node.serializer(), Node.Fuse(parts = listOf(Operand(0), Operand(1)))),
+        )
         val expected = Json.parseToJsonElement("""{ "type": "fuse", "parts": [0, 1] }""")
         assertEquals(expected, actual)
     }

@@ -31,6 +31,7 @@ private const val DISCRIMINATOR = "type"
 
 private val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
 private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
+private val JVM_INLINE = ClassName("kotlin.jvm", "JvmInline")
 private val JSON_CLASS_DISCRIMINATOR = ClassName("kotlinx.serialization.json", "JsonClassDiscriminator")
 private val LIST = ClassName("kotlin.collections", "List")
 
@@ -69,9 +70,25 @@ private fun buildFile(name: String, definition: JsonObject): FileSpec {
         definition.containsKey("oneOf") -> sealedType(name, definition)
         definition["enum"] != null -> enumType(name, definition)
         definition["type"]?.jsonPrimitive?.contentOrNull == "object" -> objectType(name, definition)
+        isScalar(definition) -> valueClass(name, definition)
         else -> error("vg3 codegen: unsupported definition '$name': $definition")
     }
     return FileSpec.builder(SCHEMA_PACKAGE, name).addType(type).build()
+}
+
+/** A named scalar (e.g. `Operand`): a `@JvmInline value class` over its primitive. */
+private fun valueClass(name: String, definition: JsonObject): TypeSpec {
+    val type = primitiveType(definition)
+    val property = PropertySpec.builder("value", type).initializer("value").build()
+    return TypeSpec.classBuilder(name)
+        .addAnnotation(JVM_INLINE)
+        .addAnnotation(SERIALIZABLE)
+        .addModifiers(KModifier.VALUE)
+        .primaryConstructor(
+            FunSpec.constructorBuilder().addParameter("value", type).build(),
+        )
+        .addProperty(property)
+        .build()
 }
 
 private fun sealedType(name: String, definition: JsonObject): TypeSpec {
@@ -197,13 +214,21 @@ private fun resolveType(schema: JsonObject): TypeName {
         return resolveType(concrete.jsonObject).copy(nullable = true)
     }
     return when (schema["type"]?.jsonPrimitive?.contentOrNull) {
-        "number" -> DOUBLE
-        "integer" -> INT
-        "string" -> STRING
-        "boolean" -> BOOLEAN
         "array" -> LIST.parameterizedBy(resolveType(schema.getValue("items").jsonObject))
-        else -> error("vg3 codegen: unsupported schema: $schema")
+        else -> primitiveType(schema)
     }
+}
+
+private fun isScalar(schema: JsonObject): Boolean =
+    schema["type"]?.jsonPrimitive?.contentOrNull in setOf("number", "integer", "string", "boolean")
+
+/** The Kotlin primitive backing a scalar schema type. */
+private fun primitiveType(schema: JsonObject): TypeName = when (schema["type"]?.jsonPrimitive?.contentOrNull) {
+    "number" -> DOUBLE
+    "integer" -> INT
+    "string" -> STRING
+    "boolean" -> BOOLEAN
+    else -> error("vg3 codegen: not a scalar: $schema")
 }
 
 private fun literal(value: JsonPrimitive): String = when {

@@ -5,6 +5,7 @@ import org.hnau.ktcad.ir.Color
 import org.hnau.ktcad.ir.Export
 import org.hnau.ktcad.ir.Model
 import org.hnau.ktcad.ir.Node
+import org.hnau.ktcad.ir.Operand
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,7 +30,7 @@ object Vg3 {
         val arena = Arena()
         val exports = parts.map { part ->
             Export(
-                index = arena.add(part.node),
+                index = Operand(arena.add(part.node)),
                 name = part.name,
                 color = part.color,
             )
