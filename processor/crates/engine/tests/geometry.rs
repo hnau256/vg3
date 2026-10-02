@@ -42,6 +42,14 @@ fn box_has_expected_volume_and_bounds() {
 }
 
 #[test]
+fn offset_grows_the_solid_in_every_direction() {
+    let parts = build("offset.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert!(parts[0].volume() > 1000.0);
+    assert_bounds(&parts[0], [-1.0, -1.0, -1.0, 11.0, 11.0, 11.0]);
+}
+
+#[test]
 fn fuse_of_box_and_sphere_is_a_single_solid() {
     let parts = build("boss.json");
     assert_eq!(parts.len(), 1);

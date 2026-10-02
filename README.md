@@ -244,6 +244,12 @@ loft(sections, ruled)               // default false; секций ≥ 2
 - **Seam-рёбра** (швы поверхностей — артефакт параметризации) **не участвуют**: движок их не обходит
   и не скругляет (OCCT не умеет).
 
+**Offset** — утолщение/утоньшение тела смещением оболочек:
+
+```jsonc
+{ "type": "offset", "target": operand, "distance": Scalar }   // >0 наружу, <0 внутрь
+```
+
 ### Выражения (Rhai)
 
 `expression` — исходник на Rhai; контекст — переменная `edge`:
@@ -278,6 +284,7 @@ loft(sections, ruled)               // default false; секций ≥ 2
 - **Булевы**: `fuse`, `cut`, `common`.
 - **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.
 - **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
+- **Offset**: утолщение/утоньшение тела (`BRepOffsetAPI_MakeOffsetShape`).
 - **Кривые**: `line`, `arc`, `spline`, `helix`.
 - **Экспорт**: STL (бинарный), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
 

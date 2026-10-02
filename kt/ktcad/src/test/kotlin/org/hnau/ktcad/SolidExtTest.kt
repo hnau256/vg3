@@ -47,4 +47,9 @@ class SolidExtTest {
         val op = TransformOp.Mirror(center = org.hnau.ktcad.ir.Point3(0.0, 0.0, 0.0), normal = Normal3(0.0, 0.0, 1.0))
         assertEquals(transform(op, a), a.mirrorXY())
     }
+
+    @Test
+    fun offset_maps_to_the_offset_node() {
+        assertEquals(offset(distance = 2.0, target = a), a.offset(2.0))
+    }
 }

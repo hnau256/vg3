@@ -98,6 +98,8 @@ pub(crate) mod ffi {
 
         fn translate(shape: &Shape, x: f64, y: f64, z: f64) -> Result<UniquePtr<Shape>>;
 
+        fn offset(shape: &Shape, distance: f64) -> Result<UniquePtr<Shape>>;
+
         fn rotate(
             shape: &Shape,
             center_x: f64,

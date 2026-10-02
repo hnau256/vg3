@@ -145,6 +145,8 @@ std::unique_ptr<Shape> common(const Shape& a, const Shape& b);
 
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z);
 
+std::unique_ptr<Shape> offset(const Shape& shape, double distance);
+
 std::unique_ptr<Shape> rotate(
     const Shape& shape,
     double center_x,

@@ -102,6 +102,11 @@ fun Solid.mirror(normal: Normal3, center: Point3 = ORIGIN): Solid =
         target = this,
     )
 
+// --- Offset -----------------------------------------------------------------
+
+/** Grow (positive [distance]) or shrink (negative) the solid by offsetting its shells. */
+fun Solid.offset(distance: Double): Solid = offset(distance = distance, target = this)
+
 private val ORIGIN = Point3(x = 0.0, y = 0.0, z = 0.0)
 private val AXIS_X = Normal3(dx = 1.0, dy = 0.0, dz = 0.0)
 private val AXIS_Y = Normal3(dx = 0.0, dy = 1.0, dz = 0.0)

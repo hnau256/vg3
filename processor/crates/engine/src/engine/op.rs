@@ -60,6 +60,9 @@ impl Evaluate for Node<Part> {
             }),
             Node::Common { parts } => reduce(parts.into_iter(), |a, b| Ok(ffi::common(a, b)?)),
             Node::Transform { target, op } => apply_transform(target, &op),
+            Node::Offset { target, distance } => {
+                make_part(ffi::offset(target.shape(), distance.value())?)
+            }
             Node::Extrude { profile, height } => {
                 let wire = build_profile_wire(&profile)?;
                 make_part(ffi::extrude(&wire, height.value())?)

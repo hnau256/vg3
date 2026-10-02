@@ -71,6 +71,10 @@ pub enum Node<T> {
         target: T,
         op: TransformOp,
     },
+    Offset {
+        target: T,
+        distance: Scalar,
+    },
     Fillet {
         target: T,
         #[serde(default)]
@@ -178,6 +182,10 @@ impl<T: Clone> Node<T> {
             Node::Transform { target, op } => Node::Transform {
                 target: f(target.clone())?,
                 op: op.clone(),
+            },
+            Node::Offset { target, distance } => Node::Offset {
+                target: f(target.clone())?,
+                distance: *distance,
             },
             Node::Fillet {
                 target,

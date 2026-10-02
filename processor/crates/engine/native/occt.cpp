@@ -28,6 +28,7 @@
 #include <GeomAbs_CurveType.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
+#include <BRepOffsetAPI_MakeOffsetShape.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 #include <BRepAdaptor_CompCurve.hxx>
@@ -82,6 +83,7 @@ namespace vg3 {
 namespace {
 
 constexpr double kPointTolerance = 1e-7;
+constexpr double kOffsetTolerance = 1e-3;
 
 [[noreturn]] void rethrow_as_std_error(const Standard_Failure& failure) {
     throw std::runtime_error(failure.GetMessageString());
@@ -270,6 +272,21 @@ std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double 
         transformation.SetTranslation(gp_Vec(x, y, z));
         BRepBuilderAPI_Transform builder(shape.topods(), transformation, true);
         const TopoDS_Shape result = builder.Shape();
+        ensure_valid(result);
+        return std::make_unique<Shape>(result);
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<Shape> offset(const Shape& shape, double distance) {
+    try {
+        BRepOffsetAPI_MakeOffsetShape maker;
+        maker.PerformByJoin(shape.topods(), distance, kOffsetTolerance);
+        if (!maker.IsDone()) {
+            throw std::runtime_error("BRepOffsetAPI_MakeOffsetShape did not complete");
+        }
+        const TopoDS_Shape result = maker.Shape();
         ensure_valid(result);
         return std::make_unique<Shape>(result);
     } catch (const Standard_Failure& failure) {
