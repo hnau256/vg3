@@ -16,6 +16,7 @@ val processorDir = file("../../processor")
 val schemaFile = file("../../scheme/vg3.schema.json")
 val generatedKotlinDir = layout.buildDirectory.dir("generated/vg3/kotlin")
 val vg3Binary = file("../../processor/target/debug/vg3")
+val irPackage = "org.hnau.ktcad.ir"
 
 val generateVg3Schema by tasks.registering(Exec::class) {
     group = "vg3"
@@ -40,7 +41,7 @@ val generateVg3Model by tasks.registering(JavaExec::class) {
     description = "Generate @Serializable Kotlin classes from the IR JSON Schema (build/generated/vg3)."
     classpath = codegen
     mainClass.set("org.hnau.ktcad.gen.MainKt")
-    args(schemaFile.absolutePath, generatedKotlinDir.get().asFile.absolutePath)
+    args(schemaFile.absolutePath, generatedKotlinDir.get().asFile.absolutePath, irPackage)
     dependsOn(generateVg3Schema)
     inputs.file(schemaFile)
     outputs.dir(generatedKotlinDir)

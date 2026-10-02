@@ -24,10 +24,13 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
-private const val SCHEMA_PACKAGE = "org.hnau.ktcad.ir"
+private const val DEFAULT_SCHEMA_PACKAGE = "org.hnau.ktcad.ir"
 private const val ROOT_NAME = "Model"
 private const val REF_PREFIX = "#/\$defs/"
 private const val DISCRIMINATOR = "type"
+
+/** Target package for the generated classes; set from the command line (see [main]). */
+private var schemaPackage = DEFAULT_SCHEMA_PACKAGE
 
 private val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
 private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
@@ -36,9 +39,9 @@ private val JSON_CLASS_DISCRIMINATOR = ClassName("kotlinx.serialization.json", "
 private val LIST = ClassName("kotlin.collections", "List")
 
 /**
- * Generates `kotlinx.serialization` classes (package [SCHEMA_PACKAGE]) from the vg3 IR JSON Schema.
+ * Generates `kotlinx.serialization` classes from the vg3 IR JSON Schema.
  *
- * Usage: `<schema.json> <output-dir>`.
+ * Usage: `<schema.json> <output-dir> [package]`.
  *
  * Mapping (schema -> Kotlin):
  * - `{"type":"object","properties":…}`      -> `@Serializable data class`
@@ -50,7 +53,8 @@ private val LIST = ClassName("kotlin.collections", "List")
  * - non-required properties become optional (schema `default`, or `= null` so the engine applies its own default)
  */
 fun main(args: Array<String>) {
-    require(args.size == 2) { "usage: <schema.json> <output-dir>" }
+    require(args.size in 2..3) { "usage: <schema.json> <output-dir> [package]" }
+    schemaPackage = args.getOrNull(2) ?: DEFAULT_SCHEMA_PACKAGE
     val schema = Json.parseToJsonElement(File(args[0]).readText()).jsonObject
     val definitions = schema.getValue("\$defs").jsonObject
     val outputDir = File(args[1]).apply { mkdirs() }
@@ -73,7 +77,7 @@ private fun buildFile(name: String, definition: JsonObject): FileSpec {
         isScalar(definition) -> valueClass(name, definition)
         else -> error("vg3 codegen: unsupported definition '$name': $definition")
     }
-    return FileSpec.builder(SCHEMA_PACKAGE, name).addType(type).build()
+    return FileSpec.builder(schemaPackage, name).addType(type).build()
 }
 
 /** A named scalar (e.g. `Operand`): a `@JvmInline value class` over its primitive. */
@@ -92,7 +96,7 @@ private fun valueClass(name: String, definition: JsonObject): TypeSpec {
 }
 
 private fun sealedType(name: String, definition: JsonObject): TypeSpec {
-    val parent = ClassName(SCHEMA_PACKAGE, name)
+    val parent = ClassName(schemaPackage, name)
     val builder = TypeSpec.interfaceBuilder(name)
         .addModifiers(KModifier.SEALED)
         .addAnnotation(SERIALIZABLE)
@@ -205,7 +209,7 @@ private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field 
 
 private fun resolveType(schema: JsonObject): TypeName {
     schema["\$ref"]?.let { reference ->
-        return ClassName(SCHEMA_PACKAGE, reference.jsonPrimitive.content.removePrefix(REF_PREFIX))
+        return ClassName(schemaPackage, reference.jsonPrimitive.content.removePrefix(REF_PREFIX))
     }
     schema["anyOf"]?.let { anyOf ->
         val concrete = anyOf.jsonArray.first {

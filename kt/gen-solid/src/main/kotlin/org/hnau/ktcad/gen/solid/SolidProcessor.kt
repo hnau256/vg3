@@ -25,10 +25,15 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-/** FQN of the class whose sealed variants drive the `Solid` generation. */
-const val NODE_NAME = "org.hnau.ktcad.ir.Node"
-private const val OPERAND_NAME = "org.hnau.ktcad.ir.Operand"
 private const val DOMAIN_PACKAGE = "org.hnau.ktcad"
+private const val IR_PACKAGE = "$DOMAIN_PACKAGE.ir"
+private const val NODE_NAME_SHORT = "Node"
+private const val OPERAND_NAME_SHORT = "Operand"
+private const val SOLID_NAME = "Solid"
+
+/** FQN of the class whose sealed variants drive the `Solid` generation. */
+const val NODE_NAME = "$IR_PACKAGE.$NODE_NAME_SHORT"
+private const val OPERAND_NAME = "$IR_PACKAGE.$OPERAND_NAME_SHORT"
 
 /**
  * Generates the reference-based `Solid` domain layer from the generated `ir.Node`.
@@ -92,13 +97,13 @@ class SolidProcessor(
     ): FileSpec {
         val nodeType = node.toClassName()
         val operandType = operand.toClassName()
-        val solidName = ClassName(DOMAIN_PACKAGE, "Solid")
+        val solidName = ClassName(DOMAIN_PACKAGE, SOLID_NAME)
         val operandFn = LambdaTypeName.get(
             parameters = listOf(ParameterSpec.unnamed(solidName)),
             returnType = operandType,
         )
 
-        val builder = FileSpec.builder(DOMAIN_PACKAGE, "Solid")
+        val builder = FileSpec.builder(DOMAIN_PACKAGE, SOLID_NAME)
             .addType(solidSealedType(variants, operand, solidName))
             .addFunction(lowerMapper(variants, operand, nodeType, solidName, operandFn))
         variants.forEach { builder.addFunction(factory(it, operand, solidName)) }
@@ -112,7 +117,7 @@ class SolidProcessor(
         operand: KSClassDeclaration,
         solidName: ClassName,
     ): TypeSpec {
-        val builder = TypeSpec.interfaceBuilder("Solid").addModifiers(KModifier.SEALED)
+        val builder = TypeSpec.interfaceBuilder(SOLID_NAME).addModifiers(KModifier.SEALED)
         variants.forEach { variant ->
             val name = variant.simpleName.asString()
             if (variant.classKind == ClassKind.OBJECT) {
