@@ -22,6 +22,13 @@ pub(super) fn evaluate_fillet(target: Part, kind: FilletKind, radius: &RadiusSpe
                 RadiusSpec::Expression { expression } => {
                     evaluate_expression(&engine, expression, &data, &box_map)?
                 }
+                RadiusSpec::Selected { expression, radius } => {
+                    if evaluate_predicate(&engine, expression, &data, &box_map)? {
+                        radius.value()
+                    } else {
+                        0.0
+                    }
+                }
             };
             values.push(value);
         }
@@ -64,13 +71,7 @@ fn evaluate_expression(
     data: &[f64],
     box_map: &Map,
 ) -> Result<f64> {
-    let mut scope = Scope::new();
-    scope.push_constant("edge", build_edge(data));
-    scope.push_constant("box", box_map.clone());
-    scope.push_constant("X", point(1.0, 0.0, 0.0));
-    scope.push_constant("Y", point(0.0, 1.0, 0.0));
-    scope.push_constant("Z", point(0.0, 0.0, 1.0));
-
+    let mut scope = build_scope(data, box_map);
     let result = engine
         .eval_expression_with_scope::<Dynamic>(&mut scope, expression)
         .map_err(|error| Error::Expression(format!("{expression}: {error}")))?;
@@ -87,6 +88,24 @@ fn evaluate_expression(
         return Err(Error::Expression(format!("{expression}: result is NaN")));
     }
     Ok(value)
+}
+
+/// Evaluates a boolean Rhai predicate (used by [`RadiusSpec::Selected`]).
+fn evaluate_predicate(engine: &Engine, expression: &str, data: &[f64], box_map: &Map) -> Result<bool> {
+    let mut scope = build_scope(data, box_map);
+    engine
+        .eval_expression_with_scope::<bool>(&mut scope, expression)
+        .map_err(|error| Error::Expression(format!("{expression}: {error}")))
+}
+
+fn build_scope(data: &[f64], box_map: &Map) -> Scope<'static> {
+    let mut scope = Scope::new();
+    scope.push_constant("edge", build_edge(data));
+    scope.push_constant("box", box_map.clone());
+    scope.push_constant("X", point(1.0, 0.0, 0.0));
+    scope.push_constant("Y", point(0.0, 1.0, 0.0));
+    scope.push_constant("Z", point(0.0, 0.0, 1.0));
+    scope
 }
 
 // --- Scope construction -----------------------------------------------------

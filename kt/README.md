@@ -108,8 +108,10 @@ fun main() {
   (3D), `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **Построение тел из контуров:** `Profile.extrude(height)`, `Profile.revolve(angle)`,
   `Profile.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
-- **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** — скругление
-  (или `kind = CHAMFER`) постоянным радиусом либо Rhai-выражением на ребро.
+- **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /
+  **`Solid.fillet(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`): постоянным
+  радиусом всем рёбрам, Rhai-выражением на ребро (число), либо булевым предикатом отбора рёбер
+  с постоянным радиусом.
 - **`polyhedron(faces)`** — многогранник из граней; каждая грань — список точек по порядку, общие точки
   (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.

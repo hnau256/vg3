@@ -255,11 +255,14 @@ loft(sections, ruled)               // default false; секций ≥ 2
 
 ```jsonc
 { "type": "fillet", "target": operand, "kind": "fillet",
-  "radius": { "type": "all", "radius": Scalar }
-          | { "type": "expression", "expression": "<Rhai>" } }
+  "radius":
+      { "type": "all",        "radius": Scalar }                       // постоянный радиус всем рёбрам
+    | { "type": "selected",   "expression": "<Rhai bool>", "radius": Scalar } // выбранным рёбрам
+    | { "type": "expression", "expression": "<Rhai>" } }               // радиус по ребру (число)
 ```
 
-- Движок обходит рёбра `target`; для каждого вычисляет значение; `≤ 0` → ребро пропускается.
+- Движок обходит рёбра `target`; `all` даёт всем один радиус; `selected` берёт радиус, если булев
+  предикат истинен; `expression` вычисляет радиус по ребру. `≤ 0` → ребро пропускается.
 - Для multi-solid `Part` применяется к каждому solid'у.
 - **Seam-рёбра** (швы поверхностей — артефакт параметризации) **не участвуют**: движок их не обходит
   и не скругляет (OCCT не умеет).
@@ -322,7 +325,7 @@ IO не регистрируется. Тернарного `? :` нет — `if 
 - **Генерация тел**: `extrude`, `revolve`, `sweep` (`follow`/`rigid`), `loft` (`ruled`).
 - **Булевы**: `bool` (fuse / cut / common).
 - **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.
-- **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
+- **Fillet / chamfer** с `radius: all | selected | expression` (Rhai), пропуск швов.
 - **Offset**: утолщение/утоньшение тела (`BRepOffsetAPI_MakeOffsetShape`).
 - **Кривые**: `line`, `arc`, `spline`, `helix`.
 - **Экспорт**: STL (бинарный), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
@@ -419,8 +422,8 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
     { "type": "cylinder", "radius": 5, "height": 10 },
     { "type": "bool", "kind": "fuse", "arguments": [1], "tools": [2] },
     { "type": "fillet", "kind": "fillet", "target": 3,
-      "radius": { "type": "expression",
-                  "expression": "if is_parallel(edge.direction, Z) { 2.0 } else { 0.0 }" } }
+      "radius": { "type": "selected",
+                  "expression": "is_parallel(edge.direction, Z)", "radius": 2.0 } }
   ],
   "export": [ { "index": 4, "name": "plate", "color": { "r": 0.35, "g": 0.6, "b": 0.95 } } ]
 }

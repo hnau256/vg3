@@ -57,4 +57,17 @@ class BuildExtTest {
             solid.fillet("if edge.is_vertical { 1.0 } else { 0.0 }", FilletKind.CHAMFER),
         )
     }
+
+    @Test
+    fun fillet_with_predicate_and_radius() {
+        val solid = box(10.0, 10.0, 10.0)
+        assertEquals(
+            fillet(
+                kind = FilletKind.FILLET,
+                radius = RadiusSpec.Selected(expression = "true", radius = 1.0),
+                target = solid,
+            ),
+            solid.fillet("true", 1.0),
+        )
+    }
 }

@@ -62,6 +62,16 @@ pub enum BooleanKind {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RadiusSpec {
-    All { radius: Scalar },
-    Expression { expression: String },
+    All {
+        radius: Scalar,
+    },
+    /// A per-edge Rhai expression returning the radius (number) for every edge.
+    Expression {
+        expression: String,
+    },
+    /// A boolean Rhai predicate selecting edges; `radius` is applied to the selected ones.
+    Selected {
+        expression: String,
+        radius: Scalar,
+    },
 }

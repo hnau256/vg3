@@ -33,3 +33,7 @@ fun Solid.fillet(radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
 /** Fillet every edge with a per-edge Rhai [expression] (variable `edge`). */
 fun Solid.fillet(expression: String, kind: FilletKind = FilletKind.FILLET): Solid =
     fillet(kind = kind, radius = RadiusSpec.Expression(expression = expression), target = this)
+
+/** Fillet only the edges selected by a boolean [expression], with a constant [radius]. */
+fun Solid.fillet(expression: String, radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
+    fillet(kind = kind, radius = RadiusSpec.Selected(expression = expression, radius = radius), target = this)

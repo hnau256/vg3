@@ -7,8 +7,9 @@
       "kind": "chamfer",
       "target": 0,
       "radius": {
-        "type": "expression",
-        "expression": "if is_close(edge.min.z, box.max.z) { 2.0 } else { 0.0 }"
+        "type": "selected",
+        "expression": "is_close(edge.min.z, box.max.z)",
+        "radius": 2.0
       }
     }
   ],
