@@ -17,7 +17,7 @@ class ExportSmokeTest {
         output.delete()
 
         Vg3.export(
-            parts = listOf(Part(name = "box", node = box(1.0, 2.0, 3.0))),
+            parts = listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0))),
             format = Format.Stl(output = Output.Single(output.absolutePath)),
         )
 

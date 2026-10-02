@@ -9,7 +9,8 @@ import org.hnau.ktcad.ir.Operand
 import java.util.concurrent.TimeUnit
 
 /**
- * The vg3 frontend: builds the IR (a flat arena of [Node]s) and hands it to the `vg3` binary.
+ * The vg3 frontend: builds the IR (a flat arena of `ir.Node`s) from the [Solid] domain graph and
+ * hands it to the `vg3` binary.
  *
  * Mirrors the CLI: a model (`version`/`parts`/`export`) plus an `export` configuration.
  */
@@ -30,7 +31,7 @@ object Vg3 {
         val arena = Arena()
         val exports = parts.map { part ->
             Export(
-                index = Operand(arena.add(part.node)),
+                index = arena.get(part.solid),
                 name = part.name,
                 color = part.color,
             )
@@ -62,30 +63,28 @@ object Vg3 {
     }
 }
 
-/** A named, optionally colored node to place in the model's `export` list. */
+/** A named, optionally colored solid to place in the model's `export` list. */
 data class Part(
     val name: String,
-    val node: Node,
+    val solid: Solid,
     val color: Color? = null,
 )
 
-/** A `box` primitive: from the origin along `+x`, `+y`, `+z`. */
-fun box(width: Double, length: Double, height: Double): Node =
-    Node.Box(width = width, length = length, height = height)
-
 /**
  * Lowers the reference DAG to the flat arena (FORMAT.md):
- * - every distinct node occupies exactly one position (identity dedup → reuse shares an entry);
+ * - every distinct `Solid` occupies exactly one position (structural `equals` dedup → reuse shares
+ *   an entry), added bottom-up so operands always precede their parents;
  * - operands are indices strictly less than the node's own index (back-references only).
  */
-private class Arena {
-    private val visited = HashMap<Node, Int>()
+class Arena {
+    private val visited = HashMap<Solid, Operand>()
     val nodes = mutableListOf<Node>()
 
-    fun add(node: Node): Int = visited.getOrPut(node) {
-        val index = nodes.size
-        nodes.add(node)
-        index
+    /** The `Operand` of [solid], lowering it (and its children first) into the arena if needed. */
+    fun get(solid: Solid): Operand = visited.getOrPut(solid) {
+        val node = solid.lower(::get)
+        nodes += node
+        Operand(nodes.lastIndex)
     }
 }
 

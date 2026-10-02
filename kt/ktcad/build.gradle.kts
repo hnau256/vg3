@@ -2,12 +2,14 @@ import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.JavaExec
 
 plugins {
+    id(hnau.plugins.ksp.get().pluginId)
     id(hnau.plugins.kotlin.serialization.get().pluginId)
     id(hnau.plugins.hnau.jvm.get().pluginId)
 }
 
 dependencies {
     api(hnau.kotlinx.serialization.json)
+    add("ksp", project(":gen-solid"))
 }
 
 val processorDir = file("../../processor")
@@ -30,7 +32,7 @@ val generateVg3Schema by tasks.registering(Exec::class) {
 val codegen by configurations.creating
 
 dependencies {
-    add(codegen.name, project(":gen"))
+    add(codegen.name, project(":gen-schema"))
 }
 
 val generateVg3Model by tasks.registering(JavaExec::class) {
@@ -51,6 +53,12 @@ kotlin {
 listOf("compileKotlin", "sourcesJar", "kotlinSourcesJar").forEach { taskName ->
     tasks.named(taskName) { dependsOn(generateVg3Model) }
 }
+
+// KSP reads the source set independently of compileKotlin, so it needs the generated `ir` too.
+tasks.matching { it.name == "kspKotlin" }.configureEach { dependsOn(generateVg3Model) }
+
+// Solid is generated for the main source set only; the test set reuses the compiled output.
+tasks.matching { it.name == "kspTestKotlin" }.configureEach { enabled = false }
 
 tasks.named<Test>("test") {
     // Smoke test runs the `vg3` binary; keep the freshly built one on PATH for local runs.
