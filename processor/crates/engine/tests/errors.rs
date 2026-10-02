@@ -61,8 +61,8 @@ fn zero_normal_is_rejected() {
             { "type": "box", "width": 1, "length": 1, "height": 1 },
             { "type": "transform",
               "target": 0,
-              "ops": [ { "type": "rotate", "center": { "x": 0, "y": 0, "z": 0 },
-                         "axis": { "dx": 0, "dy": 0, "dz": 0 }, "angle": 1 } ] }
+              "op": { "type": "rotate", "center": { "x": 0, "y": 0, "z": 0 },
+                      "axis": { "dx": 0, "dy": 0, "dz": 0 }, "angle": 1 } }
         ],
         "export": []
     }"#;

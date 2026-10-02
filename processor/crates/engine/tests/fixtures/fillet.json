@@ -10,16 +10,14 @@
     {
       "type": "transform",
       "target": 0,
-      "ops": [
-        {
-          "type": "translate",
-          "value": {
-            "dx": 0,
-            "dy": 0,
-            "dz": 5
-          }
+      "op": {
+        "type": "translate",
+        "value": {
+          "dx": 0,
+          "dy": 0,
+          "dz": 5
         }
-      ]
+      }
     },
     {
       "type": "cylinder",

@@ -37,7 +37,7 @@ fun Solid.translate(dx: Double, dy: Double, dz: Double): Solid =
 
 /** Translate by a [Vector3]. */
 fun Solid.translate(value: Vector3): Solid =
-    transform(ops = listOf(TransformOp.Translate(value = value)), target = this)
+    transform(op = TransformOp.Translate(value = value), target = this)
 
 fun Solid.right(distance: Double): Solid = translate(distance, 0.0, 0.0)
 
@@ -58,7 +58,7 @@ fun Solid.scale(factor: Double): Solid = scale(factor, factor, factor)
 
 /** Non-uniform scale. */
 fun Solid.scale(x: Double, y: Double, z: Double): Solid =
-    transform(ops = listOf(TransformOp.Scale(x = x, y = y, z = z)), target = this)
+    transform(op = TransformOp.Scale(x = x, y = y, z = z), target = this)
 
 fun Solid.scaleX(factor: Double): Solid = scale(factor, 1.0, 1.0)
 
@@ -74,7 +74,7 @@ fun Solid.rotate(
     angle: Double,
     center: Point3 = ORIGIN,
 ): Solid = transform(
-    ops = listOf(TransformOp.Rotate(center = center, axis = axis, angle = angle)),
+    op = TransformOp.Rotate(center = center, axis = axis, angle = angle),
     target = this,
 )
 
@@ -98,7 +98,7 @@ fun Solid.mirrorYZ(): Solid = mirror(normal = AXIS_X)
 /** Mirror across a plane through `center` with the given `normal`. */
 fun Solid.mirror(normal: Normal3, center: Point3 = ORIGIN): Solid =
     transform(
-        ops = listOf(TransformOp.Mirror(center = center, normal = normal)),
+        op = TransformOp.Mirror(center = center, normal = normal),
         target = this,
     )
 

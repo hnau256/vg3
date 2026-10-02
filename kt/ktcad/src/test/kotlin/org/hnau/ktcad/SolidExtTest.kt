@@ -45,6 +45,6 @@ class SolidExtTest {
     @Test
     fun mirrorXY_is_mirror_about_z_normal() {
         val op = TransformOp.Mirror(center = org.hnau.ktcad.ir.Point3(0.0, 0.0, 0.0), normal = Normal3(0.0, 0.0, 1.0))
-        assertEquals(transform(listOf(op), a), a.mirrorXY())
+        assertEquals(transform(op, a), a.mirrorXY())
     }
 }

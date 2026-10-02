@@ -69,7 +69,7 @@ pub enum Node<T> {
     },
     Transform {
         target: T,
-        ops: Vec<TransformOp>,
+        op: TransformOp,
     },
     Fillet {
         target: T,
@@ -175,9 +175,9 @@ impl<T: Clone> Node<T> {
                     .map(&mut f)
                     .collect::<std::result::Result<_, E>>()?,
             },
-            Node::Transform { target, ops } => Node::Transform {
+            Node::Transform { target, op } => Node::Transform {
                 target: f(target.clone())?,
-                ops: ops.clone(),
+                op: op.clone(),
             },
             Node::Fillet {
                 target,

@@ -16,16 +16,14 @@
     {
       "type": "transform",
       "target": 1,
-      "ops": [
-        {
-          "type": "translate",
-          "value": {
-            "dx": 10,
-            "dy": 0,
-            "dz": 0
-          }
+      "op": {
+        "type": "translate",
+        "value": {
+          "dx": 10,
+          "dy": 0,
+          "dz": 0
         }
-      ]
+      }
     },
     {
       "type": "fuse",

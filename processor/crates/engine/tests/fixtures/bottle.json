@@ -73,16 +73,14 @@
     {
       "type": "transform",
       "target": 2,
-      "ops": [
-        {
-          "type": "translate",
-          "value": {
-            "dx": 0,
-            "dy": 0,
-            "dz": 70
-          }
+      "op": {
+        "type": "translate",
+        "value": {
+          "dx": 0,
+          "dy": 0,
+          "dz": 70
         }
-      ]
+      }
     },
     {
       "type": "sweep",

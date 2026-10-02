@@ -213,7 +213,12 @@ loft(sections, ruled)               // default false; секций ≥ 2
 **Булевы:** `fuse(parts)`, `cut(base, tools)`, `common(parts)` — пустой список → ошибка; пустой
 результат (0 solid) допустим.
 
-**Трансформации:** `transform(target, ops)` применяет `ops` слева-направо:
+**Трансформации:** `transform(target, op)` применяет **одну** трансформацию к `target`; композиция — вложенностью узлов:
+
+```jsonc
+{ "type": "transform", "target": operand, "op": {
+    "type": "translate", "value": Vector3 } }
+```
 
 ```jsonc
 { "type": "translate", "value": Vector3 }
@@ -222,6 +227,9 @@ loft(sections, ruled)               // default false; секций ≥ 2
 { "type": "scale",     "x": Scalar, "y": Scalar, "z": Scalar }   // НЕ Vector3
 { "type": "matrix",    "m": [ Scalar × 16 ] }                    // ROW-MAJOR 4×4
 ```
+
+Узел несёт **один** `op` (не список): несколько трансформаций выражаются вложенными `transform`-узлами,
+а не альтернативным списком — «одна вещь — один способ». Список `ops` в v1 не существует.
 
 **Fillet / chamfer** — один узел, `kind: "fillet" | "chamfer"`:
 
@@ -361,7 +369,7 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
   "parts": [
     { "type": "box", "width": 20, "length": 20, "height": 5 },
     { "type": "transform", "target": 0,
-      "ops": [ { "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } } ] },
+      "op": { "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } } },
     { "type": "cylinder", "radius": 5, "height": 10 },
     { "type": "fuse", "parts": [1, 2] },
     { "type": "fillet", "kind": "fillet", "target": 3,
