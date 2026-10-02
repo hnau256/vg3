@@ -23,7 +23,7 @@ pub struct Export {
     feature = "schema",
     schemars(
         title = "vg3 IR model",
-        description = "Canonical intermediate representation (FORMAT.md, version 1)."
+        description = "Canonical intermediate representation (version 1)."
     )
 )]
 #[serde(deny_unknown_fields)]

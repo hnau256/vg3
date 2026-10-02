@@ -19,7 +19,7 @@ object Vg3 {
     private const val VERSION = 1
 
     /**
-     * Lowers [parts] to the flat arena (FORMAT.md), serializes the model and export config, and
+     * Lowers [parts] to the flat arena, serializes the model and export config, and
      * runs `vg3`.
      *
      * `vg3` must be on `PATH` (override with the `VG3_BIN` environment variable).
@@ -71,7 +71,7 @@ data class Part(
 )
 
 /**
- * Lowers the reference DAG to the flat arena (FORMAT.md):
+ * Lowers the reference DAG to the flat arena:
  * - every distinct `Solid` occupies exactly one position (structural `equals` dedup → reuse shares
  *   an entry), added bottom-up so operands always precede their parents;
  * - operands are indices strictly less than the node's own index (back-references only).

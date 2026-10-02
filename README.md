@@ -1,10 +1,14 @@
 # vg3
 
-*vector graphics 3* — инструмент для генерации твёрдотельных 3D-моделей кодом и их экспорта в STEP/STL.
+*vector graphics 3* — инструмент для генерации твёрдотельных 3D-моделей кодом и их экспорта в STL/PNG
+(STEP — в планах).
 
 `vg3` — тонкая обёртка над [OpenCASCADE Technology (OCCT)](https://dev.opencascade.org/): модель
 описывается типизированным JSON (IR), лёгкий нативный движок строит OCCT-шейпы и экспортирует их.
-Фронтенд (на Kotlin) генерирует IR; геометрия считается в движке.
+Фронтенд (Kotlin) генерирует IR; геометрия считается в движке.
+
+Этот README — о **ядре (Rust-движок + CLI)**. Kotlin-фронтенд (`kt/`) и его использование — в
+[kt/README.md](kt/README.md).
 
 ## Зачем
 
@@ -15,182 +19,57 @@
 - **Строгость** — типизированный IR; невозможные состояния невыразимы; канонизация — в типах.
 - **Минимализм и предсказуемость** — маленький инструмент, который делает одно дело хорошо.
 
-## Архитектура
+## Конвейер
 
-`vg3` — это **библиотека + лёгкая CLI-обёртка**. Вся логика живёт в библиотеке; CLI лишь оркестрирует
-три явных шага и не содержит собственной геометрии.
+Три явных шага; CLI лишь оркестрирует их и не содержит собственной геометрии.
 
 ```
-Kotlin-фронтенд (типизированный DSL)
-        │  сериализация
-        ▼
-   JSON IR (см. FORMAT.md)
-        │
-        │  ┌──────────────────────────── конвейер vg3 ────────────────────────────┐
-        └─▶│  1. parse       2. evaluate              3. export                     │
-           │  str -> Model   Model -> Vec<Output>     Vec<Output> -> bytes        │
-           └───────────────────────────────────────────────────────────────────────┘
-        │
-        ▼
-   STL / PNG (STEP — в планах)
+Kotlin-фронтенд (типизированный DSL) ──serialize──▶ JSON IR
+                                                     │
+        ┌──────────────────── конвейер vg3 ────────────────────┐
+        │  1. parse       2. evaluate            3. export      │
+        │  str -> Model   Model -> Vec<Output>   Output -> файл │
+        └───────────────────────────────────────────────────────┘
+                                                     │
+                                                     ▼
+                                                STL / PNG
 ```
 
-### Три шага (единый поток)
-
-| Шаг | Сигнатура | Модуль | Что делает |
-|---|---|---|---|
-| 1. parse | `parse(&str) -> Result<Model>` | `model` | JSON → доменное дерево; канонизация в типах |
-| 2. evaluate | `evaluate(&Model, &mut Cache) -> Result<Vec<Output>>` | `engine` | обход дерева, вызовы OCCT, построение шейпов |
-| 3. export | `export(&[Output], Format, &Path, &ExportOptions) -> Result<()>` | `export` | STL / рендер PNG |
+| Шаг | Сигнатура | Что делает |
+|---|---|---|
+| 1. parse | `vg3_model::parse(&str) -> Result<Model>` | JSON → доменное дерево; канонизация в типах |
+| 2. evaluate | `vg3_engine::evaluate(&Model, &mut Cache) -> Result<Vec<Output>>` | обход дерева, вызовы OCCT, построение шейпов |
+| 3. export | `ExportConfig::export(&[Output])` | STL / рендер PNG |
 
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируется
-то, что перечислено в `export` (в этом порядке): `Output` — это построенный `Part` вместе с `name` и
-опциональным `color`. Экспортируемый узел может быть и промежуточным.
+то, что перечислено в `export` (в этом порядке). Экспортируемый узел может быть и промежуточным.
 
-### Крейты (Cargo workspace)
+## Установка и сборка
 
-Проект разбит на **4 независимых крейта** — в Rust это workspace-пакеты (аналог Gradle-проектов).
-Зависимости объявлены в `Cargo.toml`, и **компилятор физически не даёт** кэшу сослаться на доменные типы:
-
-```
-# репозиторий vg3
-processor/            # Rust-движок: самостоятельный Cargo workspace
-  Cargo.toml
-  Cargo.lock
-  crates/
-    cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk/Layered. Зависит только от blake3.
-    model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
-    engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
-                           Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
-    cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
-    schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).
-scheme/               # сюда vg3-schema пишет vg3.schema.json (файл не коммитится)
-kt/                   # Kotlin-фронтенд (в разработке)
-```
-
-Граф зависимостей (`cargo tree`): `vg3-cache -> {}`, `vg3-model -> {}`,
-`vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`, `vg3-schema -> {model}`. То есть
-`vg3-cache` **не может** упомянуть `Node`/`Part` — это гарантируется, а не соглашение. Кэш выносится в
-отдельную библиотеку как есть.
-
-### Доменная модель (`model`)
-
-Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах). Это осознанный
-компромисс: меньше слоёв, быстрее старт.
-
-- `Model { version, parts: Vec<Node>, export: Vec<Export> }` — верхний уровень; `parts` — плоская
-  **арена** (все узлы в топологическом порядке, ссылки — только назад); `export` — явный список
-  выводимого (`index`/`name`/`color`).
-- `Node` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
-- Операнд — всегда `usize`: индекс назад в `parts`; inline-объектов нет.
-- `Profile`/`Path` и `Curve2`/`Curve3` (`line`/`arc`/`spline`).
-- Канонические скаляры/геометрия: `Scalar`, `Angle`, `Point2`, `Point3`, `Vector3`, `Normal3`.
-
-### Схема IR (`scheme/`)
-
-`scheme/vg3.schema.json` — JSON Schema (draft 2020-12) для IR, **генерируется из типов `model`**
-(`schemars`; те же serde-атрибуты, что и десериализация) — не пишется руками и не расходится с
-форматом. Дерево — `oneOf` по `type` (`const`-дискриминатор), структуры — `additionalProperties:false`,
-дефолты (`right_handed`, `ruled`) сохранены, операнды — целые `usize`.
-
-Файл — **вычисляемый артефакт**, в git не хранится (`.gitignore`; папка `scheme/` остаётся пустой через
-`.gitkeep`). Генерация (из `processor/`):
+Требуется OCCT (например, `brew install opencascade`) и Rust toolchain. Если OCCT не в стандартном
+месте — задать `OCCT_DIR`.
 
 ```sh
-cargo run -p vg3-schema            # -> scheme/vg3.schema.json
+cd processor
+cargo build                          # бинарь: processor/target/debug/vg3
+cargo test
 ```
 
-Gradle-сборка (этап 3, `kt/`) сама запускает `vg3-schema` и забирает файл оттуда, поэтому схема и
-Kotlin-классы всегда строятся из одного ревиза Rust-модели и не могут разойтись. Схема — контракт, но
-**не** enforcement инвариантов: конечность `Scalar`, единичность `Normal3` выражаются только в типах,
-а не в JSON Schema.
+Запуск:
 
-### Канонизация — в типах
+```sh
+vg3 --model-file model.json \
+    --export-config-json '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }'
 
-Канонизация выполняется **при десериализации, в самих типах** (`TryFrom`/`Deserialize`), а не отдельным
-проходом по дереву. После `parse` дерево всегда каноническое.
-
-- `Scalar` — конечное число, `−0 → +0`.
-- `Angle` — конечное число, `−0 → +0`; **не** приводится mod 2π (иначе полный оборот `revolve` на 2π
-  схлопнулся бы в 0).
-- `Normal3` — нормируется в единичный, знак **сохраняется**, нулевой вектор → ошибка.
-- `Point2/3`, `Vector3` — компоненты суть `Scalar`.
-
-Все типы реализуют `Hash` по каноническому значению — из этого строится Merkle-ключ кэша (см. «Кэш»).
-
-### OCCT-процессор (`engine`)
-
-`evaluate`:
-
-1. **Валидирует ссылки** по всей арене (один `try_map`): каждый операнд — `index < current`.
-   Проверяются все узлы, а не только экспортируемые.
-2. **Merkle-проход**: ключ узла — `H(версия ‖ узел ‖ ключи операндов…)`, bottom-up (ссылки назад ⇒
-   ключи операндов уже готовы). Структуру обходит тот же `try_map` (`U = Key`).
-3. **Строит корни** (`build`): операнды берутся из кэша по ключу или строятся рекурсивно, затем
-   `Node<Part>::evaluate` применяет операцию. Результат кладётся в кэш.
-4. После **каждой** операции OCCT — проверка: `IsDone()` и валидность (`BRepCheck_Analyzer`), а также
-   инвариант **«`Part` состоит только из `Solid`»** (`is_solids_only`). При проблеме — явная ошибка.
-5. Результат **каждого** узла нормализуется `unify` (`ShapeUpgrade_UnifySameDomain`): грани на одной
-   поверхности и рёбра на одной кривой сливаются. Solid не меняется, но BRep каноничен — в частности,
-   `fillet`/`chamfer` видят целые рёбра, а не нарезанные булевыми куски.
-
-`Part` — построенная сущность (`Rc` над нативным шейпом; дешёвый клон — для переиспользования и кэша).
-Умеет `solid_count()`, `face_count()`, `volume()`, `bounding_box()` (используется в тестах). Не путать с
-IR-узлом `Node` (описанием).
-
-### Кэш
-
-**Трейт `Cache<K, V>`** (`src/cache.rs`): `get`/`put` + provided `wrap_with`; плюс свободная функция
-`get_or_put(cache, key, compute)` — «посчитать и положить», она же несёт поток вычисления. Трейт
-объектно-безопасен (`get`/`put` работают и на `dyn`). Реализации — `Noop`,
-`Memory<K, V>` и `store::Disk<K, V, C>` (файлы). Склейка: `back.wrap_with(front)` — чтение
-`front`→`back`, запись в оба (CLI: `disk.wrap_with(memory)`).
-
-**Кэш не знает домена** и выносится в отдельную библиотеку. `Disk` работает с **байтами**: значения
-превращает **`Codec<T>`** — это и есть «iso» (`encode`/`decode`, пара (де)сериализаций одним объектом;
-в std готового нет — есть только трейды-обёртки вроде `monocle`, но здесь достаточно своего пары
-методов). Ключ лишь отдаёт байты для имени файла (`AsRef<[u8]>`).
-
-**Домен живёт в `engine`**: `BrepCodec: Codec<Part>` (BREP через нативные потоки `BRepTools`) и
-Merkle-обход узла (`key_of`, знает `Node`). Ключ — `Fingerprinter::of(value)` (generic BLAKE3);
-версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался при смене семантики.
-
-`BrepCodec` **публичен**, поэтому кэш собирается снаружи, и движку передаётся уже готовый кэш:
-
-```rust
-let cache = Disk::new(dir, BrepCodec).wrap_with(Memory::default()); // или Memory::default()
-let outputs = vg3_engine::evaluate(&model, &mut cache)?;
+# модель из stdin, без временных файлов:
+vg3 --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "out.png" } }' < model.json
 ```
 
-Так (де)сериализация остаётся в движке, кэш — просто носитель, а `evaluate` не знает ни про диск,
-ни про BREP-кодек.
+## CLI
 
-### Нативный слой (`native` + `sys`)
-
-- `sys.rs` — `cxx::bridge`: объявления функций и opaque-типы (`Shape`, `WireBuilder`, `CompoundBuilder`,
-  `LoftBuilder`). Приватный, наружу не торчит.
-- `native/occt.{h,cpp}` — C++-слой, **по одной функции на операцию OCCT**
-  (`BRepPrimAPI_*`, `BRepAlgoAPI_*`, `BRepPrimAPI_MakePrism/MakeRevol`, `BRepOffsetAPI_MakePipeShell`,
-  `BRepOffsetAPI_ThruSections`, `BRepFilletAPI_MakeFillet/MakeChamfer`, `BRepBuilderAPI_*`, `StlAPI_Writer`).
-- Логика — в OCCT; C++-слой транслирует Rust-вызовы в OCCT и конвертирует ошибки в исключения, которые
-  cxx превращает в `Result`.
-- Сборка (`build.rs`) линкует OCCT (путь из `OCCT_DIR` или Homebrew) и компилирует мост.
-
-### Выражения (Rhai)
-
-Радиус `fillet` может быть выражением на **Rhai** с переменной `edge` (`length`, `curve_type`,
-`is_vertical`, `is_horizontal`, `direction`, `radius`, `start`, `end`). Векторы/точки — объекты с полями.
-Лимит `max_operations` = 10 000, IO не регистрируется. Результат — число; `≤ 0` → ребро пропускается;
-не число / NaN → ошибка.
-
-**Seam-рёбра не участвуют**: шов поверхности (артефакт параметризации) не попадает в контекст и не
-скругляется (OCCT не умеет скруглять швы).
-
-### CLI (`main`)
-
-Три входа — IR‑модель, **конфиг экспорта** (обязателен) и необязательный **конфиг работы**. Каждый
+Три входа — IR-модель, **конфиг экспорта** (обязателен) и необязательный **конфиг работы**. Каждый
 задаётся либо файлом, либо inline-JSON; `-` как путь означает stdin, а модель без `--model*` читается
-из stdin (пайп из фронтенда без временных файлов):
+из stdin.
 
 ```
 vg3 [--model-file <PATH> | --model-json <JSON>]
@@ -198,26 +77,10 @@ vg3 [--model-file <PATH> | --model-json <JSON>]
     [--run-config-file <PATH> | --run-config-json <JSON>]
 ```
 
-```sh
-vg3 --model-file bottle.json --export-config-file export.json
-vg3 --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "bottle.png" } }' < bottle.json
-```
-
-`main`:
-
-```rust
-let model = vg3::model::parse(&model_source)?;              // 1. str   -> Model
-let run   = RunConfig::from_json(&run_source)?;             //     конфиг работы
-let outputs = vg3::engine::evaluate(&model, &mut cache)?;   // 2. Model -> Vec<Output>
-let config = ExportConfig::from_json(&export_source)?;      //     конфиг экспорта
-config.export(&outputs)?;                                   // 3. Outputs -> файлы
-```
-
 ### Конфиг экспорта
 
-Размеченное объединение по `format`; у каждого формата свои параметры. Раскладка вывода — общий для
-всех форматов объект `output`. Десериализуется типизированно (канонизация через `Scalar`, лишние
-поля — ошибка).
+Размеченное объединение по `format`; раскладка вывода — общий для всех форматов объект `output`.
+Десериализуется типизированно (канонизация через `Scalar`, лишние поля — ошибка).
 
 ```jsonc
 { "format": "stl", "output": { "type": "single", "filename": "out.stl" }, "tolerance": 0.1 }
@@ -238,9 +101,8 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 ### Конфиг работы
 
 Необязательный третий вход (`--run-config-file` / `--run-config-json`) — как запускать (сейчас:
-дисковый кэш). По умолчанию **включён** и пишет в
-системную папку кэша (`~/Library/Caches/vg3` на macOS, `~/.cache/vg3` на Linux, `%LOCALAPPDATA%\vg3`
-на Windows — не в `~`).
+дисковый кэш). По умолчанию **включён** и пишет в системную папку кэша (`~/Library/Caches/vg3` на macOS,
+`~/.cache/vg3` на Linux, `%LOCALAPPDATA%\vg3` на Windows — не в `~`).
 
 ```jsonc
 {}                                          // по умолчанию: диск включён, системная папка
@@ -250,83 +112,271 @@ config.export(&outputs)?;                                   // 3. Outputs -> ф�
 
 Приоритет папки: `cache.dir` → `VG3_CACHE_DIR` → системная папка.
 
+## Формат IR (структура)
+
+Структура IR задаётся **генерируемой JSON Schema** — единственным источником правды:
+
+```sh
+cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
+```
+
+Схема выводится из Rust-типов `vg3-model` (`schemars`, те же serde-атрибуты, что и десериализация),
+поэтому не может разойтись с форматом. Дерево — `oneOf` по `type` (`const`-дискриминатор), структуры —
+`additionalProperties: false`, дефолты (`right_handed`, `ruled`) сохранены, операнды — целые индексы.
+Файл — вычисляемый артефакт, в git не хранится.
+
+Дальше в этом README — **семантика**, которую схема не выражает.
+
+### Верхний уровень
+
+`{ "version": 1, "parts": [ ... ], "export": [ ... ] }`:
+
+- `version` — целое; текущее `1`.
+- `parts` — **плоская арена**: список всех узлов в топологическом порядке (узел после тех, на которые
+  ссылается).
+- `export` — **явный список** экспортируемого (`index`/`name`/`color`), порядок = порядок вывода.
+  Что не указано в `export`, не экспортируется. Промежуточный узел — валидная цель экспорта.
+
+**Ссылки (operand)** — всегда целое число: индекс **назад** в `parts` (`index < current`), inline-объектов
+нет. Ацикличность гарантирована по построению; `index >= current` — ошибка.
+
+### Базовые типы и канонизация
+
+Канонизация выполняется **при десериализации, в типах** (`try_from`), **не проходом**; после `parse`
+дерево всегда каноническое.
+
+| Тип | JSON | Канонизация |
+|---|---|---|
+| `Scalar` | число (`f64`) | конечное; `−0 → +0` |
+| `Angle` | число (`f64`) | конечное; `−0 → +0`; **не** mod 2π |
+| `Point2` | `{ "x", "y" }` | компоненты — `Scalar` |
+| `Point3` | `{ "x", "y", "z" }` | компоненты — `Scalar` |
+| `Vector3` | `{ "dx", "dy", "dz" }` | компоненты — `Scalar`; **не** нормируется (сдвиг) |
+| `Normal3` | `{ "dx", "dy", "dz" }` | **единичный**, знак **сохранён**; нулевой → ошибка |
+
+`Normal3` используется и для оси `rotate`, и для нормали `mirror`. Знак оси важен, поэтому `Normal3` его
+не канонизирует. `Angle` **не** приводится mod 2π: иначе полный оборот (`revolve` на 2π) схлопнулся бы
+в 0. Следствия (избыточность кэша, не ошибка): `rotate` на `θ` и `θ+2π` — разные ключи; `mirror` с `n`
+и `−n` — разные формулы.
+
+Сахар (`mirrorXY`, `rotateX`, `circle`, …) существует **только в DSL** и разворачивается в канонические
+формы; в JSON не встречается.
+
+### Кривые и контуры
+
+```jsonc
+// Curve2 (Point2) / Curve3 (Point3)
+{ "type": "line",   "to": Point }
+{ "type": "arc",    "via": Point, "to": Point }   // дуга через 3 точки: start(=prev), via, to
+{ "type": "spline", "points": [ Point, ... ] }    // интерполяция
+// Curve3 only — винтовая линия вокруг +Z через начало:
+{ "type": "helix", "pitch": Scalar, "height": Scalar, "right_handed": true }
+
+Profile = { "start": Point2, "edges": [ Curve2... ] }
+Path    = { "start": Point3, "edges": [ Curve3... ] }
+```
+
+- `arc`/`spline` начинаются в конце предыдущего ребра (или в `start`).
+- `helix` начинается в предыдущей точке (радиус/фаза оттуда): число витков `height / pitch`.
+- **`Profile` авто-замыкается всегда**; **`Path` — только как секция `loft`**.
+- Круг — **двумя `arc`** (`circle` в JSON запрещён; в DSL — сахар).
+- Нулевое ребро / самопересечение / незамкнутый контур → ошибка.
+
+### Операции
+
+**Примитивы** (каноническая ориентация; размещение — только `transform`):
+
+```jsonc
+box(width, length, height)          // угол в начале, +октант
+sphere(radius)                      // центр в начале
+cylinder(radius, height)            // основание в начале, ось +Z
+cone(radius_bottom, radius_top, height)
+torus(major_radius, minor_radius)   // центр в начале, пл. XY
+wedge(width, length, height, top_width)
+halfspace                           // бесконечный solid z ≤ 0; инструмент для cut
+```
+
+**Генерация тел:**
+
+```jsonc
+extrude(profile, height)            // из XY вдоль +Z; height > 0
+revolve(profile, angle)             // вокруг оси Y; профиль по одну сторону
+sweep(profile, path, mode)          // mode: "follow" (default) | "rigid"
+loft(sections, ruled)               // default false; секций ≥ 2
+```
+
+- `revolve`: профиль не пересекает ось Y, иначе ошибка.
+- `sweep`: профиль ставится в начало спины перпендикулярно касательной; `follow` — поворот по спине
+  (Frenet), `rigid` — жёсткий перенос. Вдоль `helix` это даёт резьбу.
+- `loft`: секции авто-замыкаются; проверяется совместимость (число/порядок рёбер).
+
+**Булевы:** `fuse(parts)`, `cut(base, tools)`, `common(parts)` — пустой список → ошибка; пустой
+результат (0 solid) допустим.
+
+**Трансформации:** `transform(target, ops)` применяет `ops` слева-направо:
+
+```jsonc
+{ "type": "translate", "value": Vector3 }
+{ "type": "rotate",    "center": Point3, "axis": Normal3, "angle": Angle }
+{ "type": "mirror",    "center": Point3, "normal": Normal3 }
+{ "type": "scale",     "x": Scalar, "y": Scalar, "z": Scalar }   // НЕ Vector3
+{ "type": "matrix",    "m": [ Scalar × 16 ] }                    // ROW-MAJOR 4×4
+```
+
+**Fillet / chamfer** — один узел, `kind: "fillet" | "chamfer"`:
+
+```jsonc
+{ "type": "fillet", "target": operand, "kind": "fillet",
+  "radius": { "type": "all", "radius": Scalar }
+          | { "type": "expression", "expression": "<Rhai>" } }
+```
+
+- Движок обходит рёбра `target`; для каждого вычисляет значение; `≤ 0` → ребро пропускается.
+- Для multi-solid `Part` применяется к каждому solid'у.
+- **Seam-рёбра** (швы поверхностей — артефакт параметризации) **не участвуют**: движок их не обходит
+  и не скругляет (OCCT не умеет).
+
+### Выражения (Rhai)
+
+`expression` — исходник на Rhai; контекст — переменная `edge`:
+
+| Свойство | Тип | Смысл |
+|---|---|---|
+| `edge.length` | `f64` | длина ребра |
+| `edge.curve_type` | `string` | `"line"` \| `"arc"` \| `"spline"` |
+| `edge.is_vertical` | `bool` | параллельно оси Z |
+| `edge.is_horizontal` | `bool` | лежит в плоскости XY |
+| `edge.direction` | `Normal3` | направление (для line) / касательная |
+| `edge.radius` | `f64` | радиус дуги; иначе 0 |
+| `edge.start`, `edge.end` | `Point3` | начало / конец |
+
+Результат — число; `≤ 0` → пропуск; не число / NaN → ошибка. Лимит `max_operations` = 10 000; IO не
+регистрируется. Тернарного `? :` нет — `if cond { a } else { b }`. Seam-рёбра в контекст не попадают.
+
+### Общие правила обработки
+
+- Ссылки — только назад; канонизация — в типах; сахар — только в DSL; одна вещь — один способ.
+- **Проверяем всё и падаем рано**: после каждой операции OCCT — `IsDone()` и валидность
+  (`BRepCheck_Analyzer`); проблема → явная ошибка с контекстом.
+- **После каждого узла — `unify`** (`ShapeUpgrade_UnifySameDomain`): грани на одной поверхности и рёбра
+  на одной кривой сливаются. Геометрия не меняется, но BRep каноничен — в частности, `fillet` видит
+  целые рёбра, а не нарезанные булевыми куски.
+- Допуски — OCCT-дефолты; параметры экспорта — в конфиге экспорта, не в модели.
+
 ## Реализовано
 
-- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace` (полупространство
-  `z ≤ 0`, инструмент для `cut`).
-- **Генерация тел**: `extrude`, `revolve` (ось Y, полный оборот = 2π), `sweep` (`follow`/`rigid`),
-  `loft` (`ruled`).
+- **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`.
+- **Генерация тел**: `extrude`, `revolve`, `sweep` (`follow`/`rigid`), `loft` (`ruled`).
 - **Булевы**: `fuse`, `cut`, `common`.
-- **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix` (4×4 row-major).
+- **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.
 - **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
-- **Кривые**: `line`, `arc` (через 3 точки), `spline` (интерполяция), `helix` (точная винтовая линия —
-  pcurve на цилиндре + `BRepLib::BuildCurves3d`, по ребру на виток).
-- **Экспорт**: STL (бинарный), PNG (рендер: триангуляция из OCCT + собственный z-буфер-растеризатор,
-  без OpenGL — работает headless; цвет каждой части из `export`, отсутствие цвета — дефолтный).
+- **Кривые**: `line`, `arc`, `spline`, `helix`.
+- **Экспорт**: STL (бинарный), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
 
-### Резьба
+Интеграционные проверки: бутылка из туториала OCCT (`bottle.json`), метрическая резьба
+(`thread.json` — `sweep` трапеции по `helix`), «золотые» тесты по геометрическим свойствам.
 
-`thread.json` — **настоящая метрическая резьба** (M8, шаг 1.25): цилиндр + `sweep` трапециевидного
-профиля по `helix`. Свип ставит профиль в начало спины (профиль X — радиаль, Y — вдоль оси),
-`mode: follow` (Frenet). Тест `helical_thread_adds_a_ridge_to_the_cylinder` проверяет, что тело —
-один solid с объёмом «цилиндр + гребень». (Круговая резьба — тем же способом с круглым профилем.)
+## Архитектура
 
-### Интеграционные проверки
+### Крейты (Cargo workspace в `processor/`)
 
-- **Бутылка из туториала OCCT** (`bottle.json`): скруглённый профиль → `extrude` → `fillet` вертикальных
-  рёбер (r=2.5) → горлышко-цилиндр (r=7.5, h=7) с **резьбой** (`sweep` трапеции по `helix`) → `fuse`.
-  Тест `opencascade_bottle_builds` (число solid'ов, bbox, объём). Hollow (`shell`) вне v1 (см. §7 FORMAT.md).
-- **Резьба** — см. выше.
+```
+processor/            # самостоятельный Cargo workspace
+  crates/
+    cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk. Зависит только от blake3.
+    model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
+    engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/PNG.
+                           Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
+    cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
+    schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).
+```
+
+Граф: `vg3-cache -> {}`, `vg3-model -> {}`, `vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`,
+`vg3-schema -> {model}`. То есть `vg3-cache` **не может** упомянуть `Node`/`Part` — это гарантируется
+компилятором, а не соглашением.
+
+### Доменная модель (`model`)
+
+Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах):
+
+- `Model { version, parts: Vec<Node>, export: Vec<Export> }` — верхний уровень.
+- `Node` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
+- Операнд — всегда `usize` (индекс назад).
+- `Profile`/`Path`, `Curve2`/`Curve3`.
+- Канонические значения: `Scalar`, `Angle`, `Point2/3`, `Vector3`, `Normal3`.
+
+### OCCT-процессор (`engine`)
+
+`evaluate`:
+
+1. **Валидирует ссылки** по всей арене (один `try_map`): каждый операнд — `index < current`.
+2. **Merkle-проход**: ключ узла — `H(версия ‖ узел ‖ ключи операндов…)`, bottom-up.
+3. **Строит корни**: операнды берутся из кэша по ключу или строятся рекурсивно, затем
+   `Node<Part>::evaluate` применяет операцию; результат кладётся в кэш.
+4. После **каждой** операции — `IsDone()`, `BRepCheck_Analyzer`, инвариант «только `Solid`».
+5. Результат каждого узла нормализуется `unify`.
+
+`Part` — построенная сущность (`Rc` над нативным шейпом; дешёвый клон). Умеет `solid_count()`,
+`face_count()`, `volume()`, `bounding_box()`. Не путать с IR-узлом `Node` (описанием).
+
+### Кэш
+
+**Трейт `Cache<K, V>`**: `get`/`put` + provided `wrap_with`; свободная функция `get_or_put(cache, key,
+compute)`. Объектно-безопасен. Реализации — `Noop`, `Memory<K, V>` и `store::Disk<K, V, C>`. Склейка:
+`back.wrap_with(front)` (CLI: `disk.wrap_with(memory)`).
+
+Кэш **не знает домена**. `Disk` работает с байтами; значения превращает **`Codec<T>`** (`encode`/`decode`).
+Домен живёт в `engine`: `BrepCodec: Codec<Part>` (BREP через `BRepTools`) и Merkle-обход (`key_of`).
+Ключ — `Fingerprinter::of(value)` (BLAKE3); версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался
+при смене семантики.
+
+`BrepCodec` **публичен**, поэтому кэш собирается снаружи:
+
+```rust
+let cache = Disk::new(dir, BrepCodec).wrap_with(Memory::default());
+let outputs = vg3_engine::evaluate(&model, &mut cache)?;
+```
+
+### Нативный слой (`native` + `sys`)
+
+- `sys.rs` — `cxx::bridge`: объявления и opaque-типы (`Shape`, `WireBuilder`, …). Приватный.
+- `native/occt.{h,cpp}` — C++-слой, **по одной функции на операцию OCCT** (`BRepPrimAPI_*`,
+  `BRepAlgoAPI_*`, `BRepFilletAPI_*`, `BRepOffsetAPI_*`, `BRepBuilderAPI_*`, `StlAPI_Writer`).
+- Сборка (`build.rs`) линкует OCCT (`OCCT_DIR` или Homebrew) и компилирует мост.
 
 ### Просмотр
 
-`vg3 --model-file model.json --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "model.png" } }'` — рендер в PNG
-(ортопроекция, z-буфер, плоскостное затенение). Триангуляцию даёт OCCT, рисует собственный
-растеризатор — без OpenGL, работает headless. PNG собирается встроенным энкодером (без зависимостей).
+`vg3 --model-file model.json --export-config-json '{ "format": "png", "output": { "type": "single", "filename": "model.png" } }'`
+— рендер в PNG (ортопроекция, z-буфер, плоскостное затенение), без OpenGL, headless.
 
 `tools/render_stl.py <file.stl> <out.png>` — то же для произвольного STL (dev-утилита).
 
-## Решения (зафиксировано)
+## Пример IR
 
-- **`Angle` не mod 2π** — иначе полный оборот невыразим. Цена: `rotate` на `θ` и `θ+2π` — разные ключи
-  кэша при одинаковом результате (избыточность, не ошибка).
-- **Rhai без `? :`** — тернарного оператора нет; в каноне используется `if cond { a } else { b }`.
-- **Швы пропускаются** — seam-рёбра не видны в выражениях и не скругляются.
-- **Один файл на все экспортируемые `Part`** — STL пишется как единый soup.
-- **STL сейчас, STEP позже** — схема STEP (AP214/…) станет CLI-параметром.
-- **Кэш — трейт `Cache`** (Noop/Memory/Disk + `wrap_with`), движок принимает его параметром.
-  Merkle-ключ (BLAKE3 + версия) — деталь `get_or_evaluate`. Диск — opt-in через `VG3_CACHE_DIR`.
+Пластина с бобышкой, скруглённая по вертикальным рёбрам (плоская арена; экспортируется узел `4`):
 
-## Принципы
-
-- **Инструмент, а не фреймворк.** Не решаем за пользователя, что для него хорошо; не диктуем, как
-  им пользоваться; не пытаемся быть субъектом. Только предсказуемый инструмент.
-- **Unix-way.** Маленькая программа, которая хорошо делает своё дело.
-- **Предсказуемость.** Явные ошибки, никаких тихих деградаций. Каждая операция проверяется — статус
-  выполнения (`IsDone()`) и валидность результата (`BRepCheck_Analyzer`). Проблему выявляем **как можно
-  раньше** и падаем громко, а не получаем молча неверный результат.
-- **OCCT-идиоматичность.** Названия и операции — в терминах OCCT.
-- **Одно — одним способом.** Никаких альтернативных путей сделать одну вещь.
-- **Тонкая Rust-обёртка.** Минимум своего кода; максимум логики — в OCCT.
-
-## Сборка и запуск
-
-Требуется OCCT (например, `brew install opencascade`). Если он не в стандартном месте — задать `OCCT_DIR`.
-
-Rust-движок живёт в `processor/` (самостоятельный Cargo workspace) — команды выполняются оттуда:
-
-```sh
-cd processor
-cargo build
-cargo run -- --model-file crates/engine/tests/fixtures/fillet.json \
-    --export-config-json '{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }'
-cargo test
+```json
+{
+  "version": 1,
+  "parts": [
+    { "type": "box", "width": 20, "length": 20, "height": 5 },
+    { "type": "transform", "target": 0,
+      "ops": [ { "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } } ] },
+    { "type": "cylinder", "radius": 5, "height": 10 },
+    { "type": "fuse", "parts": [1, 2] },
+    { "type": "fillet", "kind": "fillet", "target": 3,
+      "radius": { "type": "expression",
+                  "expression": "if edge.is_vertical { 2.0 } else { 0.0 }" } }
+  ],
+  "export": [ { "index": 4, "name": "plate", "color": { "r": 0.35, "g": 0.6, "b": 0.95 } } ]
+}
 ```
+
+Переиспользование (шестерня): узел-зуб используется дважды — на него ссылаются два `transform`;
+переиспользуемый узел занимает одну позицию, сколько бы раз на неё ни ссылались.
 
 ## Статус
 
-Rust-движок реализован целиком по [FORMAT.md](FORMAT.md): весь IR, геометрия, экспорт в STL/PNG, кэш
-(Merkle-ключ; память + диск), «золотые» тесты по геометрическим свойствам. Kotlin-фронтенд — отдельно,
-позже.
+Rust-движок реализован целиком. Kotlin-фронтенд — в `kt/` ([kt/README.md](kt/README.md)).
 
-Дальше: STEP-экспорт, Kotlin-DSL.
+Дальше: STEP-экспорт.
