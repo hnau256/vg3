@@ -40,7 +40,7 @@
       "target": 3,
       "radius": {
         "type": "expression",
-        "expression": "if edge.is_vertical { 2.0 } else { 0.0 }"
+        "expression": "if is_parallel(edge.direction, Z) { 2.0 } else { 0.0 }"
       }
     }
   ],

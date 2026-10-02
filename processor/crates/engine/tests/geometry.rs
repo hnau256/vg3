@@ -50,6 +50,16 @@ fn polyhedron_builds_a_unit_cube() {
 }
 
 #[test]
+fn chamfer_selects_edges_by_expression() {
+    // Chamfer only the four edges of the top face, selected via the bounding box.
+    let parts = build("top_lid.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert!(parts[0].volume() < 1000.0, "material must be removed");
+    assert!(parts[0].volume() > 850.0, "only the top edges are chamfered");
+    assert_bounds(&parts[0], [0.0, 0.0, 0.0, 10.0, 10.0, 10.0]);
+}
+
+#[test]
 fn offset_grows_the_solid_in_every_direction() {
     let parts = build("offset.json");
     assert_eq!(parts[0].solid_count(), 1);

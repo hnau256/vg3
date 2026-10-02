@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "parts": [
+    { "type": "box", "width": 10, "length": 10, "height": 10 },
+    {
+      "type": "fillet",
+      "kind": "chamfer",
+      "target": 0,
+      "radius": {
+        "type": "expression",
+        "expression": "if is_close(edge.min.z, box.max.z) { 2.0 } else { 0.0 }"
+      }
+    }
+  ],
+  "export": [
+    { "index": 1, "name": "top" }
+  ]
+}

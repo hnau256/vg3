@@ -272,20 +272,39 @@ loft(sections, ruled)               // default false; секций ≥ 2
 
 ### Выражения (Rhai)
 
-`expression` — исходник на Rhai; контекст — переменная `edge`:
+`expression` — исходник на Rhai; выбор радиуса по ребру. В scope — низкоуровневые данные и функции
+(без доменного сахара):
 
-| Свойство | Тип | Смысл |
-|---|---|---|
-| `edge.length` | `f64` | длина ребра |
-| `edge.curve_type` | `string` | `"line"` \| `"arc"` \| `"spline"` |
-| `edge.is_vertical` | `bool` | параллельно оси Z |
-| `edge.is_horizontal` | `bool` | лежит в плоскости XY |
-| `edge.direction` | `Normal3` | направление (для line) / касательная |
-| `edge.radius` | `f64` | радиус дуги; иначе 0 |
-| `edge.start`, `edge.end` | `Point3` | начало / конец |
+**Данные.** Ребро `edge` (точки/векторы — объекты `{x, y, z}`):
 
-Результат — число; `≤ 0` → пропуск; не число / NaN → ошибка. Лимит `max_operations` = 10 000; IO не
-регистрируется. Тернарного `? :` нет — `if cond { a } else { b }`. Seam-рёбра в контекст не попадают.
+| Поле | Смысл |
+|---|---|
+| `edge.curve_type` | `"line"` \| `"circle"` \| `"ellipse"` \| `"hyperbola"` \| `"parabola"` \| `"bezier"` \| `"bspline"` \| `"offset"` \| `"other"` |
+| `edge.length` | длина ребра |
+| `edge.radius` | радиус (`circle`/`ellipse` — большая полуось); иначе `0` |
+| `edge.start`, `edge.end` | начало / конец |
+| `edge.center` | точка на середине параметра |
+| `edge.direction` | единичная касательная в `center` |
+| `edge.min`, `edge.max` | bbox самого ребра |
+
+Bounding box тела: `box.min`, `box.max`, `box.center`. Оси: `X`, `Y`, `Z` (единичные векторы).
+
+**Функции.** `dot(a, b)`, `cross(a, b)`, `length(v)`, `normalized(v)`, `distance(a, b)`, `angle(a, b)`,
+`vec(x, y, z)`, `add(a, b)`, `sub(a, b)`, `scale(v, s)`, `is_close(a, b)`, `is_close_point(a, b)`,
+`is_parallel(a, b)`, `is_perpendicular(a, b)` (плюс `abs`/`sqrt`/… из Rhai).
+
+Пример — фаска только на рёбрах верхней грани (минимум ребра по Z совпал с максимумом тела ⇒ ребро
+целиком в верхней плоскости):
+
+```
+if is_close(edge.min.z, box.max.z) { 2.0 } else { 0.0 }
+```
+
+Вертикальные рёбра: `is_parallel(edge.direction, Z)`. Вдоль X: `is_parallel(edge.direction, X)`.
+Круглые рёбра: `edge.curve_type == "circle"`.
+
+Результат — число; `≤ 0` → ребро пропускается; не число / NaN → ошибка. Лимит `max_operations` = 10 000;
+IO не регистрируется. Тернарного `? :` нет — `if cond { a } else { b }`. Seam-рёбра в контекст не попадают.
 
 ### Общие правила обработки
 
@@ -401,7 +420,7 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
     { "type": "bool", "kind": "fuse", "arguments": [1], "tools": [2] },
     { "type": "fillet", "kind": "fillet", "target": 3,
       "radius": { "type": "expression",
-                  "expression": "if edge.is_vertical { 2.0 } else { 0.0 }" } }
+                  "expression": "if is_parallel(edge.direction, Z) { 2.0 } else { 0.0 }" } }
   ],
   "export": [ { "index": 4, "name": "plate", "color": { "r": 0.35, "g": 0.6, "b": 0.95 } } ]
 }

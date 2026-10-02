@@ -912,15 +912,28 @@ rust::Vec<double> edge_data(const TopoDS_Edge& edge) {
     BRepAdaptor_Curve curve(edge);
     const GeomAbs_CurveType curve_type = curve.GetType();
 
+    double type_code = 8.0;
+    switch (curve_type) {
+        case GeomAbs_Line: type_code = 0.0; break;
+        case GeomAbs_Circle: type_code = 1.0; break;
+        case GeomAbs_Ellipse: type_code = 2.0; break;
+        case GeomAbs_Hyperbola: type_code = 3.0; break;
+        case GeomAbs_Parabola: type_code = 4.0; break;
+        case GeomAbs_BezierCurve: type_code = 5.0; break;
+        case GeomAbs_BSplineCurve: type_code = 6.0; break;
+        case GeomAbs_OffsetCurve: type_code = 7.0; break;
+        case GeomAbs_OtherCurve: type_code = 8.0; break;
+    }
+
+    double radius = 0.0;
+    if (curve_type == GeomAbs_Circle) {
+        radius = curve.Circle().Radius();
+    } else if (curve_type == GeomAbs_Ellipse) {
+        radius = curve.Ellipse().MajorRadius();
+    }
+
     GProp_GProps properties;
     BRepGProp::LinearProperties(edge, properties);
-
-    double type_code = 2.0;
-    if (curve_type == GeomAbs_Line) {
-        type_code = 0.0;
-    } else if (curve_type == GeomAbs_Circle) {
-        type_code = 1.0;
-    }
 
     const double first = curve.FirstParameter();
     const double last = curve.LastParameter();
@@ -931,32 +944,42 @@ rust::Vec<double> edge_data(const TopoDS_Edge& edge) {
     if (magnitude > 0.0) {
         tangent /= magnitude;
     }
-    const bool is_vertical = std::abs(tangent.Z()) > 1.0 - 1e-7;
-    const bool is_horizontal = std::abs(tangent.Z()) < 1e-7;
-
-    double radius = 0.0;
-    if (curve_type == GeomAbs_Circle) {
-        radius = curve.Circle().Radius();
-    }
 
     const gp_Pnt start = curve.Value(first);
     const gp_Pnt end = curve.Value(last);
 
+    Bnd_Box bounds;
+    BRepBndLib::Add(edge, bounds);
+    double xmin = 0.0;
+    double ymin = 0.0;
+    double zmin = 0.0;
+    double xmax = 0.0;
+    double ymax = 0.0;
+    double zmax = 0.0;
+    bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+
     rust::Vec<double> data;
-    data.push_back(properties.Mass());
-    data.push_back(type_code);
-    data.push_back(is_vertical ? 1.0 : 0.0);
-    data.push_back(is_horizontal ? 1.0 : 0.0);
-    data.push_back(tangent.X());
+    data.push_back(properties.Mass());          // 0: length
+    data.push_back(type_code);                  // 1: curve type
+    data.push_back(tangent.X());                // 2,3,4: unit tangent at the middle
     data.push_back(tangent.Y());
     data.push_back(tangent.Z());
-    data.push_back(radius);
-    data.push_back(start.X());
+    data.push_back(radius);                     // 5: radius
+    data.push_back(start.X());                  // 6,7,8: start
     data.push_back(start.Y());
     data.push_back(start.Z());
-    data.push_back(end.X());
+    data.push_back(end.X());                    // 9,10,11: end
     data.push_back(end.Y());
     data.push_back(end.Z());
+    data.push_back(middle.X());                 // 12,13,14: center (mid parameter)
+    data.push_back(middle.Y());
+    data.push_back(middle.Z());
+    data.push_back(xmin);                       // 15,16,17: bbox min
+    data.push_back(ymin);
+    data.push_back(zmin);
+    data.push_back(xmax);                       // 18,19,20: bbox max
+    data.push_back(ymax);
+    data.push_back(zmax);
     return data;
 }
 
