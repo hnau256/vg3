@@ -2,6 +2,7 @@ package org.hnau.ktcad
 
 import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.FilletKind
+import org.hnau.ktcad.ir.Point2
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
 import kotlin.test.Test
@@ -9,7 +10,7 @@ import kotlin.test.assertEquals
 
 class BuildExtTest {
 
-    private val square = p(0.0, 0.0).lineTo(10.0, 0.0).lineTo(10.0, 10.0).lineTo(0.0, 10.0)
+    private val square = polygon(Point2(0.0, 0.0), Point2(10.0, 0.0), Point2(10.0, 10.0), Point2(0.0, 10.0))
 
     @Test
     fun extrude_maps_to_factory() {
@@ -23,7 +24,7 @@ class BuildExtTest {
 
     @Test
     fun sweep_maps_to_factory() {
-        val spine = p(0.0, 0.0, 0.0).lineTo(0.0, 0.0, 20.0)
+        val spine = Path(p(0.0, 0.0, 0.0), lineTo(0.0, 0.0, 20.0))
         assertEquals(sweep(mode = null, path = spine, profile = square), square.sweep(spine))
         assertEquals(
             sweep(mode = SweepMode.RIGID, path = spine, profile = square),
@@ -34,8 +35,8 @@ class BuildExtTest {
     @Test
     fun loft_maps_to_factory() {
         val sections = listOf(
-            p(0.0, 0.0, 0.0).lineTo(10.0, 0.0, 0.0).lineTo(10.0, 10.0, 0.0),
-            p(0.0, 0.0, 10.0).lineTo(10.0, 0.0, 10.0).lineTo(10.0, 10.0, 10.0),
+            Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0), lineTo(10.0, 10.0, 0.0)),
+            Path(p(0.0, 0.0, 10.0), lineTo(10.0, 0.0, 10.0), lineTo(10.0, 10.0, 10.0)),
         )
         assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.loft(ruled = true))
     }

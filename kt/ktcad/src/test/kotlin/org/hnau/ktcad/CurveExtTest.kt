@@ -1,59 +1,50 @@
 package org.hnau.ktcad
 
+import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Point2
 import org.hnau.ktcad.ir.Point3
+import org.hnau.ktcad.ir.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class CurveExtTest {
 
     @Test
-    fun lineTo_appends_absolute_segment() {
-        val profile = p(0.0, 0.0).lineTo(10.0, 0.0).lineTo(10.0, 10.0)
+    fun profile_builds_from_segments() {
+        val profile = Profile(
+            start = p(0.0, 0.0),
+            lineTo(10.0, 0.0),
+            lineRel(0.0, 10.0),
+        )
         assertEquals(
-            listOf(
-                Curve2.Line(Point2(10.0, 0.0)),
-                Curve2.Line(Point2(10.0, 10.0)),
-            ),
+            listOf(Curve2.Line(Point2(10.0, 0.0)), Curve2.Line(Point2(10.0, 10.0))),
             profile.edges.toList(),
         )
-        assertEquals(Point2(10.0, 10.0), profile.current)
+        assertEquals(Point2(0.0, 0.0), profile.start)
     }
 
     @Test
-    fun lineRel_is_relative_to_current_point() {
-        val profile = p(5.0, 5.0).lineRel(2.0, 0.0).lineRel(0.0, 3.0)
+    fun profile_accepts_a_non_empty_list_constructor() {
+        val profile = Profile(start = p(0.0, 0.0), edges = nonEmptyListOf(Curve2.Line(p(1.0, 0.0))))
+        assertEquals(listOf(Curve2.Line(Point2(1.0, 0.0))), profile.edges.toList())
+    }
+
+    @Test
+    fun path_builds_from_segments() {
+        val path = Path(p(0.0, 0.0, 0.0), lineTo(1.0, 2.0, 3.0))
+        assertEquals(listOf(Curve3.Line(Point3(1.0, 2.0, 3.0))), path.edges.toList())
+    }
+
+    @Test
+    fun arcRel_is_relative_to_the_current_point() {
+        val profile = Profile(p(0.0, 0.0), lineTo(2.0, 0.0), arcRel(viaDx = 0.0, viaDy = 1.0, toDx = 0.0, toDy = 2.0))
         assertEquals(
-            listOf(
-                Curve2.Line(Point2(7.0, 5.0)),
-                Curve2.Line(Point2(7.0, 8.0)),
-            ),
-            profile.edges.toList(),
+            Curve2.Arc(via = Point2(2.0, 1.0), to = Point2(2.0, 2.0)),
+            profile.edges.last(),
         )
-    }
-
-    @Test
-    fun arcRel_offsets_both_via_and_to_from_current() {
-        val profile = p(0.0, 0.0).arcRel(viaDx = 1.0, viaDy = 1.0, toDx = 2.0, toDy = 0.0)
-        assertEquals(
-            Curve2.Arc(via = Point2(1.0, 1.0), to = Point2(2.0, 0.0)),
-            profile.edges.single(),
-        )
-    }
-
-    @Test
-    fun path_rel_offsets_are_3d() {
-        val path = p(0.0, 0.0, 0.0).lineRel(1.0, 2.0, 3.0)
-        assertEquals(Curve3.Line(Point3(1.0, 2.0, 3.0)), path.edges.single())
-    }
-
-    @Test
-    fun built_profile_feeds_extrude() {
-        val solid = extrude(5.0, p(0.0, 0.0).lineTo(10.0, 0.0).lineTo(10.0, 10.0).lineTo(0.0, 10.0))
-        // The engine auto-closes the profile, so this is a valid prism.
-        check(solid is Solid.Extrude)
     }
 
     @Test
@@ -61,7 +52,7 @@ class CurveExtTest {
         val c = circle(radius = 5.0)
         assertEquals(2, c.edges.size)
         assertEquals(Point2(5.0, 0.0), c.start)
-        assertEquals(c.start, c.current)
+        assertEquals(Point2(5.0, 0.0), (c.edges.last() as Curve2.Arc).to)
     }
 
     @Test
@@ -81,5 +72,26 @@ class CurveExtTest {
         assertEquals(2, polyline(a, b, c).edges.size)
         assertEquals(3, polygon(a, b, c).edges.size)   // + closing line back to start
         assertEquals(Curve3.Line(a), polygon(a, b, c).edges.last())
+    }
+
+    @Test
+    fun built_profile_feeds_extrude() {
+        val solid = extrude(5.0, polygon(Point2(0.0, 0.0), Point2(10.0, 0.0), Point2(10.0, 10.0), Point2(0.0, 10.0)))
+        check(solid is Solid.Extrude)
+    }
+
+    private val helix: PathSegment = { Curve3.Helix(pitch = 1.0, height = 4.0, right_handed = true) }
+
+    @Test
+    fun helix_can_be_followed_by_an_absolute_segment() {
+        val path = Path(p(0.0, 0.0, 0.0), helix, lineTo(0.0, 0.0, 10.0))
+        assertEquals(2, path.edges.size)
+    }
+
+    @Test
+    fun relative_segment_after_helix_fails() {
+        assertFailsWith<IllegalStateException> {
+            Path(p(0.0, 0.0, 0.0), helix, lineRel(0.0, 0.0, 1.0))
+        }
     }
 }

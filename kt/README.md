@@ -102,11 +102,10 @@ fun main() {
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
-- **Контуры:** начинаются с точки — `p(x, y).lineTo(...)` даёт `Profile`, `p(x, y, z).lineTo(...)`
-  даёт `Path`; далее цепочкой `lineTo` / `lineRel`, `arcTo` / `arcRel`, `splineTo` (абсолютные `…To`
-  и относительные `…Rel`). Плюс `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D),
-  `polyline(...)` (3D), `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому цепочка стартует с точки
-  (пустой контур невыразим), а каждый вызов сразу возвращает готовый `Profile`/`Path`.
+- **Контуры** — `Profile(start, segment…)` / `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
+  `arcTo`/`arcRel`, `splineTo` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
+  точку). Плюс `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D), `polyline(...)`
+  (3D), `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **Построение тел из контуров:** `Profile.extrude(height)`, `Profile.revolve(angle)`,
   `Profile.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** — скругление
