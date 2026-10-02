@@ -25,9 +25,12 @@
       "height": 10
     },
     {
-      "type": "fuse",
-      "parts": [
-        1,
+      "type": "bool",
+      "kind": "fuse",
+      "arguments": [
+        1
+      ],
+      "tools": [
         2
       ]
     },

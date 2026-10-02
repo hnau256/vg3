@@ -303,25 +303,50 @@ std::unique_ptr<Shape> make_wedge(double width, double length, double height, do
 
 namespace {
 
-std::unique_ptr<Shape> boolean(
-    const Shape& a,
-    const Shape& b,
-    BRepAlgoAPI_BooleanOperation& operation,
-    const char* name
+template <typename Operation>
+TopoDS_Shape run_boolean(
+    const TopTools_ListOfShape& arguments,
+    const TopTools_ListOfShape& tools
 ) {
+    Operation operation;
+    operation.SetArguments(arguments);
+    operation.SetTools(tools);
+    operation.SetRunParallel(Standard_False);
+    operation.Build();
+    if (!operation.IsDone()) {
+        throw std::runtime_error("boolean operation did not complete");
+    }
+    return operation.Shape();
+}
+
+}  // namespace
+
+BooleanBuilder::BooleanBuilder(std::uint8_t kind) : kind_(kind) {}
+
+void BooleanBuilder::add_argument(const Shape& shape) {
+    arguments_.Append(shape.topods());
+}
+
+void BooleanBuilder::add_tool(const Shape& shape) {
+    tools_.Append(shape.topods());
+}
+
+std::unique_ptr<Shape> BooleanBuilder::finish() {
     try {
-        TopTools_ListOfShape arguments;
-        arguments.Append(a.topods());
-        operation.SetArguments(arguments);
-        TopTools_ListOfShape tools;
-        tools.Append(b.topods());
-        operation.SetTools(tools);
-        operation.SetRunParallel(Standard_False);
-        operation.Build();
-        if (!operation.IsDone()) {
-            throw std::runtime_error(std::string(name) + " did not complete");
+        TopoDS_Shape result;
+        switch (kind_) {
+            case 0:
+                result = run_boolean<BRepAlgoAPI_Fuse>(arguments_, tools_);
+                break;
+            case 1:
+                result = run_boolean<BRepAlgoAPI_Cut>(arguments_, tools_);
+                break;
+            case 2:
+                result = run_boolean<BRepAlgoAPI_Common>(arguments_, tools_);
+                break;
+            default:
+                throw std::runtime_error("unknown boolean kind");
         }
-        const TopoDS_Shape result = operation.Shape();
         ensure_valid(result);
         return std::make_unique<Shape>(result);
     } catch (const Standard_Failure& failure) {
@@ -329,21 +354,8 @@ std::unique_ptr<Shape> boolean(
     }
 }
 
-}  // namespace
-
-std::unique_ptr<Shape> fuse(const Shape& a, const Shape& b) {
-    BRepAlgoAPI_Fuse operation;
-    return boolean(a, b, operation, "BRepAlgoAPI_Fuse");
-}
-
-std::unique_ptr<Shape> cut(const Shape& a, const Shape& b) {
-    BRepAlgoAPI_Cut operation;
-    return boolean(a, b, operation, "BRepAlgoAPI_Cut");
-}
-
-std::unique_ptr<Shape> common(const Shape& a, const Shape& b) {
-    BRepAlgoAPI_Common operation;
-    return boolean(a, b, operation, "BRepAlgoAPI_Common");
+std::unique_ptr<BooleanBuilder> new_boolean_builder(std::uint8_t kind) {
+    return std::make_unique<BooleanBuilder>(kind);
 }
 
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z) {

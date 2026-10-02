@@ -54,9 +54,12 @@
       }
     },
     {
-      "type": "fuse",
-      "parts": [
-        0,
+      "type": "bool",
+      "kind": "fuse",
+      "arguments": [
+        0
+      ],
+      "tools": [
         1
       ]
     }

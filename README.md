@@ -219,8 +219,15 @@ loft(sections, ruled)               // default false; секций ≥ 2
   (Frenet), `rigid` — жёсткий перенос. Вдоль `helix` это даёт резьбу.
 - `loft`: секции авто-замыкаются; проверяется совместимость (число/порядок рёбер).
 
-**Булевы:** `fuse(parts)`, `cut(base, tools)`, `common(parts)` — пустой список → ошибка; пустой
-результат (0 solid) допустим.
+**Булевы** — один узел на все три операции (`BRepAlgoAPI_BooleanOperation`): `kind` плюс две группы операндов `arguments` (Objects) и `tools` (Tools), которые OCCT объединяет/вычитает/пересекает одним вызовом (обе группы должны быть непустыми):
+
+```jsonc
+{ "type": "bool", "kind": "fuse",   "arguments": [a], "tools": [b, c] }   // a ∪ b ∪ c
+{ "type": "bool", "kind": "common", "arguments": [a], "tools": [b, c] }   // a ∩ b ∩ c
+{ "type": "bool", "kind": "cut",    "arguments": [a], "tools": [b, c] }   // a − b − c
+```
+
+Пустой результат (0 solid) допустим.
 
 **Трансформации:** `transform(target, op)` применяет **одну** трансформацию к `target`; композиция — вложенностью узлов:
 
@@ -290,7 +297,7 @@ loft(sections, ruled)               // default false; секций ≥ 2
 
 - **Примитивы**: `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`, `polyhedron`.
 - **Генерация тел**: `extrude`, `revolve`, `sweep` (`follow`/`rigid`), `loft` (`ruled`).
-- **Булевы**: `fuse`, `cut`, `common`.
+- **Булевы**: `bool` (fuse / cut / common).
 - **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.
 - **Fillet / chamfer** с `radius: all | expression` (Rhai), пропуск швов.
 - **Offset**: утолщение/утоньшение тела (`BRepOffsetAPI_MakeOffsetShape`).
@@ -387,7 +394,7 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
     { "type": "transform", "target": 0,
       "op": { "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } } },
     { "type": "cylinder", "radius": 5, "height": 10 },
-    { "type": "fuse", "parts": [1, 2] },
+    { "type": "bool", "kind": "fuse", "arguments": [1], "tools": [2] },
     { "type": "fillet", "kind": "fillet", "target": 3,
       "radius": { "type": "expression",
                   "expression": "if edge.is_vertical { 2.0 } else { 0.0 }" } }

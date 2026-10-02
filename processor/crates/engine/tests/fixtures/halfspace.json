@@ -23,8 +23,11 @@
       }
     },
     {
-      "type": "cut",
-      "base": 0,
+      "type": "bool",
+      "kind": "cut",
+      "arguments": [
+        0
+      ],
       "tools": [
         2
       ]

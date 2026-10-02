@@ -143,11 +143,23 @@ std::unique_ptr<Shape> fillet(
     rust::Slice<const double> values
 );
 
-std::unique_ptr<Shape> fuse(const Shape& a, const Shape& b);
+class BooleanBuilder {
+public:
+    explicit BooleanBuilder(std::uint8_t kind);
 
-std::unique_ptr<Shape> cut(const Shape& a, const Shape& b);
+    void add_argument(const Shape& shape);
 
-std::unique_ptr<Shape> common(const Shape& a, const Shape& b);
+    void add_tool(const Shape& shape);
+
+    std::unique_ptr<Shape> finish();
+
+private:
+    std::uint8_t kind_;
+    TopTools_ListOfShape arguments_;
+    TopTools_ListOfShape tools_;
+};
+
+std::unique_ptr<BooleanBuilder> new_boolean_builder(std::uint8_t kind);
 
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z);
 

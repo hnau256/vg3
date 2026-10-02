@@ -1,6 +1,4 @@
-use cxx::UniquePtr;
-
-use vg3_model::{Node, SweepMode, TransformOp};
+use vg3_model::{BooleanKind, Node, SweepMode, TransformOp};
 
 use crate::engine::contour::{build_path_wire, build_profile_wire};
 use crate::engine::fillet::evaluate_fillet;
@@ -54,11 +52,11 @@ impl Evaluate for Node<Part> {
                 top_width.value(),
             )?),
             Node::Halfspace => make_part(ffi::make_halfspace()?),
-            Node::Fuse { parts } => reduce(parts.into_iter(), |a, b| Ok(ffi::fuse(a, b)?)),
-            Node::Cut { base, tools } => reduce(std::iter::once(base).chain(tools), |a, b| {
-                Ok(ffi::cut(a, b)?)
-            }),
-            Node::Common { parts } => reduce(parts.into_iter(), |a, b| Ok(ffi::common(a, b)?)),
+            Node::Bool {
+                kind,
+                arguments,
+                tools,
+            } => evaluate_boolean(kind, arguments, tools),
             Node::Transform { target, op } => apply_transform(target, &op),
             Node::Offset { target, distance } => {
                 make_part(ffi::offset(target.shape(), distance.value())?)
@@ -118,15 +116,27 @@ impl Evaluate for Node<Part> {
 }
 
 /// Reduces already-evaluated operands with a binary operation (e.g. `fuse`/`cut`/`common`).
-fn reduce<F>(operands: impl Iterator<Item = Part>, combine: F) -> Result<Part>
-where
-    F: Fn(&ffi::Shape, &ffi::Shape) -> Result<UniquePtr<ffi::Shape>>,
-{
-    let mut operands = operands;
-    let first = operands.next().ok_or(Error::MissingOperand)?;
-    operands.try_fold(first, |accumulator, next| {
-        make_part(combine(accumulator.shape(), next.shape())?)
-    })
+fn evaluate_boolean(
+    kind: BooleanKind,
+    arguments: Vec<Part>,
+    tools: Vec<Part>,
+) -> Result<Part> {
+    if arguments.is_empty() {
+        return Err(Error::MissingOperand);
+    }
+    let kind_code = match kind {
+        BooleanKind::Fuse => 0,
+        BooleanKind::Cut => 1,
+        BooleanKind::Common => 2,
+    };
+    let mut builder = ffi::new_boolean_builder(kind_code);
+    for argument in &arguments {
+        builder.pin_mut().add_argument(argument.shape())?;
+    }
+    for tool in &tools {
+        builder.pin_mut().add_tool(tool.shape())?;
+    }
+    make_part(builder.pin_mut().finish()?)
 }
 
 fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {

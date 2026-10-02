@@ -93,10 +93,11 @@ fun main() {
 ### API
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
-  `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `fuse`, `cut`, `common`, `transform`, `fillet`,
-  `offset`. Возвращают `Solid`.
+  `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
+  Возвращают `Solid`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
-- **Булевы:** `+` (fuse), `-` (cut), `*` (common).
+- **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
+  `common(parts)` — sugar над единым узлом `bool`.
 - **`offset(distance)`** — утолщение (положительное) / утоньшение (отрицательное) тела.
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.

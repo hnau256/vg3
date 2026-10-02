@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 use crate::curve::{Path, Profile};
-use crate::op::{FilletKind, RadiusSpec, SweepMode, TransformOp};
+use crate::op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
 use crate::value::{Angle, Point3, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
@@ -57,15 +57,10 @@ pub enum Node<T> {
         #[serde(default)]
         ruled: bool,
     },
-    Fuse {
-        parts: Vec<T>,
-    },
-    Cut {
-        base: T,
+    Bool {
+        kind: BooleanKind,
+        arguments: Vec<T>,
         tools: Vec<T>,
-    },
-    Common {
-        parts: Vec<T>,
     },
     Transform {
         target: T,
@@ -161,23 +156,18 @@ impl<T: Clone> Node<T> {
                 sections: sections.clone(),
                 ruled: *ruled,
             },
-            Node::Fuse { parts } => Node::Fuse {
-                parts: parts
+            Node::Bool {
+                kind,
+                arguments,
+                tools,
+            } => Node::Bool {
+                kind: *kind,
+                arguments: arguments
                     .iter()
                     .cloned()
                     .map(&mut f)
                     .collect::<std::result::Result<_, E>>()?,
-            },
-            Node::Cut { base, tools } => Node::Cut {
-                base: f(base.clone())?,
                 tools: tools
-                    .iter()
-                    .cloned()
-                    .map(&mut f)
-                    .collect::<std::result::Result<_, E>>()?,
-            },
-            Node::Common { parts } => Node::Common {
-                parts: parts
                     .iter()
                     .cloned()
                     .map(&mut f)

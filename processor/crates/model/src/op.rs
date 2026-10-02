@@ -48,6 +48,16 @@ pub enum FilletKind {
     Chamfer,
 }
 
+/// The kind of a boolean operation (mirrors `BRepAlgoAPI_BooleanOperation`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum BooleanKind {
+    Fuse,
+    Cut,
+    Common,
+}
+
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]

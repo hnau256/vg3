@@ -96,11 +96,15 @@ pub(crate) mod ffi {
 
         fn fillet(shape: &Shape, kind: u8, values: &[f64]) -> Result<UniquePtr<Shape>>;
 
-        fn fuse(a: &Shape, b: &Shape) -> Result<UniquePtr<Shape>>;
+        type BooleanBuilder;
 
-        fn cut(a: &Shape, b: &Shape) -> Result<UniquePtr<Shape>>;
+        fn new_boolean_builder(kind: u8) -> UniquePtr<BooleanBuilder>;
 
-        fn common(a: &Shape, b: &Shape) -> Result<UniquePtr<Shape>>;
+        fn add_argument(self: Pin<&mut BooleanBuilder>, shape: &Shape) -> Result<()>;
+
+        fn add_tool(self: Pin<&mut BooleanBuilder>, shape: &Shape) -> Result<()>;
+
+        fn finish(self: Pin<&mut BooleanBuilder>) -> Result<UniquePtr<Shape>>;
 
         fn translate(shape: &Shape, x: f64, y: f64, z: f64) -> Result<UniquePtr<Shape>>;
 
