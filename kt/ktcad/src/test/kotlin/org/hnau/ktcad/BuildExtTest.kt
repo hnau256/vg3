@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.FilletKind
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
@@ -8,7 +9,7 @@ import kotlin.test.assertEquals
 
 class BuildExtTest {
 
-    private val square = profile(0.0, 0.0).lineTo(10.0, 0.0).lineTo(10.0, 10.0).lineTo(0.0, 10.0)
+    private val square = p(0.0, 0.0).lineTo(10.0, 0.0).lineTo(10.0, 10.0).lineTo(0.0, 10.0)
 
     @Test
     fun extrude_maps_to_factory() {
@@ -22,7 +23,7 @@ class BuildExtTest {
 
     @Test
     fun sweep_maps_to_factory() {
-        val spine = path(0.0, 0.0, 0.0).lineTo(0.0, 0.0, 20.0)
+        val spine = p(0.0, 0.0, 0.0).lineTo(0.0, 0.0, 20.0)
         assertEquals(sweep(mode = null, path = spine, profile = square), square.sweep(spine))
         assertEquals(
             sweep(mode = SweepMode.RIGID, path = spine, profile = square),
@@ -33,10 +34,10 @@ class BuildExtTest {
     @Test
     fun loft_maps_to_factory() {
         val sections = listOf(
-            path(0.0, 0.0, 0.0).lineTo(10.0, 0.0, 0.0).lineTo(10.0, 10.0, 0.0),
-            path(0.0, 0.0, 10.0).lineTo(10.0, 0.0, 10.0).lineTo(10.0, 10.0, 10.0),
+            p(0.0, 0.0, 0.0).lineTo(10.0, 0.0, 0.0).lineTo(10.0, 10.0, 0.0),
+            p(0.0, 0.0, 10.0).lineTo(10.0, 0.0, 10.0).lineTo(10.0, 10.0, 10.0),
         )
-        assertEquals(loft(ruled = true, sections = sections), sections.loft(ruled = true))
+        assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.loft(ruled = true))
     }
 
     @Test

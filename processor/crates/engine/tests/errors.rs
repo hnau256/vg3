@@ -9,7 +9,7 @@ fn unsupported_version_is_rejected() {
 
 #[test]
 fn forward_reference_is_rejected() {
-    let source = r#"{ "version": 1, "parts": [ { "type": "bool", "kind": "fuse", "arguments": [0], "tools": [] } ], "export": [] }"#;
+    let source = r#"{ "version": 1, "parts": [ { "type": "bool", "kind": "fuse", "arguments": [0], "tools": [0] } ], "export": [] }"#;
     let model = model::parse(source).expect("parses");
     assert!(engine::evaluate(&model, &mut vg3_cache::Noop).is_err());
 }

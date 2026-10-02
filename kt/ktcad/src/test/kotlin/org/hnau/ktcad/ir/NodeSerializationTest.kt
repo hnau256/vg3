@@ -1,5 +1,6 @@
 package org.hnau.ktcad.ir
 
+import arrow.core.nonEmptyListOf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
@@ -23,8 +24,14 @@ class NodeSerializationTest {
     @Test
     fun default_valued_properties_are_omitted() {
         val node = Node.Sweep(
-            profile = Profile(start = Point2(0.0, 0.0), edges = emptyList()),
-            path = Path(start = Point3(0.0, 0.0, 0.0), edges = emptyList()),
+            profile = Profile(
+                start = Point2(0.0, 0.0),
+                edges = nonEmptyListOf(Curve2.Line(Point2(1.0, 0.0))),
+            ),
+            path = Path(
+                start = Point3(0.0, 0.0, 0.0),
+                edges = nonEmptyListOf(Curve3.Line(Point3(0.0, 0.0, 1.0))),
+            ),
         )
         val actual = Json.parseToJsonElement(json.encodeToString(Node.serializer(), node))
         assertTrue("mode" !in actual.jsonObject, "default `mode` must be omitted: $actual")
@@ -37,8 +44,8 @@ class NodeSerializationTest {
                 Node.serializer(),
                 Node.Bool(
                     kind = BooleanKind.CUT,
-                    arguments = listOf(Operand(0)),
-                    tools = listOf(Operand(1)),
+                    arguments = nonEmptyListOf(Operand(0)),
+                    tools = nonEmptyListOf(Operand(1)),
                 ),
             ),
         )

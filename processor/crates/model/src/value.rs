@@ -6,6 +6,61 @@ use serde::Deserialize;
 
 use crate::error::{Error, Result};
 
+/// A list guaranteed to contain at least one element.
+///
+/// On the wire it is a plain JSON array, but deserialization rejects an empty array (canonicalized
+/// in the type), and its JSON Schema carries `minItems: 1`.
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(inline, extend("minItems" = 1)))]
+#[serde(try_from = "Vec<T>")]
+pub struct NonEmpty<T>(Vec<T>);
+
+impl<T> NonEmpty<T> {
+    pub fn as_slice(&self) -> &[T] {
+        &self.0
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
+        self.0.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn into_vec(self) -> Vec<T> {
+        self.0
+    }
+}
+
+impl<T: Clone> NonEmpty<T> {
+    /// Maps every element, preserving non-emptiness (mirrors the `Node::try_map` functor).
+    pub fn try_map<U, E>(
+        &self,
+        mut f: impl FnMut(T) -> std::result::Result<U, E>,
+    ) -> std::result::Result<NonEmpty<U>, E> {
+        let mapped = self
+            .0
+            .iter()
+            .cloned()
+            .map(&mut f)
+            .collect::<std::result::Result<Vec<_>, E>>()?;
+        Ok(NonEmpty(mapped))
+    }
+}
+
+impl<T> TryFrom<Vec<T>> for NonEmpty<T> {
+    type Error = Error;
+
+    fn try_from(value: Vec<T>) -> Result<Self> {
+        if value.is_empty() {
+            return Err(Error::EmptyList);
+        }
+        Ok(NonEmpty(value))
+    }
+}
+
 /// A back-reference to an earlier node in the arena (`index < current`).
 ///
 /// A plain newtype over `usize`: on the wire it is just an integer. Correctness (the reference

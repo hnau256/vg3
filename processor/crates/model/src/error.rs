@@ -13,6 +13,9 @@ pub enum Error {
 
     #[error("normal vector must be non-zero")]
     ZeroNormal,
+
+    #[error("list must not be empty")]
+    EmptyList,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

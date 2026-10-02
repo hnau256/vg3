@@ -4,19 +4,16 @@ use cxx::UniquePtr;
 
 use vg3_model::{Curve2, Curve3, Path, Point2, Point3, Profile};
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::sys::ffi;
 
 /// Builds a closed 2D profile wire (auto-closing the contour).
 pub(super) fn build_profile_wire(profile: &Profile) -> Result<UniquePtr<ffi::Shape>> {
-    if profile.edges.is_empty() {
-        return Err(Error::EmptyContour);
-    }
     let mut builder = ffi::new_wire_builder();
     builder
         .pin_mut()
         .start(profile.start.x.value(), profile.start.y.value(), 0.0)?;
-    for edge in &profile.edges {
+    for edge in profile.edges.iter() {
         add_curve2(builder.pin_mut(), edge)?;
     }
     Ok(builder.pin_mut().finish(true)?)
@@ -24,16 +21,13 @@ pub(super) fn build_profile_wire(profile: &Profile) -> Result<UniquePtr<ffi::Sha
 
 /// Builds a 3D path wire (`closed` is used for loft sections).
 pub(super) fn build_path_wire(path: &Path, closed: bool) -> Result<UniquePtr<ffi::Shape>> {
-    if path.edges.is_empty() {
-        return Err(Error::EmptyContour);
-    }
     let mut builder = ffi::new_wire_builder();
     builder.pin_mut().start(
         path.start.x.value(),
         path.start.y.value(),
         path.start.z.value(),
     )?;
-    for edge in &path.edges {
+    for edge in path.edges.iter() {
         add_curve3(builder.pin_mut(), edge)?;
     }
     Ok(builder.pin_mut().finish(closed)?)
@@ -50,7 +44,7 @@ fn add_curve3(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve3) -> Result<()> 
             to.y.value(),
             to.z.value(),
         )?,
-        Curve3::Spline { points } => builder.spline(&flatten3(points))?,
+        Curve3::Spline { points } => builder.spline(&flatten3(points.as_slice()))?,
         Curve3::Helix {
             pitch,
             height,
@@ -71,7 +65,7 @@ fn add_curve2(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve2) -> Result<()> 
             to.y.value(),
             0.0,
         )?,
-        Curve2::Spline { points } => builder.spline(&flatten2(points))?,
+        Curve2::Spline { points } => builder.spline(&flatten2(points.as_slice()))?,
     }
     Ok(())
 }

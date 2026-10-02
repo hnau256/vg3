@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -32,6 +33,12 @@ private const val DISCRIMINATOR = "type"
 /** Target package for the generated classes; set from the command line (see [main]). */
 private var schemaPackage = DEFAULT_SCHEMA_PACKAGE
 
+/** Kotlin type used for non-empty arrays (`minItems >= 1`); set from the command line. */
+private var nonEmptyList = ClassName("arrow.core", "NonEmptyList")
+
+/** Serializer the generated non-empty properties are annotated with; set from the command line. */
+private var nonEmptyListSerializer = ClassName("arrow.core.serialization", "NonEmptyListSerializer")
+
 private val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
 private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
 private val JVM_INLINE = ClassName("kotlin.jvm", "JvmInline")
@@ -41,7 +48,7 @@ private val LIST = ClassName("kotlin.collections", "List")
 /**
  * Generates `kotlinx.serialization` classes from the vg3 IR JSON Schema.
  *
- * Usage: `<schema.json> <output-dir> [package]`.
+ * Usage: `<schema.json> <output-dir> [package] [non-empty-list] [non-empty-serializer]`.
  *
  * Mapping (schema -> Kotlin):
  * - `{"type":"object","properties":…}`      -> `@Serializable data class`
@@ -50,11 +57,14 @@ private val LIST = ClassName("kotlin.collections", "List")
  * - `{"type":"string","enum":[…]}`          -> `@Serializable enum class` (`@SerialName` per entry)
  * - `{"$ref":"#/$defs/X"}`                  -> `X`
  * - `{"anyOf":[X,{"type":"null"}]}`         -> `X?`
+ * - array with `minItems >= 1` (no `maxItems`) -> `NonEmptyList<T>` with `@Serializable(with = …)`
  * - non-required properties become optional (schema `default`, or `= null` so the engine applies its own default)
  */
 fun main(args: Array<String>) {
-    require(args.size in 2..3) { "usage: <schema.json> <output-dir> [package]" }
+    require(args.size in 2..5) { "usage: <schema.json> <output-dir> [package] [non-empty-list] [non-empty-serializer]" }
     schemaPackage = args.getOrNull(2) ?: DEFAULT_SCHEMA_PACKAGE
+    args.getOrNull(3)?.let { nonEmptyList = ClassName.bestGuess(it) }
+    args.getOrNull(4)?.let { nonEmptyListSerializer = ClassName.bestGuess(it) }
     val schema = Json.parseToJsonElement(File(args[0]).readText()).jsonObject
     val definitions = schema.getValue("\$defs").jsonObject
     val outputDir = File(args[1]).apply { mkdirs() }
@@ -199,13 +209,31 @@ private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field 
     }
 
     val parameter = ParameterSpec.builder(name, type)
-        .apply { if (default != null) defaultValue("%L", default) }
+        .apply {
+            if (default != null) defaultValue("%L", default)
+            if (isNonEmptyList(schema)) {
+                addAnnotation(
+                    AnnotationSpec.builder(SERIALIZABLE)
+                        .addMember("with = %T::class", nonEmptyListSerializer)
+                        .build(),
+                )
+            }
+        }
         .build()
     val property = PropertySpec.builder(name, type)
         .initializer("%N", name)
         .build()
     return Field(parameter, property)
 }
+
+/**
+ * A non-empty list: an array with `minItems >= 1` and no `maxItems` (fixed-size arrays like the
+ * `matrix` stay plain `List`). Maps to the Kotlin `NonEmptyList` with its Arrow serializer.
+ */
+private fun isNonEmptyList(schema: JsonObject): Boolean =
+    schema["type"]?.jsonPrimitive?.contentOrNull == "array" &&
+        (schema["minItems"]?.jsonPrimitive?.intOrNull ?: 0) >= 1 &&
+        !schema.containsKey("maxItems")
 
 private fun resolveType(schema: JsonObject): TypeName {
     schema["\$ref"]?.let { reference ->
@@ -218,7 +246,10 @@ private fun resolveType(schema: JsonObject): TypeName {
         return resolveType(concrete.jsonObject).copy(nullable = true)
     }
     return when (schema["type"]?.jsonPrimitive?.contentOrNull) {
-        "array" -> LIST.parameterizedBy(resolveType(schema.getValue("items").jsonObject))
+        "array" -> {
+            val element = resolveType(schema.getValue("items").jsonObject)
+            if (isNonEmptyList(schema)) nonEmptyList.parameterizedBy(element) else LIST.parameterizedBy(element)
+        }
         else -> primitiveType(schema)
     }
 }

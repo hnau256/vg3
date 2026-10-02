@@ -159,6 +159,10 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 в 0. Следствия (избыточность кэша, не ошибка): `rotate` на `θ` и `θ+2π` — разные ключи; `mirror` с `n`
 и `−n` — разные формулы.
 
+Списки, которые обязаны быть непустыми, типизированы как `NonEmpty<T>`: пустой массив отвергается **при
+десериализации**, а схема несёт `minItems: 1`. Так типизированы `Profile`/`Path.edges`,
+`Curve2/3.Spline.points`, `Loft.sections` и обе группы `bool` (`arguments`/`tools`).
+
 Сахар (`mirrorXY`, `rotateX`, `circle`, …) существует **только в DSL** и разворачивается в канонические
 формы; в JSON не встречается.
 
@@ -172,8 +176,8 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 // Curve3 only — винтовая линия вокруг +Z через начало:
 { "type": "helix", "pitch": Scalar, "height": Scalar, "right_handed": true }
 
-Profile = { "start": Point2, "edges": [ Curve2... ] }
-Path    = { "start": Point3, "edges": [ Curve3... ] }
+Profile = { "start": Point2, "edges": [ Curve2... ] }   // edges непусто (≥1)
+Path    = { "start": Point3, "edges": [ Curve3... ] }   // edges непусто (≥1)
 ```
 
 - `arc`/`spline` начинаются в конце предыдущего ребра (или в `start`).

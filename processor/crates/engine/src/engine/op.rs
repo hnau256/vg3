@@ -1,4 +1,4 @@
-use vg3_model::{BooleanKind, Node, SweepMode, TransformOp};
+use vg3_model::{BooleanKind, Node, NonEmpty, SweepMode, TransformOp};
 
 use crate::engine::contour::{build_path_wire, build_profile_wire};
 use crate::engine::fillet::evaluate_fillet;
@@ -100,7 +100,7 @@ impl Evaluate for Node<Part> {
                     return Err(Error::LoftNeedsTwoSections);
                 }
                 let mut builder = ffi::new_loft_builder(ruled);
-                for section in &sections {
+                for section in sections.iter() {
                     let wire = build_path_wire(section, true)?;
                     builder.pin_mut().add(&wire)?;
                 }
@@ -118,22 +118,19 @@ impl Evaluate for Node<Part> {
 /// Reduces already-evaluated operands with a binary operation (e.g. `fuse`/`cut`/`common`).
 fn evaluate_boolean(
     kind: BooleanKind,
-    arguments: Vec<Part>,
-    tools: Vec<Part>,
+    arguments: NonEmpty<Part>,
+    tools: NonEmpty<Part>,
 ) -> Result<Part> {
-    if arguments.is_empty() {
-        return Err(Error::MissingOperand);
-    }
     let kind_code = match kind {
         BooleanKind::Fuse => 0,
         BooleanKind::Cut => 1,
         BooleanKind::Common => 2,
     };
     let mut builder = ffi::new_boolean_builder(kind_code);
-    for argument in &arguments {
+    for argument in arguments.iter() {
         builder.pin_mut().add_argument(argument.shape())?;
     }
-    for tool in &tools {
+    for tool in tools.iter() {
         builder.pin_mut().add_tool(tool.shape())?;
     }
     make_part(builder.pin_mut().finish()?)

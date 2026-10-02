@@ -12,4 +12,4 @@ pub use error::{Error, Result};
 pub use model::{parse, Export, Model};
 pub use node::Node;
 pub use op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
-pub use value::{Angle, Color, Normal3, Operand, Point2, Point3, Scalar, Vector3};
+pub use value::{Angle, Color, NonEmpty, Normal3, Operand, Point2, Point3, Scalar, Vector3};

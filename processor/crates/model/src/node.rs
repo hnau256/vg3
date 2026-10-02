@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::curve::{Path, Profile};
 use crate::op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
-use crate::value::{Angle, Point3, Scalar};
+use crate::value::{Angle, NonEmpty, Point3, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -53,14 +53,14 @@ pub enum Node<T> {
         mode: SweepMode,
     },
     Loft {
-        sections: Vec<Path>,
+        sections: NonEmpty<Path>,
         #[serde(default)]
         ruled: bool,
     },
     Bool {
         kind: BooleanKind,
-        arguments: Vec<T>,
-        tools: Vec<T>,
+        arguments: NonEmpty<T>,
+        tools: NonEmpty<T>,
     },
     Transform {
         target: T,
@@ -162,16 +162,8 @@ impl<T: Clone> Node<T> {
                 tools,
             } => Node::Bool {
                 kind: *kind,
-                arguments: arguments
-                    .iter()
-                    .cloned()
-                    .map(&mut f)
-                    .collect::<std::result::Result<_, E>>()?,
-                tools: tools
-                    .iter()
-                    .cloned()
-                    .map(&mut f)
-                    .collect::<std::result::Result<_, E>>()?,
+                arguments: arguments.try_map(&mut f)?,
+                tools: tools.try_map(&mut f)?,
             },
             Node::Transform { target, op } => Node::Transform {
                 target: f(target.clone())?,

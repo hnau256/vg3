@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.FilletKind
 import org.hnau.ktcad.ir.Path
 import org.hnau.ktcad.ir.Profile
@@ -23,7 +24,7 @@ fun Profile.sweep(path: Path, mode: SweepMode? = null): Solid =
     sweep(mode = mode, path = path, profile = this)
 
 /** Loft through [this] sections (`size >= 2`); [ruled] switches from smooth to ruled surfaces. */
-fun List<Path>.loft(ruled: Boolean = false): Solid = loft(ruled = ruled, sections = this)
+fun List<Path>.loft(ruled: Boolean = false): Solid = loft(ruled = ruled, sections = toNonEmptyListOrThrow())
 
 /** Fillet every edge with a constant [radius] (or chamfer with `kind = CHAMFER`). */
 fun Solid.fillet(radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =

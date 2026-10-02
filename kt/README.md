@@ -102,11 +102,11 @@ fun main() {
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
-- **Контуры:** точки `p(x, y)` / `p(x, y, z)`;
-  `profile(x, y)` / `profile(Point2)` и `path(x, y, z)` / `path(Point3)` — стартовые точки;
-  далее цепочкой `lineTo` / `lineRel`, `arcTo` / `arcRel`, `splineTo` (абсолютные `…To` и относительные `…Rel`);
-  `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D), `polyline(...)` (3D), `Path.close()`.
-  Цепочку можно прервать в любой момент — получится готовый `Profile`/`Path`.
+- **Контуры:** начинаются с точки — `p(x, y).lineTo(...)` даёт `Profile`, `p(x, y, z).lineTo(...)`
+  даёт `Path`; далее цепочкой `lineTo` / `lineRel`, `arcTo` / `arcRel`, `splineTo` (абсолютные `…To`
+  и относительные `…Rel`). Плюс `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D),
+  `polyline(...)` (3D), `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому цепочка стартует с точки
+  (пустой контур невыразим), а каждый вызов сразу возвращает готовый `Profile`/`Path`.
 - **Построение тел из контуров:** `Profile.extrude(height)`, `Profile.revolve(angle)`,
   `Profile.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** — скругление
