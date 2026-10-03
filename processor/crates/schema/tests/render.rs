@@ -8,7 +8,7 @@ fn render_is_valid_json_schema_with_node_definition() {
         serde_json::from_str(&vg3_schema::render()).expect("the generator emits valid JSON");
     assert_eq!(json["type"], "object");
     assert!(
-        json["$defs"]["Node"].is_object(),
-        "the schema must define `Node`"
+        json["$defs"]["Body"].is_object(),
+        "the schema must define `Body`"
     );
 }

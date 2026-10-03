@@ -90,7 +90,7 @@ private fun buildFile(name: String, definition: JsonObject): FileSpec {
     return FileSpec.builder(schemaPackage, name).addType(type).build()
 }
 
-/** A named scalar (e.g. `Operand`): a `@JvmInline value class` over its primitive. */
+/** A named scalar (e.g. `BodyIndex`): a `@JvmInline value class` over its primitive. */
 private fun valueClass(name: String, definition: JsonObject): TypeSpec {
     val type = primitiveType(definition)
     val property = PropertySpec.builder("value", type).initializer("value").build()

@@ -4,12 +4,12 @@ import kotlinx.serialization.json.Json
 import org.hnau.ktcad.ir.Color
 import org.hnau.ktcad.ir.Export
 import org.hnau.ktcad.ir.Model
-import org.hnau.ktcad.ir.Node
-import org.hnau.ktcad.ir.Operand
+import org.hnau.ktcad.ir.Body
+import org.hnau.ktcad.ir.BodyIndex
 import java.util.concurrent.TimeUnit
 
 /**
- * The vg3 frontend: builds the IR (a flat arena of `ir.Node`s) from the [Solid] domain graph and
+ * The vg3 frontend: builds the IR (a flat arena of `ir.Body`s) from the [Solid] domain graph and
  * hands it to the `vg3` binary.
  *
  * Mirrors the CLI: a model (`version`/`parts`/`export`) plus an `export` configuration.
@@ -38,7 +38,7 @@ object Vg3 {
         }
         val modelJson = modelJson.encodeToString(
             Model.serializer(),
-            Model(version = VERSION, parts = arena.nodes, export = exports),
+            Model(version = VERSION, parts = arena.bodies, export = exports),
         )
         run(modelJson, format.toJson())
     }
@@ -74,17 +74,17 @@ data class Part(
  * Lowers the reference DAG to the flat arena:
  * - every distinct `Solid` occupies exactly one position (structural `equals` dedup → reuse shares
  *   an entry), added bottom-up so operands always precede their parents;
- * - operands are indices strictly less than the node's own index (back-references only).
+ * - operands are indices strictly less than the body's own index (back-references only).
  */
 class Arena {
-    private val visited = HashMap<Solid, Operand>()
-    val nodes = mutableListOf<Node>()
+    private val visited = HashMap<Solid, BodyIndex>()
+    val bodies = mutableListOf<Body>()
 
-    /** The `Operand` of [solid], lowering it (and its children first) into the arena if needed. */
-    fun get(solid: Solid): Operand = visited.getOrPut(solid) {
-        val node = solid.lower(::get)
-        nodes += node
-        Operand(nodes.lastIndex)
+    /** The `BodyIndex` of [solid], lowering it (and its children first) into the arena if needed. */
+    fun get(solid: Solid): BodyIndex = visited.getOrPut(solid) {
+        val body = solid.lower(::get)
+        bodies += body
+        BodyIndex(bodies.lastIndex)
     }
 }
 

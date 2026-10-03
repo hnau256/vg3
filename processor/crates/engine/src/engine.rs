@@ -1,9 +1,9 @@
-//! The `Node -> Part` transformation, and the Merkle key that the cache is keyed by.
+//! The `Body -> Part` transformation, and the Merkle key that the cache is keyed by.
 
 use std::sync::OnceLock;
 
 use vg3_cache::{get_or_put, Cache, Fingerprinter, Key};
-use vg3_model::{Color, Model, Node, Operand};
+use vg3_model::{Color, Model, Body, BodyIndex};
 
 use crate::error::{Error, Result};
 use crate::sys::ffi;
@@ -30,47 +30,47 @@ pub struct Output {
 /// public so the caller can build a disk-backed cache with it.
 pub fn evaluate<C: Cache<Key, Part> + ?Sized>(model: &Model, cache: &mut C) -> Result<Vec<Output>> {
     // Validate every reference (`index < current`) up front.
-    for (index, node) in model.parts.iter().enumerate() {
-        node.try_map(|operand| -> Result<()> { validate_index(operand.value(), index) })?;
+    for (index, body) in model.parts.iter().enumerate() {
+        body.try_map(|operand| -> Result<()> { validate_index(operand.value(), index) })?;
     }
 
     let parts = &model.parts;
     let mut outputs = Vec::new();
     for item in &model.export {
         let index = item.index.value();
-        let node = parts.get(index).ok_or(Error::ExportIndex {
+        let body = parts.get(index).ok_or(Error::ExportIndex {
             index,
             parts: parts.len(),
         })?;
         outputs.push(Output {
             name: item.name.clone(),
             color: item.color,
-            part: get_or_evaluate(node, parts, cache)?,
+            part: get_or_evaluate(body, parts, cache)?,
         });
     }
     Ok(outputs)
 }
 
-/// The whole `Node -> Part` transformation. The cache key is a purely internal detail: computed
+/// The whole `Body -> Part` transformation. The cache key is a purely internal detail: computed
 /// here, right before use, and never leaving this function. The cache is whatever the caller
 /// passed in — memory, disk, a layering of both, or nothing.
 fn get_or_evaluate<C: Cache<Key, Part> + ?Sized>(
-    node: &Node<Operand>,
-    parts: &[Node<Operand>],
+    body: &Body<BodyIndex>,
+    parts: &[Body<BodyIndex>],
     cache: &mut C,
 ) -> Result<Part> {
-    let key = key_of(node, parts)?;
+    let key = key_of(body, parts)?;
     get_or_put(cache, &key, |cache| {
-        let ready: Node<Part> =
-            node.try_map(|operand| get_or_evaluate(&parts[operand.value()], parts, cache))?;
+        let ready: Body<Part> =
+            body.try_map(|operand| get_or_evaluate(&parts[operand.value()], parts, cache))?;
         ready.evaluate()
     })
 }
 
-/// The node's Merkle key `H(node ‖ operand_keys…)`, computed on demand (keys are not stored).
+/// The body's Merkle key `H(body ‖ operand_keys…)`, computed on demand (keys are not stored).
 /// References are `index < current` (checked in [`evaluate`]), so `parts[operand]` is in range.
-fn key_of(node: &Node<Operand>, parts: &[Node<Operand>]) -> Result<Key> {
-    let mapped: Node<Key> = node.try_map(|operand| key_of(&parts[operand.value()], parts))?;
+fn key_of(body: &Body<BodyIndex>, parts: &[Body<BodyIndex>]) -> Result<Key> {
+    let mapped: Body<Key> = body.try_map(|operand| key_of(&parts[operand.value()], parts))?;
     Ok(fingerprinter().of(&mapped))
 }
 
@@ -104,8 +104,8 @@ mod tests {
         Scalar::try_from(value).expect("finite")
     }
 
-    fn box_node(size: f64) -> Node<Operand> {
-        Node::Box {
+    fn box_node(size: f64) -> Body<BodyIndex> {
+        Body::Box {
             width: scalar(size),
             length: scalar(size),
             height: scalar(size),
@@ -114,13 +114,13 @@ mod tests {
 
     fn export(index: usize) -> Export {
         Export {
-            index: Operand::new(index),
+            index: BodyIndex::new(index),
             name: format!("p{index}"),
             color: None,
         }
     }
 
-    fn model(parts: Vec<Node<Operand>>) -> Model {
+    fn model(parts: Vec<Body<BodyIndex>>) -> Model {
         let export = (0..parts.len()).map(export).collect();
         Model {
             version: 1,
@@ -150,7 +150,7 @@ mod tests {
         assert_eq!(outputs.len(), 2);
         assert!(
             outputs[0].part.shares_storage(&outputs[1].part),
-            "the cache must reuse an identical node"
+            "the cache must reuse an identical body"
         );
     }
 

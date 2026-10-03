@@ -1,17 +1,17 @@
-//! The top-level model: a flat arena of nodes, plus parsing.
+//! The top-level model: a flat arena of bodies, plus parsing.
 
 use serde::Deserialize;
 
 use crate::error::{Error, Result};
-use crate::node::Node;
-use crate::value::{Color, Operand};
+use crate::body::Body;
+use crate::value::{Color, BodyIndex};
 
 /// An explicit export entry: which part to output, its name and (optionally) its color.
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Export {
-    pub index: Operand,
+    pub index: BodyIndex,
     pub name: String,
     #[serde(default)]
     pub color: Option<Color>,
@@ -29,7 +29,7 @@ pub struct Export {
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
-    pub parts: Vec<Node<Operand>>,
+    pub parts: Vec<Body<BodyIndex>>,
     pub export: Vec<Export>,
 }
 

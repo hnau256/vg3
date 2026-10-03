@@ -345,23 +345,23 @@ IO не регистрируется. Тернарного `? :` нет — `if 
 processor/            # самостоятельный Cargo workspace
   crates/
     cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk. Зависит только от blake3.
-    model/   vg3-model   — IR: Node/Model + parse + канонические типы. Зависит только от serde.
-    engine/  vg3-engine  — Node->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/STEP/PNG.
+    model/   vg3-model   — IR: Body/Model + parse + канонические типы. Зависит только от serde.
+    engine/  vg3-engine  — Body->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/STEP/PNG.
                            Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
     cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
     schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).
 ```
 
 Граф: `vg3-cache -> {}`, `vg3-model -> {}`, `vg3-engine -> {cache, model}`, `vg3 -> {cache, model, engine}`,
-`vg3-schema -> {model}`. То есть `vg3-cache` **не может** упомянуть `Node`/`Part` — это гарантируется
+`vg3-schema -> {model}`. То есть `vg3-cache` **не может** упомянуть `Body`/`Part` — это гарантируется
 компилятором, а не соглашением.
 
 ### Доменная модель (`model`)
 
 Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах):
 
-- `Model { version, parts: Vec<Node>, export: Vec<Export> }` — верхний уровень.
-- `Node` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
+- `Model { version, parts: Vec<Body>, export: Vec<Export> }` — верхний уровень.
+- `Body` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
 - Операнд — всегда `usize` (индекс назад).
 - `Profile`/`Path`, `Curve2`/`Curve3`.
 - Канонические значения: `Scalar`, `Angle`, `Point2/3`, `Vector3`, `Normal3`.
@@ -373,12 +373,12 @@ processor/            # самостоятельный Cargo workspace
 1. **Валидирует ссылки** по всей арене (один `try_map`): каждый операнд — `index < current`.
 2. **Merkle-проход**: ключ узла — `H(версия ‖ узел ‖ ключи операндов…)`, bottom-up.
 3. **Строит корни**: операнды берутся из кэша по ключу или строятся рекурсивно, затем
-   `Node<Part>::evaluate` применяет операцию; результат кладётся в кэш.
+   `Body<Part>::evaluate` применяет операцию; результат кладётся в кэш.
 4. После **каждой** операции — `IsDone()`, `BRepCheck_Analyzer`, инвариант «только `Solid`».
 5. Результат каждого узла нормализуется `unify`.
 
 `Part` — построенная сущность (`Rc` над нативным шейпом; дешёвый клон). Умеет `solid_count()`,
-`face_count()`, `volume()`, `bounding_box()`. Не путать с IR-узлом `Node` (описанием).
+`face_count()`, `volume()`, `bounding_box()`. Не путать с IR-узлом `Body` (описанием).
 
 ### Кэш
 

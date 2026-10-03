@@ -6,7 +6,7 @@ import org.hnau.ktcad.ir.Point3
  * Builds a polyhedron from its faces. Each face is a list of points given in order; equal points
  * (structural `equals`) share one position, so callers never deal with indices.
  *
- * The model node stores a flat point list plus faces as index lists; this sugar computes both.
+ * The model body stores a flat point list plus faces as index lists; this sugar computes both.
  */
 fun polyhedron(faces: List<List<Point3>>): Solid {
     val points = mutableListOf<Point3>()

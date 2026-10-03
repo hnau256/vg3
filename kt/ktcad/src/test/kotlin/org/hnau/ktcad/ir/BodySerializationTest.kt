@@ -7,14 +7,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class NodeSerializationTest {
+class BodySerializationTest {
 
     private val json = Json { encodeDefaults = false }
 
     @Test
     fun node_serializes_as_tagged_sealed_interface() {
-        val node = Node.Box(width = 1.0, length = 2.0, height = 3.0)
-        val actual = Json.parseToJsonElement(json.encodeToString(Node.serializer(), node))
+        val body = Body.Box(width = 1.0, length = 2.0, height = 3.0)
+        val actual = Json.parseToJsonElement(json.encodeToString(Body.serializer(), body))
         val expected = Json.parseToJsonElement(
             """{ "type": "box", "width": 1.0, "length": 2.0, "height": 3.0 }""",
         )
@@ -23,7 +23,7 @@ class NodeSerializationTest {
 
     @Test
     fun default_valued_properties_are_omitted() {
-        val node = Node.Sweep(
+        val body = Body.Sweep(
             profile = Profile(
                 start = Point2(0.0, 0.0),
                 edges = nonEmptyListOf(Curve2.Line(Point2(1.0, 0.0))),
@@ -33,7 +33,7 @@ class NodeSerializationTest {
                 edges = nonEmptyListOf(Curve3.Line(Point3(0.0, 0.0, 1.0))),
             ),
         )
-        val actual = Json.parseToJsonElement(json.encodeToString(Node.serializer(), node))
+        val actual = Json.parseToJsonElement(json.encodeToString(Body.serializer(), body))
         assertTrue("mode" !in actual.jsonObject, "default `mode` must be omitted: $actual")
     }
 
@@ -41,11 +41,11 @@ class NodeSerializationTest {
     fun operands_are_plain_integers() {
         val actual = Json.parseToJsonElement(
             json.encodeToString(
-                Node.serializer(),
-                Node.Bool(
+                Body.serializer(),
+                Body.Bool(
                     kind = BooleanKind.CUT,
-                    arguments = nonEmptyListOf(Operand(0)),
-                    tools = nonEmptyListOf(Operand(1)),
+                    arguments = nonEmptyListOf(BodyIndex(0)),
+                    tools = nonEmptyListOf(BodyIndex(1)),
                 ),
             ),
         )

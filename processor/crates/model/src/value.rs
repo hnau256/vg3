@@ -35,7 +35,7 @@ impl<T> NonEmpty<T> {
 }
 
 impl<T: Clone> NonEmpty<T> {
-    /// Maps every element, preserving non-emptiness (mirrors the `Node::try_map` functor).
+    /// Maps every element, preserving non-emptiness (mirrors the `Body::try_map` functor).
     pub fn try_map<U, E>(
         &self,
         mut f: impl FnMut(T) -> std::result::Result<U, E>,
@@ -61,18 +61,18 @@ impl<T> TryFrom<Vec<T>> for NonEmpty<T> {
     }
 }
 
-/// A back-reference to an earlier node in the arena (`index < current`).
+/// A back-reference to an earlier body in the arena (`index < current`).
 ///
 /// A plain newtype over `usize`: on the wire it is just an integer. Correctness (the reference
 /// points backwards) is checked during evaluation, not at construction.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
-pub struct Operand(usize);
+pub struct BodyIndex(usize);
 
-impl Operand {
+impl BodyIndex {
     pub fn new(index: usize) -> Self {
-        Operand(index)
+        BodyIndex(index)
     }
 
     pub fn value(self) -> usize {

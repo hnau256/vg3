@@ -1,4 +1,4 @@
-//! The IR node — a flat arena of these is the model.
+//! The IR body — a flat arena of these is the model.
 
 use serde::Deserialize;
 
@@ -9,7 +9,7 @@ use crate::value::{Angle, NonEmpty, Point3, Scalar};
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum Node<T> {
+pub enum Body<T> {
     Box {
         width: Scalar,
         length: Scalar,
@@ -82,106 +82,106 @@ pub enum Node<T> {
     },
 }
 
-impl<T: Clone> Node<T> {
-    /// Functor over operands: rebuilds the node, applying `f` to every operand, in order.
+impl<T: Clone> Body<T> {
+    /// Functor over operands: rebuilds the body, applying `f` to every operand, in order.
     ///
-    /// This is the single source of truth for "where are a node's operands". Operand-level
-    /// concerns — validation, reachability, evaluation (`Node<usize>` → `Node<Part>`) and the
+    /// This is the single source of truth for "where are a body's operands". BodyIndex-level
+    /// concerns — validation, reachability, evaluation (`Body<usize>` → `Body<Part>`) and the
     /// cache key — are all expressed as a `try_map` over the arena.
     pub fn try_map<U, E>(
         &self,
         mut f: impl FnMut(T) -> std::result::Result<U, E>,
-    ) -> std::result::Result<Node<U>, E> {
+    ) -> std::result::Result<Body<U>, E> {
         Ok(match self {
-            Node::Box {
+            Body::Box {
                 width,
                 length,
                 height,
-            } => Node::Box {
+            } => Body::Box {
                 width: *width,
                 length: *length,
                 height: *height,
             },
-            Node::Sphere { radius } => Node::Sphere { radius: *radius },
-            Node::Cylinder { radius, height } => Node::Cylinder {
+            Body::Sphere { radius } => Body::Sphere { radius: *radius },
+            Body::Cylinder { radius, height } => Body::Cylinder {
                 radius: *radius,
                 height: *height,
             },
-            Node::Cone {
+            Body::Cone {
                 radius_bottom,
                 radius_top,
                 height,
-            } => Node::Cone {
+            } => Body::Cone {
                 radius_bottom: *radius_bottom,
                 radius_top: *radius_top,
                 height: *height,
             },
-            Node::Torus {
+            Body::Torus {
                 major_radius,
                 minor_radius,
-            } => Node::Torus {
+            } => Body::Torus {
                 major_radius: *major_radius,
                 minor_radius: *minor_radius,
             },
-            Node::Wedge {
+            Body::Wedge {
                 width,
                 length,
                 height,
                 top_width,
-            } => Node::Wedge {
+            } => Body::Wedge {
                 width: *width,
                 length: *length,
                 height: *height,
                 top_width: *top_width,
             },
-            Node::Halfspace => Node::Halfspace,
-            Node::Extrude { profile, height } => Node::Extrude {
+            Body::Halfspace => Body::Halfspace,
+            Body::Extrude { profile, height } => Body::Extrude {
                 profile: profile.clone(),
                 height: *height,
             },
-            Node::Revolve { profile, angle } => Node::Revolve {
+            Body::Revolve { profile, angle } => Body::Revolve {
                 profile: profile.clone(),
                 angle: *angle,
             },
-            Node::Sweep {
+            Body::Sweep {
                 profile,
                 path,
                 mode,
-            } => Node::Sweep {
+            } => Body::Sweep {
                 profile: profile.clone(),
                 path: path.clone(),
                 mode: *mode,
             },
-            Node::Loft { sections, ruled } => Node::Loft {
+            Body::Loft { sections, ruled } => Body::Loft {
                 sections: sections.clone(),
                 ruled: *ruled,
             },
-            Node::Bool {
+            Body::Bool {
                 kind,
                 arguments,
                 tools,
-            } => Node::Bool {
+            } => Body::Bool {
                 kind: *kind,
                 arguments: arguments.try_map(&mut f)?,
                 tools: tools.try_map(&mut f)?,
             },
-            Node::Transform { target, op } => Node::Transform {
+            Body::Transform { target, op } => Body::Transform {
                 target: f(target.clone())?,
                 op: op.clone(),
             },
-            Node::Offset { target, distance } => Node::Offset {
+            Body::Offset { target, distance } => Body::Offset {
                 target: f(target.clone())?,
                 distance: *distance,
             },
-            Node::Polyhedron { points, faces } => Node::Polyhedron {
+            Body::Polyhedron { points, faces } => Body::Polyhedron {
                 points: points.clone(),
                 faces: faces.clone(),
             },
-            Node::Fillet {
+            Body::Fillet {
                 target,
                 kind,
                 radius,
-            } => Node::Fillet {
+            } => Body::Fillet {
                 target: f(target.clone())?,
                 kind: *kind,
                 radius: radius.clone(),

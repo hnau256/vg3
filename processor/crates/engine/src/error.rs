@@ -23,7 +23,7 @@ pub enum Error {
     #[error("export index {index} is out of range (parts has {parts})")]
     ExportIndex { index: usize, parts: usize },
 
-    #[error("node requires at least one operand")]
+    #[error("body requires at least one operand")]
     MissingOperand,
 
     #[error("loft requires at least two sections")]

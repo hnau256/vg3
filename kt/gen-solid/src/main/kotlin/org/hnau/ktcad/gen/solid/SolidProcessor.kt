@@ -27,27 +27,27 @@ import com.squareup.kotlinpoet.ksp.writeTo
 
 private const val DOMAIN_PACKAGE = "org.hnau.ktcad"
 private const val IR_PACKAGE = "$DOMAIN_PACKAGE.ir"
-private const val NODE_NAME_SHORT = "Node"
-private const val OPERAND_NAME_SHORT = "Operand"
+private const val BODY_NAME_SHORT = "Body"
+private const val BODY_INDEX_NAME_SHORT = "BodyIndex"
 private const val SOLID_NAME = "Solid"
 
 /** FQN of the class whose sealed variants drive the `Solid` generation. */
-const val NODE_NAME = "$IR_PACKAGE.$NODE_NAME_SHORT"
-private const val OPERAND_NAME = "$IR_PACKAGE.$OPERAND_NAME_SHORT"
+const val BODY_NAME = "$IR_PACKAGE.$BODY_NAME_SHORT"
+private const val BODY_INDEX_NAME = "$IR_PACKAGE.$BODY_INDEX_NAME_SHORT"
 
 /**
- * Generates the reference-based `Solid` domain layer from the generated `ir.Node`.
+ * Generates the reference-based `Solid` domain layer from the generated `ir.Body`.
  *
  * The `ir` package is a plain input (found by name, not by a marker annotation), so the
  * schema→Kotlin generator stays generic; all domain knowledge lives here.
  *
- * For each `Node` variant it emits a matching `Solid` variant with `Operand` fields widened to
- * `Solid` (`List<Operand>` → `List<Solid>`), plus:
- * - `Solid.lower(operand: (Solid) -> Operand): Node` — the structural mapper that asks the caller
+ * For each `Body` variant it emits a matching `Solid` variant with `BodyIndex` fields widened to
+ * `Solid` (`List<BodyIndex>` → `List<Solid>`), plus:
+ * - `Solid.lower(operand: (Solid) -> BodyIndex): Body` — the structural mapper that asks the caller
  *   for each child's index (storage stays outside);
  * - factories (`box`, `fuse`, …).
  *
- * No `Node -> Solid` mapper is generated: the CLI never returns geometry to Kotlin.
+ * No `Body -> Solid` mapper is generated: the CLI never returns geometry to Kotlin.
  */
 class SolidProcessor(
     private val codeGenerator: CodeGenerator,
@@ -60,30 +60,30 @@ class SolidProcessor(
         if (generated) return emptyList()
         generated = true
 
-        val node: KSClassDeclaration? =
-            resolver.getClassDeclarationByName(resolver.getKSNameFromString(NODE_NAME))
-        if (node == null) {
-            logger.warn("SolidProcessor: $NODE_NAME not found; nothing to generate")
+        val body: KSClassDeclaration? =
+            resolver.getClassDeclarationByName(resolver.getKSNameFromString(BODY_NAME))
+        if (body == null) {
+            logger.warn("SolidProcessor: $BODY_NAME not found; nothing to generate")
             return emptyList()
         }
         val operand: KSClassDeclaration? =
-            resolver.getClassDeclarationByName(resolver.getKSNameFromString(OPERAND_NAME))
+            resolver.getClassDeclarationByName(resolver.getKSNameFromString(BODY_INDEX_NAME))
         if (operand == null) {
-            logger.warn("SolidProcessor: $OPERAND_NAME not found; nothing to generate")
+            logger.warn("SolidProcessor: $BODY_INDEX_NAME not found; nothing to generate")
             return emptyList()
         }
 
-        val variants: List<KSClassDeclaration> = node.getSealedSubclasses().toList().sortedBy { it.simpleName.asString() }
+        val variants: List<KSClassDeclaration> = body.getSealedSubclasses().toList().sortedBy { it.simpleName.asString() }
         if (variants.isEmpty()) {
-            logger.warn("SolidProcessor: $NODE_NAME has no sealed subclasses; nothing to generate")
+            logger.warn("SolidProcessor: $BODY_NAME has no sealed subclasses; nothing to generate")
             return emptyList()
         }
 
-        // `Node` lives in the main source set; when the processor also runs for test sources the IR
+        // `Body` lives in the main source set; when the processor also runs for test sources the IR
         // is already compiled, so there is no originating file to attach to (and nothing new to emit).
-        val origin = node.containingFile ?: return emptyList()
+        val origin = body.containingFile ?: return emptyList()
 
-        val file = generate(node, operand, variants)
+        val file = generate(body, operand, variants)
         val dependencies = Dependencies(aggregating = false, origin)
         file.writeTo(codeGenerator, dependencies)
         logger.info("SolidProcessor: generated Solid for ${variants.size} variants")
@@ -91,11 +91,11 @@ class SolidProcessor(
     }
 
     private fun generate(
-        node: KSClassDeclaration,
+        body: KSClassDeclaration,
         operand: KSClassDeclaration,
         variants: List<KSClassDeclaration>,
     ): FileSpec {
-        val nodeType = node.toClassName()
+        val nodeType = body.toClassName()
         val operandType = operand.toClassName()
         val solidName = ClassName(DOMAIN_PACKAGE, SOLID_NAME)
         val operandFn = LambdaTypeName.get(
@@ -147,7 +147,7 @@ class SolidProcessor(
         return builder.build()
     }
 
-    // --- Solid -> Node -------------------------------------------------
+    // --- Solid -> Body -------------------------------------------------
 
     private fun lowerMapper(
         variants: List<KSClassDeclaration>,
@@ -224,13 +224,13 @@ class SolidProcessor(
 
     // --- helpers -------------------------------------------------------
 
-    /** `Solid` field type: `Operand` → `Solid`, `List<Operand>` → `List<Solid>`, others unchanged. */
+    /** `Solid` field type: `BodyIndex` → `Solid`, `List<BodyIndex>` → `List<Solid>`, others unchanged. */
     private fun solidType(type: KSType, operand: KSClassDeclaration, solidName: ClassName): TypeName {
-        // `Operand` itself widens to `Solid`.
+        // `BodyIndex` itself widens to `Solid`.
         if (isOperand(type, operand)) {
             return if (type.isMarkedNullable) solidName.copy(nullable = true) else solidName
         }
-        // A parameterized `ir` type (e.g. `List<Operand>`): widen its arguments.
+        // A parameterized `ir` type (e.g. `List<BodyIndex>`): widen its arguments.
         if (type.arguments.isNotEmpty()) {
             val base = (type.declaration as KSClassDeclaration).toClassName()
             val widened = type.arguments.map { argument ->

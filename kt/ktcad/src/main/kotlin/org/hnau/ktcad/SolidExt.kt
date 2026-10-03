@@ -17,7 +17,7 @@ import org.hnau.ktcad.ir.Vector3
  * - `right` = `+X`, `left` = `−X`
  * - `forward` = `+Y`, `back` = `−Y`
  *
- * Transforms wrap the operand in the `transform` IR node (there is a single canonical way to place
+ * Transforms wrap the operand in the `transform` IR body (there is a single canonical way to place
  * a shape); the engine applies `ops` left to right.
  */
 

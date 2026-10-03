@@ -1,4 +1,4 @@
-use vg3_model::{BooleanKind, Node, NonEmpty, SweepMode, TransformOp};
+use vg3_model::{BooleanKind, Body, NonEmpty, SweepMode, TransformOp};
 
 use crate::engine::contour::{build_path_wire, build_profile_wire};
 use crate::engine::fillet::evaluate_fillet;
@@ -6,15 +6,15 @@ use crate::engine::part::{make_part, Part};
 use crate::error::{Error, Result};
 use crate::sys::ffi;
 
-/// Applies a node's operation once all its operands are already evaluated.
+/// Applies a body's operation once all its operands are already evaluated.
 pub(super) trait Evaluate {
     fn evaluate(self) -> Result<Part>;
 }
 
-impl Evaluate for Node<Part> {
+impl Evaluate for Body<Part> {
     fn evaluate(self) -> Result<Part> {
         match self {
-            Node::Box {
+            Body::Box {
                 width,
                 length,
                 height,
@@ -23,11 +23,11 @@ impl Evaluate for Node<Part> {
                 length.value(),
                 height.value(),
             )?),
-            Node::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
-            Node::Cylinder { radius, height } => {
+            Body::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
+            Body::Cylinder { radius, height } => {
                 make_part(ffi::make_cylinder(radius.value(), height.value())?)
             }
-            Node::Cone {
+            Body::Cone {
                 radius_bottom,
                 radius_top,
                 height,
@@ -36,11 +36,11 @@ impl Evaluate for Node<Part> {
                 radius_top.value(),
                 height.value(),
             )?),
-            Node::Torus {
+            Body::Torus {
                 major_radius,
                 minor_radius,
             } => make_part(ffi::make_torus(major_radius.value(), minor_radius.value())?),
-            Node::Wedge {
+            Body::Wedge {
                 width,
                 length,
                 height,
@@ -51,17 +51,17 @@ impl Evaluate for Node<Part> {
                 height.value(),
                 top_width.value(),
             )?),
-            Node::Halfspace => make_part(ffi::make_halfspace()?),
-            Node::Bool {
+            Body::Halfspace => make_part(ffi::make_halfspace()?),
+            Body::Bool {
                 kind,
                 arguments,
                 tools,
             } => evaluate_boolean(kind, arguments, tools),
-            Node::Transform { target, op } => apply_transform(target, &op),
-            Node::Offset { target, distance } => {
+            Body::Transform { target, op } => apply_transform(target, &op),
+            Body::Offset { target, distance } => {
                 make_part(ffi::offset(target.shape(), distance.value())?)
             }
-            Node::Polyhedron { points, faces } => {
+            Body::Polyhedron { points, faces } => {
                 let positions: Vec<f64> = points
                     .iter()
                     .flat_map(|point| [point.x.value(), point.y.value(), point.z.value()])
@@ -77,15 +77,15 @@ impl Evaluate for Node<Part> {
                 }
                 make_part(ffi::make_polyhedron(&positions, &indices, &offsets)?)
             }
-            Node::Extrude { profile, height } => {
+            Body::Extrude { profile, height } => {
                 let wire = build_profile_wire(&profile)?;
                 make_part(ffi::extrude(&wire, height.value())?)
             }
-            Node::Revolve { profile, angle } => {
+            Body::Revolve { profile, angle } => {
                 let wire = build_profile_wire(&profile)?;
                 make_part(ffi::revolve(&wire, angle.value())?)
             }
-            Node::Sweep {
+            Body::Sweep {
                 profile,
                 path,
                 mode,
@@ -95,7 +95,7 @@ impl Evaluate for Node<Part> {
                 let follow = matches!(mode, SweepMode::Follow);
                 make_part(ffi::sweep(&profile_wire, &spine, follow)?)
             }
-            Node::Loft { sections, ruled } => {
+            Body::Loft { sections, ruled } => {
                 if sections.len() < 2 {
                     return Err(Error::LoftNeedsTwoSections);
                 }
@@ -106,7 +106,7 @@ impl Evaluate for Node<Part> {
                 }
                 make_part(builder.pin_mut().finish()?)
             }
-            Node::Fillet {
+            Body::Fillet {
                 target,
                 kind,
                 radius,
