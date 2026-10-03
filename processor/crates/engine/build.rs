@@ -18,6 +18,10 @@ const OCCT_TOOLKITS: &[&str] = &[
     "TKDESTL",
     "TKShHealing",
     "TKDESTEP",
+    "TKXCAF",
+    "TKLCAF",
+    "TKCDF",
+    "TKXSBase",
 ];
 
 fn resolve_occt_directory() -> PathBuf {

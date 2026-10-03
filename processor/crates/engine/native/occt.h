@@ -15,6 +15,10 @@
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pnt.hxx>
 
+#include <TDocStd_Document.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <XCAFDoc_ColorTool.hxx>
+
 namespace vg3 {
 
 class Shape {
@@ -201,6 +205,29 @@ std::unique_ptr<Shape> unify(const Shape& shape);
 bool write_stl(const Shape& shape, rust::Str path, double tolerance);
 
 bool write_step(const Shape& shape, rust::Str path);
+
+class StepBuilder {
+public:
+    StepBuilder();
+
+    void add_part(
+        const Shape& shape,
+        rust::Str name,
+        bool has_color,
+        double r,
+        double g,
+        double b
+    );
+
+    bool write(rust::Str path);
+
+private:
+    Handle(TDocStd_Document) document_;
+    Handle(XCAFDoc_ShapeTool) shapes_;
+    Handle(XCAFDoc_ColorTool) colors_;
+};
+
+std::unique_ptr<StepBuilder> new_step_builder();
 
 rust::Vec<std::uint8_t> brep_encode(const Shape& shape);
 

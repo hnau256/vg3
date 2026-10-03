@@ -65,6 +65,13 @@
 #include <StlAPI_Writer.hxx>
 #include <STEPControl_Writer.hxx>
 #include <IFSelect_ReturnStatus.hxx>
+#include <STEPCAFControl_Writer.hxx>
+#include <XCAFApp_Application.hxx>
+#include <XCAFDoc_DocumentTool.hxx>
+#include <XCAFDoc_ColorTool.hxx>
+#include <TDataStd_Name.hxx>
+#include <TDocStd_Application.hxx>
+#include <Quantity_Color.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopTools_FormatVersion.hxx>
 #include <TopExp.hxx>
@@ -1177,6 +1184,62 @@ bool write_step(const Shape& shape, rust::Str path) {
     } catch (const Standard_Failure& failure) {
         rethrow_as_std_error(failure);
     }
+}
+
+StepBuilder::StepBuilder() {
+    Handle(TDocStd_Application) application = XCAFApp_Application::GetApplication();
+    Handle(TDocStd_Document) document = new TDocStd_Document("MDTV-XCAF");
+    application->NewDocument("MDTV-XCAF", document);
+    document_ = document;
+    shapes_ = XCAFDoc_DocumentTool::ShapeTool(document_->Main());
+    colors_ = XCAFDoc_DocumentTool::ColorTool(document_->Main());
+}
+
+void StepBuilder::add_part(
+    const Shape& shape,
+    rust::Str name,
+    bool has_color,
+    double r,
+    double g,
+    double b
+) {
+    try {
+        const TDF_Label label = shapes_->AddShape(shape.topods(), false);
+        shapes_->SetShape(label, shape.topods());
+        const std::string name_string(name.data(), name.size());
+        TDataStd_Name::Set(
+            label,
+            TCollection_ExtendedString(name_string.c_str(), Standard_True)
+        );
+        if (has_color) {
+            colors_->SetColor(
+                label,
+                Quantity_Color(r, g, b, Quantity_TOC_RGB),
+                XCAFDoc_ColorGen
+            );
+        }
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
+bool StepBuilder::write(rust::Str path) {
+    try {
+        const std::string path_string(path.data(), path.size());
+        STEPCAFControl_Writer writer;
+        writer.SetColorMode(Standard_True);
+        writer.SetNameMode(Standard_True);
+        if (!writer.Transfer(document_, STEPControl_AsIs)) {
+            throw std::runtime_error("STEPCAFControl_Writer::Transfer did not complete");
+        }
+        return writer.Write(path_string.c_str()) == IFSelect_RetDone;
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<StepBuilder> new_step_builder() {
+    return std::make_unique<StepBuilder>();
 }
 
 }  // namespace vg3

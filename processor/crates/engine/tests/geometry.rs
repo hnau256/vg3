@@ -281,7 +281,6 @@ fn chamfer_on_a_box_removes_material() {
 
 #[test]
 fn step_export_is_a_single_file() {
-    let parts = build("box.json");
     let path = std::env::temp_dir().join("vg3-step-test.step");
     let _ = std::fs::remove_file(&path);
     let config = vg3_engine::ExportConfig::from_json(&format!(
@@ -289,13 +288,13 @@ fn step_export_is_a_single_file() {
         path.display()
     ))
     .expect("step config parses");
-    let outputs: Vec<vg3_engine::Output> = build_outputs("box.json")
-        .into_iter()
-        .collect();
+    let outputs = build_outputs("bottle.json");
     config.export(&outputs).expect("step export succeeds");
     let contents = std::fs::read_to_string(&path).expect("step file is written");
     assert!(contents.starts_with("ISO-10303-21;"));
     assert!(contents.contains("AUTOMOTIVE_DESIGN"));
-    drop(parts);
+    // The bottle fixture has a color and a name, so STEP carries both.
+    assert!(contents.contains("COLOUR_RGB"));
+    assert!(contents.contains("PRODUCT('bottle'"));
     let _ = std::fs::remove_file(&path);
 }

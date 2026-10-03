@@ -147,6 +147,22 @@ pub(crate) mod ffi {
 
         fn write_step(shape: &Shape, path: &str) -> Result<bool>;
 
+        type StepBuilder;
+
+        fn new_step_builder() -> UniquePtr<StepBuilder>;
+
+        fn add_part(
+            self: Pin<&mut StepBuilder>,
+            shape: &Shape,
+            name: &str,
+            has_color: bool,
+            r: f64,
+            g: f64,
+            b: f64,
+        ) -> Result<()>;
+
+        fn write(self: Pin<&mut StepBuilder>, path: &str) -> Result<bool>;
+
         fn brep_encode(shape: &Shape) -> Result<Vec<u8>>;
 
         fn brep_decode(bytes: &[u8]) -> Result<UniquePtr<Shape>>;

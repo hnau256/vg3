@@ -145,12 +145,24 @@ fn export_stl(outputs: &[Output], layout: &ExportLayout, tolerance: f64) -> Resu
 }
 
 fn export_step(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
-    let compound = build_compound(outputs)?;
     let path = filename
         .to_str()
         .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
-    if !ffi::write_step(&compound, path)? {
-        return Err(Error::Export("STEPControl_Writer reported failure".to_string()));
+    let mut builder = ffi::new_step_builder();
+    for output in outputs {
+        let (has_color, r, g, b) = match output.color {
+            Some(color) => {
+                let [r, g, b] = color.components();
+                (true, r, g, b)
+            }
+            None => (false, 0.0, 0.0, 0.0),
+        };
+        builder
+            .pin_mut()
+            .add_part(output.part.shape(), &output.name, has_color, r, g, b)?;
+    }
+    if !builder.pin_mut().write(path)? {
+        return Err(Error::Export("STEPCAFControl_Writer reported failure".to_string()));
     }
     Ok(())
 }
