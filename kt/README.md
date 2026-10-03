@@ -116,7 +116,7 @@ fun main() {
   (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
-- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, size?, azimuth?, elevation?)`** /
+- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?)`** /
   **`Format.Step(filename)`** (STEP всегда один файл, без `output`).
 - **`Output.Single(filename)`** / **`Output.Multi(path)`** — раскладка вывода для STL/PNG.
 

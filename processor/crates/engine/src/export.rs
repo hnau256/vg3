@@ -86,6 +86,8 @@ pub enum ExportConfig {
     },
     Png {
         output: ExportLayout,
+        #[serde(default = "default_tolerance")]
+        tolerance: Scalar,
         #[serde(default = "default_size")]
         size: u32,
         #[serde(default = "default_azimuth")]
@@ -114,12 +116,14 @@ impl ExportConfig {
             }
             ExportConfig::Png {
                 output,
+                tolerance,
                 size,
                 azimuth,
                 elevation,
             } => export_png(
                 outputs,
                 output,
+                tolerance.value(),
                 &RenderOptions {
                     size: *size,
                     azimuth: azimuth.value(),
@@ -167,13 +171,18 @@ fn export_step(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
-fn export_png(outputs: &[Output], layout: &ExportLayout, options: &RenderOptions) -> Result<()> {
+fn export_png(
+    outputs: &[Output],
+    layout: &ExportLayout,
+    tolerance: f64,
+    options: &RenderOptions,
+) -> Result<()> {
     for (path, batch) in layout.batches(outputs, "png")? {
         let mut items = Vec::with_capacity(batch.len());
         for output in batch {
             items.push(render::Item {
                 color: output.color.map(|color| color.components()),
-                triangles: ffi::triangulation(output.part.shape(), DEFAULT_TOLERANCE)?,
+                triangles: ffi::triangulation(output.part.shape(), tolerance)?,
             });
         }
         render::render_png(&items, &path, options)?;

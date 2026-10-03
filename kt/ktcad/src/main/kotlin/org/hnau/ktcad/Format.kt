@@ -26,6 +26,7 @@ sealed interface Format {
     @Serializable
     data class Png(
         val output: Output,
+        val tolerance: Double? = null,
         val size: Int? = null,
         val azimuth: Double? = null,
         val elevation: Double? = null,
