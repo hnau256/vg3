@@ -400,8 +400,11 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
 ### Нативный слой (`native` + `sys`)
 
 - `sys.rs` — `cxx::bridge`: объявления и opaque-типы (`Shape`, `WireBuilder`, …). Приватный.
-- `native/occt.{h,cpp}` — C++-слой, **по одной функции на операцию OCCT** (`BRepPrimAPI_*`,
-  `BRepAlgoAPI_*`, `BRepFilletAPI_*`, `BRepOffsetAPI_*`, `BRepBuilderAPI_*`, `StlAPI_Writer`).
+- `native/` — C++-слой, **по одной функции на операцию OCCT** (`BRepPrimAPI_*`,
+  `BRepAlgoAPI_*`, `BRepFilletAPI_*`, `BRepOffsetAPI_*`, `BRepBuilderAPI_*`, `StlAPI_Writer`,
+  `STEPCAFControl_Writer`), разбит по операциям: `primitives`, `transform`, `booleans`, `sweep`,
+  `fillet`, `mesh`, `edges`, `brep`, `export` (+ `detail`, `occt_internal.h`). Публичный контракт
+  cxx — `occt.{h,cpp}`-объявления в `occt.h`.
 - Сборка (`build.rs`) линкует OCCT (`OCCT_DIR` или Homebrew) и компилирует мост.
 
 ### Просмотр

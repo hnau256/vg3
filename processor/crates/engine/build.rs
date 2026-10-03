@@ -43,7 +43,13 @@ fn main() {
     println!("cargo:rerun-if-env-changed=OCCT_DIR");
     println!("cargo:rerun-if-changed=src/sys.rs");
     println!("cargo:rerun-if-changed=native/occt.h");
-    println!("cargo:rerun-if-changed=native/occt.cpp");
+    println!("cargo:rerun-if-changed=native/occt_internal.h");
+    for entry in std::fs::read_dir("native").expect("native/ is readable") {
+        let path = entry.expect("native/ entry").path();
+        if path.extension().is_some_and(|extension| extension == "cpp") {
+            println!("cargo:rerun-if-changed={}", path.display());
+        }
+    }
 
     let occt_directory = resolve_occt_directory();
     let occt_include_directory = occt_directory.join("include/opencascade");
@@ -57,11 +63,17 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib={toolkit}");
     }
 
-    cxx_build::bridge("src/sys.rs")
-        .file("native/occt.cpp")
+    let mut build = cxx_build::bridge("src/sys.rs");
+    build
         .include("native")
         .include(&occt_include_directory)
         .flag_if_supported("-std=c++17")
-        .flag_if_supported("-Wno-deprecated-declarations")
-        .compile("vg3-native");
+        .flag_if_supported("-Wno-deprecated-declarations");
+    for entry in std::fs::read_dir("native").expect("native/ is readable") {
+        let path = entry.expect("native/ entry").path();
+        if path.extension().is_some_and(|extension| extension == "cpp") {
+            build.file(path);
+        }
+    }
+    build.compile("vg3-native");
 }
