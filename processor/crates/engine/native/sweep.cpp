@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include <BRepAdaptor_CompCurve.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
@@ -17,6 +18,7 @@
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Wire.hxx>
 #include <gp_Ax3.hxx>
+#include <gp_Circ.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
@@ -47,6 +49,29 @@ std::unique_ptr<Shape> make_face(const Shape& wire) {
         const TopoDS_Shape face = make_face.Face();
         detail::ensure_valid(face);
         return std::make_unique<Shape>(face);
+    } catch (const Standard_Failure& failure) {
+        detail::rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<Shape> make_circle(double radius) {
+    try {
+        const gp_Circ circle(gp_Ax2(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)), radius);
+        BRepBuilderAPI_MakeEdge edge(circle);
+        if (!edge.IsDone()) {
+            throw std::runtime_error("cannot build a circle edge");
+        }
+        BRepBuilderAPI_MakeWire wire(edge.Edge());
+        if (!wire.IsDone()) {
+            throw std::runtime_error("cannot build a circle wire");
+        }
+        BRepBuilderAPI_MakeFace face(wire.Wire());
+        if (!face.IsDone()) {
+            throw std::runtime_error("cannot build a circle face");
+        }
+        const TopoDS_Shape shape = face.Face();
+        detail::ensure_valid(shape);
+        return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {
         detail::rethrow_as_std_error(failure);
     }

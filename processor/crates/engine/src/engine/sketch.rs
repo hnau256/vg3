@@ -30,6 +30,9 @@ pub(super) fn build_regions(sketches: &[Sketch<SketchIndex>]) -> Result<Vec<Regi
 
 fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<Region> {
     match sketch {
+        Sketch::Circle { radius } => Ok(Region {
+            shape: ffi::make_circle(radius.value())?,
+        }),
         Sketch::Polygon { points } => {
             let mut iter = points.iter();
             let first = iter.next().expect("NonEmpty is non-empty");

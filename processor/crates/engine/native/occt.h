@@ -109,6 +109,8 @@ std::unique_ptr<Shape> make_polyhedron(
 
 std::unique_ptr<Shape> make_face(const Shape& wire);
 
+std::unique_ptr<Shape> make_circle(double radius);
+
 std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle);

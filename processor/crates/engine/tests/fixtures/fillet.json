@@ -23,20 +23,17 @@
     {
       "type": "bool",
       "kind": "fuse",
-      "arguments": [
-        1
-      ],
-      "tools": [
-        2
-      ]
+      "arguments": [1],
+      "tools": [2]
     },
     {
       "type": "fillet",
       "kind": "fillet",
       "target": 3,
       "radius": {
-        "type": "expression",
-        "expression": "if is_parallel(edge.direction, Z) { 2.0 } else { 0.0 }"
+        "type": "selected",
+        "expression": "is_parallel(edge.direction, Z)",
+        "radius": 2.0
       }
     }
   ],

@@ -12,8 +12,9 @@
       "kind": "fillet",
       "target": 0,
       "radius": {
-        "type": "expression",
-        "expression": "if is_parallel(edge.direction, Z) { 2.0 } else { 0.0 }"
+        "type": "selected",
+        "expression": "is_parallel(edge.direction, Z)",
+        "radius": 2.0
       }
     }
   ],

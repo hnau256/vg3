@@ -106,11 +106,11 @@ fun main() {
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
 - **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
   `arcTo`/`arcRel`, `splineTo` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
-  точку). 2D-контур: `contour(start, segment…)`; готовые (sugar): `rect(width, height, centerX?, centerY?)`
-  = `polygon` из 4 точек, `circle(radius)` = `contour` из двух `arc`; `polygon(first, second, vararg)`;
-  3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой
-  контур невыразим.
-- **`Region`** — immutable доменный 2D-узел (эскиз): `polygon`/`contour` + булевы
+  точку). 2D-контур: `contour(start, segment…)`; готовые: `rect(width, height, centerX?, centerY?)`
+  (sugar = `polygon` из 4 точек), `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`);
+  `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
+  имеет ≥1 ребро, поэтому пустой контур невыразим.
+- **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
   `union`/`cut`/`intersect` (`+`/`-`/`*`) и трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
   `mirror(normal, center?)`, `scale(x, y)`. Эскизы **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,

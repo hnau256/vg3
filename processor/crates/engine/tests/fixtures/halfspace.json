@@ -21,12 +21,8 @@
     {
       "type": "bool",
       "kind": "cut",
-      "arguments": [
-        0
-      ],
-      "tools": [
-        2
-      ]
+      "arguments": [0],
+      "tools": [2]
     }
   ],
   "export": [

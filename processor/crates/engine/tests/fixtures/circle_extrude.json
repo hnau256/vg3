@@ -2,20 +2,8 @@
   "version": 1,
   "sketches": [
     {
-      "type": "contour",
-      "start": { "x": 5, "y": 0 },
-      "edges": [
-        {
-          "type": "arc",
-          "via": { "x": 0, "y": 5 },
-          "to": { "x": -5, "y": 0 }
-        },
-        {
-          "type": "arc",
-          "via": { "x": 0, "y": -5 },
-          "to": { "x": 5, "y": 0 }
-        }
-      ]
+      "type": "circle",
+      "radius": 5
     }
   ],
   "bodies": [

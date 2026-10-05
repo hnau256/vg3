@@ -51,10 +51,10 @@ class BuildExtTest {
         assertEquals(
             fillet(
                 kind = FilletKind.CHAMFER,
-                radius = RadiusSpec.Expression("if edge.is_vertical { 1.0 } else { 0.0 }"),
+                radius = RadiusSpec.Expression("1.0"),
                 target = solid,
             ),
-            solid.fillet("if edge.is_vertical { 1.0 } else { 0.0 }", FilletKind.CHAMFER),
+            solid.fillet("1.0", FilletKind.CHAMFER),
         )
     }
 

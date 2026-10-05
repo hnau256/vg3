@@ -19,11 +19,13 @@ fun box(
     centerX: Boolean = false,
     centerY: Boolean = false,
     centerZ: Boolean = false,
-): Solid = Solid.Box(width = width, length = length, height = height).translate(
-    if (centerX) -width / 2 else 0.0,
-    if (centerY) -length / 2 else 0.0,
-    if (centerZ) -height / 2 else 0.0,
-)
+): Solid {
+    val box = Solid.Box(width = width, length = length, height = height)
+    val dx = if (centerX) -width / 2 else 0.0
+    val dy = if (centerY) -length / 2 else 0.0
+    val dz = if (centerZ) -height / 2 else 0.0
+    return if (dx == 0.0 && dy == 0.0 && dz == 0.0) box else box.translate(dx, dy, dz)
+}
 
 /**
  * A cylinder with its base at the origin and axis `+Z`. Its base is already centred on the `Z`
@@ -36,8 +38,7 @@ fun cylinder(
     centerX: Boolean = false,
     centerY: Boolean = false,
     centerZ: Boolean = false,
-): Solid = Solid.Cylinder(radius = radius, height = height).translate(
-    0.0,
-    0.0,
-    if (centerZ) -height / 2 else 0.0,
-)
+): Solid {
+    val cylinder = Solid.Cylinder(radius = radius, height = height)
+    return if (centerZ) cylinder.translate(0.0, 0.0, -height / 2) else cylinder
+}

@@ -14,8 +14,8 @@ import org.hnau.ktcad.ir.Vec2
 
 // --- Primitives -------------------------------------------------------------
 //
-// The IR has no `rect`/`circle` node (OpenCASCADE has no such primitives), so these are pure DSL
-// sugar: `rect` is a `Polygon`, `circle` is a `Contour` of two arcs.
+// `circle` is an OpenCASCADE primitive (`gp_Circ`) and maps straight to `Region.Circle`. The IR has
+// no `rect` node (OpenCASCADE has no rectangle primitive), so `rect` is pure DSL sugar: a `Polygon`.
 
 /**
  * An axis-aligned rectangle with its corner at the origin, extending into the `+` quadrant. A
@@ -35,20 +35,13 @@ fun rect(
             Vec2(x = 0.0, y = height),
         ),
     )
-    return rectangle.translate(
-        if (centerX) -width / 2 else 0.0,
-        if (centerY) -height / 2 else 0.0,
-    )
+    val dx = if (centerX) -width / 2 else 0.0
+    val dy = if (centerY) -height / 2 else 0.0
+    return if (dx == 0.0 && dy == 0.0) rectangle else rectangle.translate(dx, dy)
 }
 
-/** A full circle of [radius] centred at the origin, as two `arc`s. */
-fun circle(radius: Double): Region = Region.Contour(
-    start = Vec2(x = radius, y = 0.0),
-    edges = nonEmptyListOf(
-        Curve2.Arc(via = Vec2(x = 0.0, y = radius), to = Vec2(x = -radius, y = 0.0)),
-        Curve2.Arc(via = Vec2(x = 0.0, y = -radius), to = Vec2(x = radius, y = 0.0)),
-    ),
-)
+/** A full circle of [radius] centred at the origin. */
+fun circle(radius: Double): Region = Region.Circle(radius = radius)
 
 fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Region =
     Region.Polygon(points = nonEmptyListOf(first, second, *tail))

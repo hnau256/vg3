@@ -50,8 +50,9 @@
       "kind": "fillet",
       "target": 0,
       "radius": {
-        "type": "expression",
-        "expression": "if is_parallel(edge.direction, Z) { 2.5 } else { 0.0 }"
+        "type": "selected",
+        "expression": "is_parallel(edge.direction, Z)",
+        "radius": 2.5
       }
     },
     {
@@ -85,24 +86,15 @@
     {
       "type": "bool",
       "kind": "fuse",
-      "arguments": [
-        1
-      ],
-      "tools": [
-        3,
-        4
-      ]
+      "arguments": [1],
+      "tools": [3, 4]
     }
   ],
   "export": [
     {
       "index": 5,
       "name": "bottle",
-      "color": {
-        "r": 0.35,
-        "g": 0.6,
-        "b": 0.95
-      }
+      "color": { "r": 0.35, "g": 0.6, "b": 0.95 }
     }
   ]
 }

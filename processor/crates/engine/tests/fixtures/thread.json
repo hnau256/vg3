@@ -35,12 +35,8 @@
     {
       "type": "bool",
       "kind": "fuse",
-      "arguments": [
-        0
-      ],
-      "tools": [
-        1
-      ]
+      "arguments": [0],
+      "tools": [1]
     }
   ],
   "export": [

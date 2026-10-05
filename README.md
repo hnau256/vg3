@@ -197,6 +197,7 @@ Path = { "start": Vec3, "edges": [ Curve3... ] }   // edges непусто (≥1
 ### Эскизы (2D-арена)
 
 ```jsonc
+circle(radius)                      // окружность (OCCT `gp_Circ`), центр в начале
 polygon(points)                     // замкнутая ломаная по точкам (Vec2)
 contour(start, edges)               // свободный 2D-контур (Curve2); edges непусто (≥1)
 bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
@@ -204,8 +205,9 @@ transform(target, op)               // планарная трансформац
 ```
 
 - `polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
-- Узлов `rect`/`circle` в IR **нет** (в OpenCASCADE таких примитивов нет): это чистый DSL-сахар —
-  `rect` = `polygon` из четырёх точек, `circle` = `contour` из двух `arc`.
+- Узла `rect` в IR **нет** (в OpenCASCADE нет прямоугольника): это чистый DSL-сахар — `polygon` из
+  четырёх точек. `circle` — наоборот, полноценный узел (одно ребро `gp_Circ`, не две полуокружности);
+  эллипс при необходимости — так же через `gp_Elips`.
 - `TransformOp2`: `translate(Vec2)`, `rotate(center: Vec2, angle)`, `mirror(center: Vec2, normal: Vec2)`,
   `scale(value: Vec2)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
 - Эскизы не экспортируются; они нужны только как профиль для `extrude`/`revolve`/`sweep`.
@@ -382,8 +384,8 @@ processor/            # самостоятельный Cargo workspace
 
 - `Model { version, sketches: Vec<Sketch>, bodies: Vec<Body>, export: Vec<Export> }` — верхний уровень.
 - `Body` — узел 3D IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
-- `Sketch` — узел 2D IR: планарные контуры (`polygon`/`contour`), булевы, трансформации. `rect`/`circle`
-  — только DSL-сахар. Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
+- `Sketch` — узел 2D IR: `circle`/`polygon`/`contour`, булевы, трансформации. `rect` — только DSL-сахар.
+  Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
 - Операнды — всегда `usize` (индекс назад в своей арене).
 - `Sketch.Contour`, `Path` (`Curve2`/`Curve3`).
 - Канонические значения: `Scalar`, `Angle`, `Vec2`, `Vec3`.

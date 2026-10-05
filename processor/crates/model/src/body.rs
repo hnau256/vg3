@@ -83,16 +83,17 @@ pub enum Body<T> {
 }
 
 impl<T: Clone> Body<T> {
-    /// The sketches this body references, in order (the `SketchIndex` counterpart of `try_map`:
-    /// sketches live in a separate arena and are never operands of `Body<T>`).
+    /// Maps every sketch this body references, in order, returning the results (the `SketchIndex`
+    /// counterpart of `try_map`: sketches live in a separate arena and are never operands of
+    /// `Body<T>`). Pure — the caller decides what to do with each result.
     ///
     /// The match is exhaustive on purpose — adding a body variant that carries a sketch will not
     /// compile until it is listed here, so a reference can never be silently dropped.
-    pub fn sketch_refs(&self) -> Vec<SketchIndex> {
+    pub fn map_sketches<U>(&self, mut f: impl FnMut(SketchIndex) -> U) -> Vec<U> {
         match self {
-            Body::Extrude { profile, .. } => vec![*profile],
-            Body::Revolve { profile, .. } => vec![*profile],
-            Body::Sweep { profile, .. } => vec![*profile],
+            Body::Extrude { profile, .. } => vec![f(*profile)],
+            Body::Revolve { profile, .. } => vec![f(*profile)],
+            Body::Sweep { profile, .. } => vec![f(*profile)],
             Body::Box { .. }
             | Body::Sphere { .. }
             | Body::Cylinder { .. }

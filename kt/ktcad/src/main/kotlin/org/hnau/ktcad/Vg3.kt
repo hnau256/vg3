@@ -103,7 +103,7 @@ class Arena {
 }
 
 /** A flat, deduplicating arena over a domain type `T` producing IR nodes `N` indexed by `I`. */
-private class Lowering<T, I, N>(
+internal class Lowering<T, I, N>(
     private val wrap: (Int) -> I,
     private val lower: (T, (T) -> I) -> N,
 ) {
