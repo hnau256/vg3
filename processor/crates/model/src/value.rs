@@ -141,7 +141,7 @@ impl TryFrom<f64> for Angle {
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct Point2 {
+pub struct Vec2 {
     pub x: Scalar,
     pub y: Scalar,
 }
@@ -149,28 +149,10 @@ pub struct Point2 {
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct Point3 {
+pub struct Vec3 {
     pub x: Scalar,
     pub y: Scalar,
     pub z: Scalar,
-}
-
-#[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
-pub struct Vector3 {
-    pub dx: Scalar,
-    pub dy: Scalar,
-    pub dz: Scalar,
-}
-
-#[derive(Clone, Copy, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "schema", schemars(deny_unknown_fields))]
-pub struct Normal3 {
-    pub dx: Scalar,
-    pub dy: Scalar,
-    pub dz: Scalar,
 }
 
 /// An RGB color (`0..1` per component); used by exporters that support color.
@@ -186,37 +168,5 @@ pub struct Color {
 impl Color {
     pub fn components(self) -> [f64; 3] {
         [self.r.value(), self.g.value(), self.b.value()]
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RawNormal3 {
-    dx: Scalar,
-    dy: Scalar,
-    dz: Scalar,
-}
-
-impl Normal3 {
-    pub fn new(dx: Scalar, dy: Scalar, dz: Scalar) -> Result<Self> {
-        let length = (dx.value().powi(2) + dy.value().powi(2) + dz.value().powi(2)).sqrt();
-        if length == 0.0 {
-            return Err(Error::ZeroNormal);
-        }
-        Ok(Normal3 {
-            dx: Scalar::try_from(dx.value() / length)?,
-            dy: Scalar::try_from(dy.value() / length)?,
-            dz: Scalar::try_from(dz.value() / length)?,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for Normal3 {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let raw = RawNormal3::deserialize(deserializer)?;
-        Normal3::new(raw.dx, raw.dy, raw.dz).map_err(serde::de::Error::custom)
     }
 }

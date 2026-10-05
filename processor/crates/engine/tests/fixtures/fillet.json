@@ -13,9 +13,9 @@
       "op": {
         "type": "translate",
         "value": {
-          "dx": 0,
-          "dy": 0,
-          "dz": 5
+          "x": 0,
+          "y": 0,
+          "z": 5
         }
       }
     },

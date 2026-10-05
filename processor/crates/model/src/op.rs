@@ -2,23 +2,23 @@
 
 use serde::Deserialize;
 
-use crate::value::{Angle, Normal3, Point3, Scalar, Vector3};
+use crate::value::{Angle, Scalar, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransformOp {
     Translate {
-        value: Vector3,
+        value: Vec3,
     },
     Rotate {
-        center: Point3,
-        axis: Normal3,
+        center: Vec3,
+        axis: Vec3,
         angle: Angle,
     },
     Mirror {
-        center: Point3,
-        normal: Normal3,
+        center: Vec3,
+        normal: Vec3,
     },
     Scale {
         x: Scalar,

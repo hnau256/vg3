@@ -2,7 +2,7 @@ package org.hnau.ktcad
 
 import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.FilletKind
-import org.hnau.ktcad.ir.Point2
+import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
 import kotlin.test.Test
@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 
 class BuildExtTest {
 
-    private val square = polygon(Point2(0.0, 0.0), Point2(10.0, 0.0), Point2(10.0, 10.0), Point2(0.0, 10.0))
+    private val square = polygon(Vec2(0.0, 0.0), Vec2(10.0, 0.0), Vec2(10.0, 10.0), Vec2(0.0, 10.0))
 
     @Test
     fun extrude_maps_to_factory() {

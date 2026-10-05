@@ -2,15 +2,15 @@
 
 use serde::Deserialize;
 
-use crate::value::{NonEmpty, Point2, Point3, Scalar};
+use crate::value::{NonEmpty, Vec2, Vec3, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Curve2 {
-    Line { to: Point2 },
-    Arc { via: Point2, to: Point2 },
-    Spline { points: NonEmpty<Point2> },
+    Line { to: Vec2 },
+    Arc { via: Vec2, to: Vec2 },
+    Spline { points: NonEmpty<Vec2> },
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
@@ -18,14 +18,14 @@ pub enum Curve2 {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Curve3 {
     Line {
-        to: Point3,
+        to: Vec3,
     },
     Arc {
-        via: Point3,
-        to: Point3,
+        via: Vec3,
+        to: Vec3,
     },
     Spline {
-        points: NonEmpty<Point3>,
+        points: NonEmpty<Vec3>,
     },
     Helix {
         pitch: Scalar,
@@ -43,7 +43,7 @@ fn default_right_handed() -> bool {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Profile {
-    pub start: Point2,
+    pub start: Vec2,
     pub edges: NonEmpty<Curve2>,
 }
 
@@ -51,6 +51,6 @@ pub struct Profile {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Path {
-    pub start: Point3,
+    pub start: Vec3,
     pub edges: NonEmpty<Curve3>,
 }

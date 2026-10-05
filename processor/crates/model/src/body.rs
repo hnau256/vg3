@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::curve::{Path, Profile};
 use crate::op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
-use crate::value::{Angle, NonEmpty, Point3, Scalar};
+use crate::value::{Angle, NonEmpty, Vec3, Scalar};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -71,7 +71,7 @@ pub enum Body<T> {
         distance: Scalar,
     },
     Polyhedron {
-        points: Vec<Point3>,
+        points: Vec<Vec3>,
         faces: Vec<Vec<usize>>,
     },
     Fillet {

@@ -140,9 +140,9 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
     match op {
         TransformOp::Translate { value } => make_part(ffi::translate(
             part.shape(),
-            value.dx.value(),
-            value.dy.value(),
-            value.dz.value(),
+            value.x.value(),
+            value.y.value(),
+            value.z.value(),
         )?),
         TransformOp::Rotate {
             center,
@@ -153,9 +153,9 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
             center.x.value(),
             center.y.value(),
             center.z.value(),
-            axis.dx.value(),
-            axis.dy.value(),
-            axis.dz.value(),
+            axis.x.value(),
+            axis.y.value(),
+            axis.z.value(),
             angle.value(),
         )?),
         TransformOp::Mirror { center, normal } => make_part(ffi::mirror(
@@ -163,9 +163,9 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
             center.x.value(),
             center.y.value(),
             center.z.value(),
-            normal.dx.value(),
-            normal.dy.value(),
-            normal.dz.value(),
+            normal.x.value(),
+            normal.y.value(),
+            normal.z.value(),
         )?),
         TransformOp::Scale { x, y, z } => {
             make_part(ffi::scale(part.shape(), x.value(), y.value(), z.value())?)

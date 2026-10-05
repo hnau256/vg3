@@ -1,6 +1,6 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.ir.Normal3
+import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.TransformOp
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +33,7 @@ class SolidExtTest {
 
     @Test
     fun rotateX_uses_the_x_axis() {
-        val expected = a.rotate(Normal3(1.0, 0.0, 0.0), 0.5)
+        val expected = a.rotate(Vec3(1.0, 0.0, 0.0), 0.5)
         assertEquals(expected, a.rotateX(0.5))
     }
 
@@ -44,7 +44,7 @@ class SolidExtTest {
 
     @Test
     fun mirrorXY_is_mirror_about_z_normal() {
-        val op = TransformOp.Mirror(center = org.hnau.ktcad.ir.Point3(0.0, 0.0, 0.0), normal = Normal3(0.0, 0.0, 1.0))
+        val op = TransformOp.Mirror(center = org.hnau.ktcad.ir.Vec3(0.0, 0.0, 0.0), normal = Vec3(0.0, 0.0, 1.0))
         assertEquals(transform(op, a), a.mirrorXY())
     }
 

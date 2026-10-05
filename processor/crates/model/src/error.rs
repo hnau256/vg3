@@ -11,9 +11,6 @@ pub enum Error {
     #[error("scalar must be finite")]
     NonFiniteScalar,
 
-    #[error("normal vector must be non-zero")]
-    ZeroNormal,
-
     #[error("list must not be empty")]
     EmptyList,
 }

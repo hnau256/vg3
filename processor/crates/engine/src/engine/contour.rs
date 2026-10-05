@@ -2,7 +2,7 @@ use std::pin::Pin;
 
 use cxx::UniquePtr;
 
-use vg3_model::{Curve2, Curve3, Path, Point2, Point3, Profile};
+use vg3_model::{Curve2, Curve3, Path, Vec2, Vec3, Profile};
 
 use crate::error::Result;
 use crate::sys::ffi;
@@ -70,7 +70,7 @@ fn add_curve2(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve2) -> Result<()> 
     Ok(())
 }
 
-fn flatten3(points: &[Point3]) -> Vec<f64> {
+fn flatten3(points: &[Vec3]) -> Vec<f64> {
     let mut flat = Vec::with_capacity(points.len() * 3);
     for point in points {
         flat.push(point.x.value());
@@ -80,7 +80,7 @@ fn flatten3(points: &[Point3]) -> Vec<f64> {
     flat
 }
 
-fn flatten2(points: &[Point2]) -> Vec<f64> {
+fn flatten2(points: &[Vec2]) -> Vec<f64> {
     let mut flat = Vec::with_capacity(points.len() * 3);
     for point in points {
         flat.push(point.x.value());

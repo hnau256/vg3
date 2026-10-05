@@ -153,15 +153,14 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 |---|---|---|
 | `Scalar` | число (`f64`) | конечное; `−0 → +0` |
 | `Angle` | число (`f64`) | конечное; `−0 → +0`; **не** mod 2π |
-| `Point2` | `{ "x", "y" }` | компоненты — `Scalar` |
-| `Point3` | `{ "x", "y", "z" }` | компоненты — `Scalar` |
-| `Vector3` | `{ "dx", "dy", "dz" }` | компоненты — `Scalar`; **не** нормируется (сдвиг) |
-| `Normal3` | `{ "dx", "dy", "dz" }` | **единичный**, знак **сохранён**; нулевой → ошибка |
+| `Vec2` | `{ "x", "y" }` | компоненты — `Scalar` |
+| `Vec3` | `{ "x", "y", "z" }` | компоненты — `Scalar` |
 
-`Normal3` используется и для оси `rotate`, и для нормали `mirror`. Знак оси важен, поэтому `Normal3` его
-не канонизирует. `Angle` **не** приводится mod 2π: иначе полный оборот (`revolve` на 2π) схлопнулся бы
-в 0. Следствия (избыточность кэша, не ошибка): `rotate` на `θ` и `θ+2π` — разные ключи; `mirror` с `n`
-и `−n` — разные формулы.
+`Vec3` используется и как точка, и как вектор, и как направление (ось `rotate`, нормаль `mirror`) —
+различение по смыслу задаёт операция, а не тип. Нормировка не выполняется: как у любой операции OCCT,
+корректность входных векторов — забота того, кто пишет JSON. `Angle` **не** приводится mod 2π: иначе
+полный оборот (`revolve` на 2π) схлопнулся бы в 0. Следствия (избыточность кэша, не ошибка): `rotate`
+на `θ` и `θ+2π` — разные ключи; `mirror` с `n` и `−n` — разные формулы.
 
 Списки, которые обязаны быть непустыми, типизированы как `NonEmpty<T>`: пустой массив отвергается **при
 десериализации**, а схема несёт `minItems: 1`. Так типизированы `Profile`/`Path.edges`,
@@ -173,15 +172,15 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 ### Кривые и контуры
 
 ```jsonc
-// Curve2 (Point2) / Curve3 (Point3)
+// Curve2 (Vec2) / Curve3 (Vec3)
 { "type": "line",   "to": Point }
 { "type": "arc",    "via": Point, "to": Point }   // дуга через 3 точки: start(=prev), via, to
 { "type": "spline", "points": [ Point, ... ] }    // интерполяция
 // Curve3 only — винтовая линия вокруг +Z через начало:
 { "type": "helix", "pitch": Scalar, "height": Scalar, "right_handed": true }
 
-Profile = { "start": Point2, "edges": [ Curve2... ] }   // edges непусто (≥1)
-Path    = { "start": Point3, "edges": [ Curve3... ] }   // edges непусто (≥1)
+Profile = { "start": Vec2, "edges": [ Curve2... ] }   // edges непусто (≥1)
+Path    = { "start": Vec3, "edges": [ Curve3... ] }   // edges непусто (≥1)
 ```
 
 - `arc`/`spline` начинаются в конце предыдущего ребра (или в `start`).
@@ -241,14 +240,14 @@ loft(sections, ruled)               // default false; секций ≥ 2
 
 ```jsonc
 { "type": "transform", "target": operand, "op": {
-    "type": "translate", "value": Vector3 } }
+    "type": "translate", "value": Vec3 } }
 ```
 
 ```jsonc
-{ "type": "translate", "value": Vector3 }
-{ "type": "rotate",    "center": Point3, "axis": Normal3, "angle": Angle }
-{ "type": "mirror",    "center": Point3, "normal": Normal3 }
-{ "type": "scale",     "x": Scalar, "y": Scalar, "z": Scalar }   // НЕ Vector3
+{ "type": "translate", "value": Vec3 }
+{ "type": "rotate",    "center": Vec3, "axis": Vec3, "angle": Angle }
+{ "type": "mirror",    "center": Vec3, "normal": Vec3 }
+{ "type": "scale",     "x": Scalar, "y": Scalar, "z": Scalar }   // НЕ Vec3
 { "type": "matrix",    "m": [ Scalar × 16 ] }                    // ROW-MAJOR 4×4
 ```
 
@@ -364,7 +363,7 @@ processor/            # самостоятельный Cargo workspace
 - `Body` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
 - Операнд — всегда `usize` (индекс назад).
 - `Profile`/`Path`, `Curve2`/`Curve3`.
-- Канонические значения: `Scalar`, `Angle`, `Point2/3`, `Vector3`, `Normal3`.
+- Канонические значения: `Scalar`, `Angle`, `Vec2`, `Vec3`.
 
 ### OCCT-процессор (`engine`)
 

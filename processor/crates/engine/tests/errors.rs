@@ -52,19 +52,3 @@ fn out_of_range_export_index_is_rejected() {
     let model = model::parse(source).expect("parses");
     assert!(engine::evaluate(&model, &mut vg3_cache::Noop).is_err());
 }
-
-#[test]
-fn zero_normal_is_rejected() {
-    let source = r#"{
-        "version": 1,
-        "parts": [
-            { "type": "box", "width": 1, "length": 1, "height": 1 },
-            { "type": "transform",
-              "target": 0,
-              "op": { "type": "rotate", "center": { "x": 0, "y": 0, "z": 0 },
-                      "axis": { "dx": 0, "dy": 0, "dz": 0 }, "angle": 1 } }
-        ],
-        "export": []
-    }"#;
-    assert!(model::parse(source).is_err());
-}

@@ -1,6 +1,6 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.ir.Point3
+import org.hnau.ktcad.ir.Vec3
 
 /**
  * Builds a polyhedron from its faces. Each face is a list of points given in order; equal points
@@ -8,9 +8,9 @@ import org.hnau.ktcad.ir.Point3
  *
  * The model body stores a flat point list plus faces as index lists; this sugar computes both.
  */
-fun polyhedron(faces: List<List<Point3>>): Solid {
-    val points = mutableListOf<Point3>()
-    val indexOf = HashMap<Point3, Int>()
+fun polyhedron(faces: List<List<Vec3>>): Solid {
+    val points = mutableListOf<Vec3>()
+    val indexOf = HashMap<Vec3, Int>()
     val faceIndices = faces.map { face ->
         face.map { point ->
             indexOf.getOrPut(point) {
@@ -23,4 +23,4 @@ fun polyhedron(faces: List<List<Point3>>): Solid {
 }
 
 /** Variadic convenience: `polyhedron(face0, face1, …)`. */
-fun polyhedron(vararg faces: List<Point3>): Solid = polyhedron(faces.toList())
+fun polyhedron(vararg faces: List<Vec3>): Solid = polyhedron(faces.toList())
