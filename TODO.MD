@@ -1,0 +1,1 @@
+- Увидел код: polyhedron(faces: List<List<Vec3>>) Пройдись по проекту и замени List на NonEmptyList где это уместно (а перед vararg добавь first значение)
