@@ -67,8 +67,9 @@ fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<R
             for tool in tools.iter() {
                 builder.pin_mut().add_tool(region(regions, *tool)?.shape())?;
             }
+            let built = builder.pin_mut().finish()?;
             Ok(Region {
-                shape: builder.pin_mut().finish()?,
+                shape: ffi::as_face(&built)?,
             })
         }
         Sketch::Transform { target, op } => {

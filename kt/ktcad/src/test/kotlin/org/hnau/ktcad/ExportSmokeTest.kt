@@ -56,4 +56,18 @@ class ExportSmokeTest {
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
+
+    @Test
+    fun donut_with_a_hole_exports_to_stl() {
+        val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-donut.stl")
+        output.delete()
+
+        val donut = circle(10.0).cut(circle(5.0)).offset2d(2.0).extrude(3.0)
+        Vg3.export(
+            parts = listOf(Part(name = "donut", solid = donut)),
+            format = Format.Stl(output = Output.Single(output.absolutePath)),
+        )
+
+        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+    }
 }

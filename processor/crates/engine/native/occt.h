@@ -111,6 +111,9 @@ std::unique_ptr<Shape> make_face(const Shape& wire);
 
 std::unique_ptr<Shape> make_circle(double radius);
 
+/// Reduces a shape (a face, or a compound such as a boolean result) to its single planar face.
+std::unique_ptr<Shape> as_face(const Shape& shape);
+
 std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle);

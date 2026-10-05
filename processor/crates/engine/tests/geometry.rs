@@ -318,3 +318,23 @@ fn offset2d_grows_the_contour() {
     assert_close(parts[0].volume(), std::f64::consts::PI * 49.0 * 3.0, 1e-3);
     assert_bounds(&parts[0], [-7.0, -7.0, 0.0, 7.0, 7.0, 3.0]);
 }
+
+#[test]
+fn offset2d_keeps_holes() {
+    let parts = build("donut.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_eq!(parts[0].face_count(), 4); // outer, hole, top, bottom
+    // Outer 10+2=12, hole 5-2=3, extruded by 3.
+    assert_close(parts[0].volume(), std::f64::consts::PI * (144.0 - 9.0) * 3.0, 1e-3);
+    assert_bounds(&parts[0], [-12.0, -12.0, 0.0, 12.0, 12.0, 3.0]);
+}
+
+#[test]
+fn extruding_a_boolean_region_keeps_the_hole() {
+    let parts = build("annulus.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_eq!(parts[0].face_count(), 4); // outer, hole, top, bottom
+    // Outer r=10, hole r=5, extruded by 3.
+    assert_close(parts[0].volume(), std::f64::consts::PI * (100.0 - 25.0) * 3.0, 1e-3);
+    assert_bounds(&parts[0], [-10.0, -10.0, 0.0, 10.0, 10.0, 3.0]);
+}

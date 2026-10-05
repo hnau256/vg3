@@ -28,15 +28,7 @@ namespace vg3 {
 
 namespace {
 TopoDS_Face profile_face(const Shape& profile) {
-    const TopoDS_Shape& shape = profile.topods();
-    if (shape.ShapeType() == TopAbs_FACE) {
-        return TopoDS::Face(shape);
-    }
-    BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(shape));
-    if (!make_face.IsDone()) {
-        throw std::runtime_error("profile is not a closed planar contour");
-    }
-    return make_face.Face();
+    return TopoDS::Face(profile.topods());
 }
 }  // namespace
 
@@ -113,12 +105,9 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
     try {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
 
-        // A sketch is a planar face; the pipe shell is built from its outer wire (holes are not
-        // part of a swept section — the same limitation as a bare contour profile).
-        const TopoDS_Shape& section = profile.topods();
-        const TopoDS_Shape section_wire = section.ShapeType() == TopAbs_FACE
-            ? BRepTools::OuterWire(TopoDS::Face(section))
-            : section;
+        // A sketch is a planar face (possibly a compound); the pipe shell is built from its outer
+        // wire (holes are not part of a swept section — the same limitation as a bare contour).
+        const TopoDS_Shape section_wire = BRepTools::OuterWire(profile_face(profile));
 
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
         // to the tangent. Section frame (documented in FORMAT.md): local X is radial — away from

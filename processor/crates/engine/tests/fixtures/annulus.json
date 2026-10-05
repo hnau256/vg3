@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "sketches": [
+    { "type": "circle", "radius": 10 },
+    { "type": "circle", "radius": 5 },
+    { "type": "bool", "kind": "cut", "arguments": [0], "tools": [1] }
+  ],
+  "bodies": [
+    { "type": "extrude", "height": 3, "profile": 2 }
+  ],
+  "export": [ { "index": 0, "name": "annulus" } ]
+}

@@ -8,7 +8,7 @@
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepOffsetAPI_MakeOffsetShape.hxx>
-#include <BRepTools.hxx>
+#include <BRep_Tool.hxx>
 #include <GeomAbs_JoinType.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
@@ -54,24 +54,20 @@ std::unique_ptr<Shape> offset(const Shape& shape, double distance) {
 std::unique_ptr<Shape> offset2d(const Shape& profile, double distance) {
     try {
         const TopoDS_Face face = TopoDS::Face(profile.topods());
-        const TopoDS_Wire outer = BRepTools::OuterWire(face);
 
-        BRepOffsetAPI_MakeOffset maker(outer, GeomAbs_Arc, Standard_False);
+        // Offset the whole face (not just the outer wire): holes are offset in the right direction
+        // and preserved. The result is a compound of wires; rebuild the face from all of them —
+        // OCCT classifies the outer boundary and the holes itself.
+        BRepOffsetAPI_MakeOffset maker(face, GeomAbs_Arc, Standard_False);
         maker.Perform(distance);
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakeOffset did not complete");
         }
-
-        TopoDS_Wire offset_wire;
-        for (TopExp_Explorer wires(maker.Shape(), TopAbs_WIRE); wires.More(); wires.Next()) {
-            offset_wire = TopoDS::Wire(wires.Current());
-            break;
+        BRepBuilderAPI_MakeFace make_face(BRep_Tool::Surface(face), detail::kPointTolerance);
+        for (TopExp_Explorer explorer(maker.Shape(), TopAbs_WIRE); explorer.More();
+             explorer.Next()) {
+            make_face.Add(TopoDS::Wire(explorer.Current()));
         }
-        if (offset_wire.IsNull()) {
-            throw std::runtime_error("offset produced no contour");
-        }
-
-        BRepBuilderAPI_MakeFace make_face(offset_wire);
         if (!make_face.IsDone()) {
             throw std::runtime_error("cannot build a face from the offset contour");
         }
