@@ -43,4 +43,17 @@ class ExportSmokeTest {
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
+
+    @Test
+    fun extruded_filleted_region_exports_to_stl() {
+        val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-fillet2d.stl")
+        output.delete()
+
+        Vg3.export(
+            parts = listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2d(2.0).extrude(5.0))),
+            format = Format.Stl(output = Output.Single(output.absolutePath)),
+        )
+
+        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+    }
 }

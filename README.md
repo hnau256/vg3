@@ -202,6 +202,8 @@ polygon(points)                     // замкнутая ломаная по т
 contour(start, edges)               // свободный 2D-контур (Curve2); edges непусто (≥1)
 bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
 transform(target, op)               // планарная трансформация (TransformOp2)
+fillet2d(target, radius)            // скругление всех углов (BRepFilletAPI_MakeFillet2d)
+offset2d(target, distance)          // рост (>0) / усадка (<0) контура (BRepOffsetAPI_MakeOffset)
 ```
 
 - `polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
@@ -210,6 +212,8 @@ transform(target, op)               // планарная трансформац
   эллипс при необходимости — так же через `gp_Elips`.
 - `TransformOp2`: `translate(Vec2)`, `rotate(center: Vec2, angle)`, `mirror(center: Vec2, normal: Vec2)`,
   `scale(value: Vec2)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
+- `fillet2d` скругляет **все** углы (вершины, где сходятся ≥2 ребра); `offset2d` работает по внешнему
+  контуру (отверстия не сохраняются — как и у прочих 2D-операций).
 - Эскизы не экспортируются; они нужны только как профиль для `extrude`/`revolve`/`sweep`.
 
 ### Операции
@@ -384,8 +388,8 @@ processor/            # самостоятельный Cargo workspace
 
 - `Model { version, sketches: Vec<Sketch>, bodies: Vec<Body>, export: Vec<Export> }` — верхний уровень.
 - `Body` — узел 3D IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
-- `Sketch` — узел 2D IR: `circle`/`polygon`/`contour`, булевы, трансформации. `rect` — только DSL-сахар.
-  Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
+- `Sketch` — узел 2D IR: `circle`/`polygon`/`contour`, булевы, трансформации, `fillet2d`/`offset2d`.
+  `rect` — только DSL-сахар. Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
 - Операнды — всегда `usize` (индекс назад в своей арене).
 - `Sketch.Contour`, `Path` (`Curve2`/`Curve3`).
 - Канонические значения: `Scalar`, `Angle`, `Vec2`, `Vec3`.

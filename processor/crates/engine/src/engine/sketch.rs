@@ -77,6 +77,12 @@ fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<R
                 shape: apply_transform(shape, op)?,
             })
         }
+        Sketch::Fillet { target, radius } => Ok(Region {
+            shape: ffi::fillet2d(region(regions, *target)?.shape(), radius.value())?,
+        }),
+        Sketch::Offset { target, distance } => Ok(Region {
+            shape: ffi::offset2d(region(regions, *target)?.shape(), distance.value())?,
+        }),
     }
 }
 

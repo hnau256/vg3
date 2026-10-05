@@ -51,4 +51,26 @@ class RegionExtTest {
         assertEquals(1, arena.sketches.size)
         assertEquals(1, arena.bodies.size)
     }
+
+    @Test
+    fun fillet2d_lowers_to_a_sketch_fillet() {
+        val arena = Arena()
+        val index = arena.region(square.fillet2d(1.0))
+
+        assertEquals(2, arena.sketches.size)
+        val fillet = arena.sketches[index.value] as Sketch.Fillet2d
+        assertEquals(0, fillet.target.value)
+        assertEquals(1.0, fillet.radius)
+    }
+
+    @Test
+    fun offset2d_lowers_to_a_sketch_offset() {
+        val arena = Arena()
+        val index = arena.region(circle(5.0).offset2d(2.0))
+
+        assertEquals(2, arena.sketches.size)
+        val offset = arena.sketches[index.value] as Sketch.Offset2d
+        assertEquals(0, offset.target.value)
+        assertEquals(2.0, offset.distance)
+    }
 }

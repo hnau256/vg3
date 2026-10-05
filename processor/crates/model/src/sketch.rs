@@ -36,6 +36,18 @@ pub enum Sketch<T> {
         target: T,
         op: TransformOp2,
     },
+    /// Round the corners of the region (`BRepFilletAPI_MakeFillet2d`).
+    #[serde(rename = "fillet2d")]
+    Fillet {
+        target: T,
+        radius: Scalar,
+    },
+    /// Grow (positive) or shrink (negative) the region (`BRepOffsetAPI_MakeOffset`).
+    #[serde(rename = "offset2d")]
+    Offset {
+        target: T,
+        distance: Scalar,
+    },
 }
 
 impl<T: Clone> Sketch<T> {
@@ -65,6 +77,14 @@ impl<T: Clone> Sketch<T> {
             Sketch::Transform { target, op } => Sketch::Transform {
                 target: f(target.clone())?,
                 op: op.clone(),
+            },
+            Sketch::Fillet { target, radius } => Sketch::Fillet {
+                target: f(target.clone())?,
+                radius: *radius,
+            },
+            Sketch::Offset { target, distance } => Sketch::Offset {
+                target: f(target.clone())?,
+                distance: *distance,
             },
         })
     }

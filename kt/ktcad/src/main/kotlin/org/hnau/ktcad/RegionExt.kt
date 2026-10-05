@@ -87,3 +87,11 @@ fun Region.mirror(normal: Vec2, center: Vec2 = REGION_ORIGIN): Region =
 
 fun Region.scale(x: Double, y: Double): Region =
     Region.Transform(target = this, op = TransformOp2.Scale(value = Vec2(x = x, y = y)))
+
+// --- Fillet / offset --------------------------------------------------------
+
+/** Round every corner of the region with [radius] (`BRepFilletAPI_MakeFillet2d`). */
+fun Region.fillet2d(radius: Double): Region = Region.Fillet2d(target = this, radius = radius)
+
+/** Grow (positive [distance]) or shrink (negative) the region's contour (`BRepOffsetAPI_MakeOffset`). */
+fun Region.offset2d(distance: Double): Region = Region.Offset2d(target = this, distance = distance)

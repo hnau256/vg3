@@ -111,8 +111,9 @@ fun main() {
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
-  `union`/`cut`/`intersect` (`+`/`-`/`*`) и трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
-  `mirror(normal, center?)`, `scale(x, y)`. Эскизы **не экспортируются** — только служат профилем тел.
+  `union`/`cut`/`intersect` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
+  `mirror(normal, center?)`, `scale(x, y)`, и `fillet2d(radius)` / `offset2d(distance)`. Эскизы
+  **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
   `Region.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /

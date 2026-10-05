@@ -300,3 +300,21 @@ fn step_export_is_a_single_file() {
     assert!(contents.contains("PRODUCT('bottle'"));
     let _ = std::fs::remove_file(&path);
 }
+
+#[test]
+fn fillet2d_rounds_the_contour_corners() {
+    let parts = build("fillet2d.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    // A 10x10 square with r=2 corners: area 100 - (4 - pi) * r^2, extruded by 5.
+    let expected = (100.0 - (4.0 - std::f64::consts::PI) * 4.0) * 5.0;
+    assert_close(parts[0].volume(), expected, 1e-3);
+    assert_bounds(&parts[0], [0.0, 0.0, 0.0, 10.0, 10.0, 5.0]);
+}
+
+#[test]
+fn offset2d_grows_the_contour() {
+    let parts = build("offset2d.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), std::f64::consts::PI * 49.0 * 3.0, 1e-3);
+    assert_bounds(&parts[0], [-7.0, -7.0, 0.0, 7.0, 7.0, 3.0]);
+}

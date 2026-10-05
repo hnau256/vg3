@@ -151,6 +151,8 @@ std::unique_ptr<Shape> fillet(
     rust::Slice<const double> values
 );
 
+std::unique_ptr<Shape> fillet2d(const Shape& profile, double radius);
+
 class BooleanBuilder {
 public:
     explicit BooleanBuilder(std::uint8_t kind);
@@ -172,6 +174,8 @@ std::unique_ptr<BooleanBuilder> new_boolean_builder(std::uint8_t kind);
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z);
 
 std::unique_ptr<Shape> offset(const Shape& shape, double distance);
+
+std::unique_ptr<Shape> offset2d(const Shape& profile, double distance);
 
 std::unique_ptr<Shape> rotate(
     const Shape& shape,

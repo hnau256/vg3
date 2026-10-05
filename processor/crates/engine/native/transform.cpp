@@ -4,8 +4,16 @@
 #include <stdexcept>
 
 #include <BRepBuilderAPI_GTransform.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
+#include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepOffsetAPI_MakeOffsetShape.hxx>
+#include <BRepTools.hxx>
+#include <GeomAbs_JoinType.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS_Wire.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
 #include <gp_Dir.hxx>
@@ -36,6 +44,38 @@ std::unique_ptr<Shape> offset(const Shape& shape, double distance) {
             throw std::runtime_error("BRepOffsetAPI_MakeOffsetShape did not complete");
         }
         const TopoDS_Shape result = maker.Shape();
+        detail::ensure_valid(result);
+        return std::make_unique<Shape>(result);
+    } catch (const Standard_Failure& failure) {
+        detail::rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<Shape> offset2d(const Shape& profile, double distance) {
+    try {
+        const TopoDS_Face face = TopoDS::Face(profile.topods());
+        const TopoDS_Wire outer = BRepTools::OuterWire(face);
+
+        BRepOffsetAPI_MakeOffset maker(outer, GeomAbs_Arc, Standard_False);
+        maker.Perform(distance);
+        if (!maker.IsDone()) {
+            throw std::runtime_error("BRepOffsetAPI_MakeOffset did not complete");
+        }
+
+        TopoDS_Wire offset_wire;
+        for (TopExp_Explorer wires(maker.Shape(), TopAbs_WIRE); wires.More(); wires.Next()) {
+            offset_wire = TopoDS::Wire(wires.Current());
+            break;
+        }
+        if (offset_wire.IsNull()) {
+            throw std::runtime_error("offset produced no contour");
+        }
+
+        BRepBuilderAPI_MakeFace make_face(offset_wire);
+        if (!make_face.IsDone()) {
+            throw std::runtime_error("cannot build a face from the offset contour");
+        }
+        const TopoDS_Shape result = make_face.Face();
         detail::ensure_valid(result);
         return std::make_unique<Shape>(result);
     } catch (const Standard_Failure& failure) {
