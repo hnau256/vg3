@@ -92,7 +92,7 @@ fun Solid.scale(factor: Double): Solid = scale(factor, factor, factor)
 
 /** Non-uniform scale. */
 fun Solid.scale(x: Double, y: Double, z: Double): Solid =
-    transform(op = TransformOp.Scale(x = x, y = y, z = z), target = this)
+    transform(op = TransformOp.Scale(value = Vec3(x = x, y = y, z = z)), target = this)
 
 fun Solid.scaleX(factor: Double): Solid = scale(factor, 1.0, 1.0)
 

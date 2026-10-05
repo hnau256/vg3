@@ -1,8 +1,12 @@
 {
   "version": 1,
-  "sketches": [],
   "bodies": [
-    { "type": "box", "width": 10, "length": 10, "height": 10 },
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
     {
       "type": "fillet",
       "kind": "chamfer",
@@ -15,6 +19,9 @@
     }
   ],
   "export": [
-    { "index": 1, "name": "top" }
+    {
+      "index": 1,
+      "name": "top"
+    }
   ]
 }

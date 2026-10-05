@@ -13,10 +13,42 @@ import org.hnau.ktcad.ir.Vec2
  */
 
 // --- Primitives -------------------------------------------------------------
+//
+// The IR has no `rect`/`circle` node (OpenCASCADE has no such primitives), so these are pure DSL
+// sugar: `rect` is a `Polygon`, `circle` is a `Contour` of two arcs.
 
-fun rect(width: Double, height: Double): Region = Region.Rect(width = width, height = height)
+/**
+ * An axis-aligned rectangle with its corner at the origin, extending into the `+` quadrant. A
+ * `center*` flag shifts it by half its size along that axis so it is centred there instead.
+ */
+fun rect(
+    width: Double,
+    height: Double,
+    centerX: Boolean = false,
+    centerY: Boolean = false,
+): Region {
+    val rectangle = Region.Polygon(
+        points = nonEmptyListOf(
+            Vec2(x = 0.0, y = 0.0),
+            Vec2(x = width, y = 0.0),
+            Vec2(x = width, y = height),
+            Vec2(x = 0.0, y = height),
+        ),
+    )
+    return rectangle.translate(
+        if (centerX) -width / 2 else 0.0,
+        if (centerY) -height / 2 else 0.0,
+    )
+}
 
-fun circle(radius: Double): Region = Region.Circle(radius = radius)
+/** A full circle of [radius] centred at the origin, as two `arc`s. */
+fun circle(radius: Double): Region = Region.Contour(
+    start = Vec2(x = radius, y = 0.0),
+    edges = nonEmptyListOf(
+        Curve2.Arc(via = Vec2(x = 0.0, y = radius), to = Vec2(x = -radius, y = 0.0)),
+        Curve2.Arc(via = Vec2(x = 0.0, y = -radius), to = Vec2(x = radius, y = 0.0)),
+    ),
+)
 
 fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Region =
     Region.Polygon(points = nonEmptyListOf(first, second, *tail))
@@ -61,4 +93,4 @@ fun Region.mirror(normal: Vec2, center: Vec2 = REGION_ORIGIN): Region =
     Region.Transform(target = this, op = TransformOp2.Mirror(center = center, normal = normal))
 
 fun Region.scale(x: Double, y: Double): Region =
-    Region.Transform(target = this, op = TransformOp2.Scale(x = x, y = y))
+    Region.Transform(target = this, op = TransformOp2.Scale(value = Vec2(x = x, y = y)))

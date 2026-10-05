@@ -21,9 +21,7 @@ pub enum TransformOp {
         normal: Vec3,
     },
     Scale {
-        x: Scalar,
-        y: Scalar,
-        z: Scalar,
+        value: Vec3,
     },
     Matrix {
         m: [Scalar; 16],
@@ -47,8 +45,7 @@ pub enum TransformOp2 {
         normal: Vec2,
     },
     Scale {
-        x: Scalar,
-        y: Scalar,
+        value: Vec2,
     },
 }
 

@@ -83,17 +83,29 @@ pub enum Body<T> {
 }
 
 impl<T: Clone> Body<T> {
-    /// Visits the sketches this body references, in order (the `SketchIndex` counterpart of
-    /// `try_map`: sketches live in a separate arena and are never operands of `Body<T>`).
-    pub fn visit_sketches<E>(
-        &self,
-        mut f: impl FnMut(SketchIndex) -> std::result::Result<(), E>,
-    ) -> std::result::Result<(), E> {
+    /// The sketches this body references, in order (the `SketchIndex` counterpart of `try_map`:
+    /// sketches live in a separate arena and are never operands of `Body<T>`).
+    ///
+    /// The match is exhaustive on purpose — adding a body variant that carries a sketch will not
+    /// compile until it is listed here, so a reference can never be silently dropped.
+    pub fn sketch_refs(&self) -> Vec<SketchIndex> {
         match self {
-            Body::Extrude { profile, .. }
-            | Body::Revolve { profile, .. }
-            | Body::Sweep { profile, .. } => f(*profile),
-            _ => Ok(()),
+            Body::Extrude { profile, .. } => vec![*profile],
+            Body::Revolve { profile, .. } => vec![*profile],
+            Body::Sweep { profile, .. } => vec![*profile],
+            Body::Box { .. }
+            | Body::Sphere { .. }
+            | Body::Cylinder { .. }
+            | Body::Cone { .. }
+            | Body::Torus { .. }
+            | Body::Wedge { .. }
+            | Body::Halfspace
+            | Body::Loft { .. }
+            | Body::Bool { .. }
+            | Body::Transform { .. }
+            | Body::Offset { .. }
+            | Body::Polyhedron { .. }
+            | Body::Fillet { .. } => Vec::new(),
         }
     }
 

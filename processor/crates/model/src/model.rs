@@ -30,7 +30,8 @@ pub struct Export {
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
-    /// Planar nodes; bodies reference them by index. Not exported directly.
+    /// Planar nodes; bodies reference them by index. Not exported directly. Optional (empty).
+    #[serde(default)]
     pub sketches: Vec<Sketch<SketchIndex>>,
     pub bodies: Vec<Body<BodyIndex>>,
     pub export: Vec<Export>,

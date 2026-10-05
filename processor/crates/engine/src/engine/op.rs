@@ -168,9 +168,12 @@ fn apply_transform(part: Part, op: &TransformOp) -> Result<Part> {
             normal.y.value(),
             normal.z.value(),
         )?),
-        TransformOp::Scale { x, y, z } => {
-            make_part(ffi::scale(part.shape(), x.value(), y.value(), z.value())?)
-        }
+        TransformOp::Scale { value } => make_part(ffi::scale(
+            part.shape(),
+            value.x.value(),
+            value.y.value(),
+            value.z.value(),
+        )?),
         TransformOp::Matrix { m } => {
             let values: Vec<f64> = m.iter().map(|scalar| scalar.value()).collect();
             make_part(ffi::apply_matrix(part.shape(), &values)?)

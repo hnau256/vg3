@@ -30,22 +30,6 @@ pub(super) fn build_regions(sketches: &[Sketch<SketchIndex>]) -> Result<Vec<Regi
 
 fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<Region> {
     match sketch {
-        Sketch::Rect { width, height } => {
-            let mut builder = ffi::new_wire_builder();
-            builder.pin_mut().start(0.0, 0.0, 0.0)?;
-            builder.pin_mut().line(width.value(), 0.0, 0.0)?;
-            builder.pin_mut().line(width.value(), height.value(), 0.0)?;
-            builder.pin_mut().line(0.0, height.value(), 0.0)?;
-            from_wire(builder.pin_mut().finish(true)?)
-        }
-        Sketch::Circle { radius } => {
-            let radius = radius.value();
-            let mut builder = ffi::new_wire_builder();
-            builder.pin_mut().start(radius, 0.0, 0.0)?;
-            builder.pin_mut().arc(0.0, radius, 0.0, -radius, 0.0, 0.0)?;
-            builder.pin_mut().arc(0.0, -radius, 0.0, radius, 0.0, 0.0)?;
-            from_wire(builder.pin_mut().finish(true)?)
-        }
         Sketch::Polygon { points } => {
             let mut iter = points.iter();
             let first = iter.next().expect("NonEmpty is non-empty");
@@ -130,8 +114,11 @@ fn apply_transform(shape: &ffi::Shape, op: &TransformOp2) -> Result<UniquePtr<ff
             normal.y.value(),
             0.0,
         )?),
-        TransformOp2::Scale { x, y } => {
-            Ok(ffi::scale(shape, x.value(), y.value(), 1.0)?)
-        }
+        TransformOp2::Scale { value } => Ok(ffi::scale(
+            shape,
+            value.x.value(),
+            value.y.value(),
+            1.0,
+        )?),
     }
 }

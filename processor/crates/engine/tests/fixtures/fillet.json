@@ -1,6 +1,5 @@
 {
   "version": 1,
-  "sketches": [],
   "bodies": [
     {
       "type": "box",
@@ -13,11 +12,7 @@
       "target": 0,
       "op": {
         "type": "translate",
-        "value": {
-          "x": 0,
-          "y": 0,
-          "z": 5
-        }
+        "value": { "x": 0, "y": 0, "z": 5 }
       }
     },
     {

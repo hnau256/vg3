@@ -4,9 +4,12 @@ use serde::Deserialize;
 
 use crate::curve::Curve2;
 use crate::op::{BooleanKind, TransformOp2};
-use crate::value::{NonEmpty, Scalar, Vec2};
+use crate::value::{NonEmpty, Vec2};
 
-/// A planar node: primitives, a free contour, booleans over them and planar transforms.
+/// A planar node: a contour, booleans over them and planar transforms.
+///
+/// There is no `rect`/`circle` node: OpenCASCADE has no such primitives, so the DSL builds them as
+/// `Polygon`/`Contour` — the format stays OCCT-idiomatic.
 ///
 /// `T` is the operand type — `SketchIndex` in the wire model (back-references within the sketch
 /// arena); sketches never reference bodies.
@@ -14,13 +17,6 @@ use crate::value::{NonEmpty, Scalar, Vec2};
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Sketch<T> {
-    Rect {
-        width: Scalar,
-        height: Scalar,
-    },
-    Circle {
-        radius: Scalar,
-    },
     Polygon {
         points: NonEmpty<Vec2>,
     },
@@ -46,11 +42,6 @@ impl<T: Clone> Sketch<T> {
         mut f: impl FnMut(T) -> std::result::Result<U, E>,
     ) -> std::result::Result<Sketch<U>, E> {
         Ok(match self {
-            Sketch::Rect { width, height } => Sketch::Rect {
-                width: *width,
-                height: *height,
-            },
-            Sketch::Circle { radius } => Sketch::Circle { radius: *radius },
             Sketch::Polygon { points } => Sketch::Polygon {
                 points: points.clone(),
             },

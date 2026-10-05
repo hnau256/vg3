@@ -78,32 +78,42 @@ data class Part(
 )
 
 /**
- * Lowers the reference DAG to the flat arenas:
- * - every distinct `Solid` occupies exactly one position in `bodies` (structural `equals` dedup →
- *   reuse shares an entry), added bottom-up so operands always precede their parents;
- * - every distinct `Region` a body references occupies exactly one position in `sketches`, lowered
- *   on demand;
+ * Lowers the reference DAGs to the flat arenas:
+ * - every distinct node occupies exactly one position (structural `equals` dedup → reuse shares an
+ *   entry), added bottom-up so operands always precede their parents;
+ * - a body references its sketches (`SketchIndex`); a sketch never references a body;
  * - operands are indices strictly less than the node's own index (back-references only).
  */
 class Arena {
-    private val solids = HashMap<Solid, BodyIndex>()
-    private val regions = HashMap<Region, SketchIndex>()
-
-    val sketches = mutableListOf<Sketch>()
-    val bodies = mutableListOf<Body>()
-
-    /** The `SketchIndex` of [region], lowering it (and its children first) into the sketch arena. */
-    fun region(region: Region): SketchIndex = regions.getOrPut(region) {
-        val sketch = region.lower(::region)
-        sketches += sketch
-        SketchIndex(sketches.lastIndex)
+    private val regionArena = Lowering<Region, SketchIndex, Sketch>(::SketchIndex) { region, self ->
+        region.lower(self)
+    }
+    private val bodyArena = Lowering<Solid, BodyIndex, Body>(::BodyIndex) { solid, self ->
+        solid.lower(self, regionArena::indexOf)
     }
 
+    val sketches: List<Sketch> get() = regionArena.nodes
+    val bodies: List<Body> get() = bodyArena.nodes
+
+    /** The `SketchIndex` of [region], lowering it (and its children first) into the sketch arena. */
+    fun region(region: Region): SketchIndex = regionArena.indexOf(region)
+
     /** The `BodyIndex` of [solid], lowering it (and its children first) into the body arena. */
-    fun body(solid: Solid): BodyIndex = solids.getOrPut(solid) {
-        val body = solid.lower(::body, ::region)
-        bodies += body
-        BodyIndex(bodies.lastIndex)
+    fun body(solid: Solid): BodyIndex = bodyArena.indexOf(solid)
+}
+
+/** A flat, deduplicating arena over a domain type `T` producing IR nodes `N` indexed by `I`. */
+private class Lowering<T, I, N>(
+    private val wrap: (Int) -> I,
+    private val lower: (T, (T) -> I) -> N,
+) {
+    private val visited = HashMap<T, I>()
+    val nodes = mutableListOf<N>()
+
+    fun indexOf(value: T): I = visited.getOrPut(value) {
+        val node = lower(value, ::indexOf)
+        nodes += node
+        wrap(nodes.lastIndex)
     }
 }
 

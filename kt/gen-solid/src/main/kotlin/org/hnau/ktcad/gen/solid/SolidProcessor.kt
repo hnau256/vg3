@@ -61,6 +61,7 @@ private data class Domain(
     val selfIndexFqn: String,
     val references: List<Reference>,
     val factories: Boolean,
+    val factorySkip: Set<String> = emptySet(),
 )
 
 private val DOMAINS = listOf(
@@ -70,6 +71,8 @@ private val DOMAINS = listOf(
         selfIndexFqn = "$IR_PACKAGE.BodyIndex",
         references = listOf(Reference("$IR_PACKAGE.SketchIndex", "Region", "sketch")),
         factories = true,
+        // Hand-written with `centerX/Y/Z` sugar (see PrimitiveExt.kt).
+        factorySkip = setOf("Box", "Cylinder"),
     ),
     Domain(
         nodeFqn = "$IR_PACKAGE.Sketch",
@@ -121,7 +124,9 @@ class SolidProcessor(
             .addType(sealedType(domain, variants, domainType))
             .addFunction(lowerMapper(domain, variants, nodeType, domainType))
         if (domain.factories) {
-            variants.forEach { builder.addFunction(factory(domain, it, domainType)) }
+            variants
+                .filterNot { it.simpleName.asString() in domain.factorySkip }
+                .forEach { builder.addFunction(factory(domain, it, domainType)) }
         }
         return builder.build()
     }

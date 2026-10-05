@@ -1,11 +1,22 @@
 {
   "version": 1,
-  "sketches": [],
   "bodies": [
-    { "type": "box", "width": 10, "length": 10, "height": 10 },
-    { "type": "offset", "target": 0, "distance": 1 }
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
+    {
+      "type": "offset",
+      "target": 0,
+      "distance": 1
+    }
   ],
   "export": [
-    { "index": 1, "name": "offset" }
+    {
+      "index": 1,
+      "name": "offset"
+    }
   ]
 }

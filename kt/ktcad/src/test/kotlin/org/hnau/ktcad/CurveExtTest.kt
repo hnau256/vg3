@@ -47,8 +47,11 @@ class CurveExtTest {
     }
 
     @Test
-    fun circle_is_a_region_circle() {
-        assertEquals(Region.Circle(radius = 5.0), circle(5.0))
+    fun circle_is_a_two_arc_contour_returning_to_start() {
+        val c = circle(radius = 5.0) as Region.Contour
+        assertEquals(2, c.edges.size)
+        assertEquals(Vec2(5.0, 0.0), c.start)
+        assertEquals(Vec2(5.0, 0.0), (c.edges.last() as Curve2.Arc).to)
     }
 
     @Test

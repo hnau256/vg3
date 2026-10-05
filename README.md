@@ -136,8 +136,9 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 `{ "version": 1, "sketches": [ ... ], "bodies": [ ... ], "export": [ ... ] }`:
 
 - `version` — целое; текущее `1`.
-- `sketches` — **плоская арена 2D**: `Sketch`-узлы (планарные примитивы, булевы, трансформации) в
-  топологическом порядке. Эскизы существуют только для внутренней работы и **не экспортируются**.
+- `sketches` — **плоская арена 2D**: `Sketch`-узлы (планарные контуры, булевы, трансформации) в
+  топологическом порядке. Поле **необязательное** (по умолчанию пусто): модель без 2D-арены валидна.
+  Эскизы существуют только для внутренней работы и **не экспортируются**.
 - `bodies` — **плоская арена 3D**: список всех узлов в топологическом порядке (узел после тех, на
   которые ссылается).
 - `export` — **явный список** экспортируемого (`index`/`name`/`color`), `index` — в `bodies`; порядок =
@@ -196,18 +197,17 @@ Path = { "start": Vec3, "edges": [ Curve3... ] }   // edges непусто (≥1
 ### Эскизы (2D-арена)
 
 ```jsonc
-rect(width, height)                 // угол в начале, +квадрант
-circle(radius)                      // центр в начале
 polygon(points)                     // замкнутая ломаная по точкам (Vec2)
 contour(start, edges)               // свободный 2D-контур (Curve2); edges непусто (≥1)
 bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
 transform(target, op)               // планарная трансформация (TransformOp2)
 ```
 
-- `rect`/`circle`/`polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
-- Круг — одним `circle` (не двумя `arc`, как контур).
+- `polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
+- Узлов `rect`/`circle` в IR **нет** (в OpenCASCADE таких примитивов нет): это чистый DSL-сахар —
+  `rect` = `polygon` из четырёх точек, `circle` = `contour` из двух `arc`.
 - `TransformOp2`: `translate(Vec2)`, `rotate(center: Vec2, angle)`, `mirror(center: Vec2, normal: Vec2)`,
-  `scale(x, y)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
+  `scale(value: Vec2)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
 - Эскизы не экспортируются; они нужны только как профиль для `extrude`/`revolve`/`sweep`.
 
 ### Операции
@@ -268,7 +268,7 @@ loft(sections, ruled)               // sections: [Path...]; default ruled false;
 { "type": "translate", "value": Vec3 }
 { "type": "rotate",    "center": Vec3, "axis": Vec3, "angle": Angle }
 { "type": "mirror",    "center": Vec3, "normal": Vec3 }
-{ "type": "scale",     "x": Scalar, "y": Scalar, "z": Scalar }   // НЕ Vec3
+{ "type": "scale",     "value": Vec3 }
 { "type": "matrix",    "m": [ Scalar × 16 ] }                    // ROW-MAJOR 4×4
 ```
 
@@ -382,8 +382,8 @@ processor/            # самостоятельный Cargo workspace
 
 - `Model { version, sketches: Vec<Sketch>, bodies: Vec<Body>, export: Vec<Export> }` — верхний уровень.
 - `Body` — узел 3D IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
-- `Sketch` — узел 2D IR: планарные примитивы (`rect`/`circle`/`polygon`/`contour`), булевы,
-  трансформации. Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
+- `Sketch` — узел 2D IR: планарные контуры (`polygon`/`contour`), булевы, трансформации. `rect`/`circle`
+  — только DSL-сахар. Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
 - Операнды — всегда `usize` (индекс назад в своей арене).
 - `Sketch.Contour`, `Path` (`Curve2`/`Curve3`).
 - Канонические значения: `Scalar`, `Angle`, `Vec2`, `Vec3`.

@@ -37,9 +37,9 @@ pub fn evaluate<C: Cache<Key, Part> + ?Sized>(model: &Model, cache: &mut C) -> R
     }
     for (index, body) in model.bodies.iter().enumerate() {
         body.try_map(|operand| -> Result<()> { validate_index(operand.value(), index) })?;
-        body.visit_sketches(|sketch| -> Result<()> {
-            validate_index(sketch.value(), model.sketches.len())
-        })?;
+        for sketch in body.sketch_refs() {
+            validate_index(sketch.value(), model.sketches.len())?;
+        }
     }
 
     let regions = build_regions(&model.sketches)?;
@@ -88,11 +88,11 @@ fn key_of(
 ) -> Result<Key> {
     let mapped: Body<Key> =
         body.try_map(|operand| key_of(&bodies[operand.value()], bodies, sketches))?;
-    let mut sketch_keys = Vec::new();
-    body.visit_sketches(|sketch| -> Result<()> {
-        sketch_keys.push(key_of_sketch(&sketches[sketch.value()], sketches)?);
-        Ok(())
-    })?;
+    let sketch_keys = body
+        .sketch_refs()
+        .into_iter()
+        .map(|sketch| key_of_sketch(&sketches[sketch.value()], sketches))
+        .collect::<Result<Vec<Key>>>()?;
     Ok(fingerprinter().of(&BodyKeyInput {
         body: &mapped,
         sketches: sketch_keys,

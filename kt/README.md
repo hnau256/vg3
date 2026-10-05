@@ -94,7 +94,9 @@ fun main() {
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
-  Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз).
+  Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `box`/`cylinder`/`rect`
+  необязательно центрируются по осям: `centerX`/`centerY`/`centerZ` (`Boolean = false`) — это sugar
+  над `translate` (у `cylinder` X/Y уже центрированы, у `rect` есть только X/Y).
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`.
@@ -104,10 +106,11 @@ fun main() {
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
 - **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
   `arcTo`/`arcRel`, `splineTo` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
-  точку). 2D-контур: `contour(start, segment…)`; готовые: `rect(width, height)`, `circle(radius)`,
-  `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
-  имеет ≥1 ребро, поэтому пустой контур невыразим.
-- **`Region`** — immutable доменный 2D-узел (эскиз): `rect`/`circle`/`polygon`/`contour` + булевы
+  точку). 2D-контур: `contour(start, segment…)`; готовые (sugar): `rect(width, height, centerX?, centerY?)`
+  = `polygon` из 4 точек, `circle(radius)` = `contour` из двух `arc`; `polygon(first, second, vararg)`;
+  3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой
+  контур невыразим.
+- **`Region`** — immutable доменный 2D-узел (эскиз): `polygon`/`contour` + булевы
   `union`/`cut`/`intersect` (`+`/`-`/`*`) и трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
   `mirror(normal, center?)`, `scale(x, y)`. Эскизы **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
