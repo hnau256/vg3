@@ -20,8 +20,8 @@ pub enum Error {
     #[error("reference index {index} must be less than the current index {current}")]
     InvalidReference { index: usize, current: usize },
 
-    #[error("export index {index} is out of range (parts has {parts})")]
-    ExportIndex { index: usize, parts: usize },
+    #[error("export index {index} is out of range (bodies has {bodies})")]
+    ExportIndex { index: usize, bodies: usize },
 
     #[error("body requires at least one operand")]
     MissingOperand,

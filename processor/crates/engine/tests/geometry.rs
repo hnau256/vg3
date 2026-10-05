@@ -164,7 +164,8 @@ fn export_config_rejects_unknown_parameters() {
 fn two_named_outputs() -> Vec<vg3_engine::Output> {
     let source = r#"{
         "version": 1,
-        "parts": [
+        "sketches": [],
+        "bodies": [
             { "type": "box", "width": 1, "length": 1, "height": 1 },
             { "type": "sphere", "radius": 1 }
         ],
@@ -203,7 +204,8 @@ fn multi_output_writes_one_file_per_named_part() {
 fn multi_output_rejects_duplicate_names() {
     let source = r#"{
         "version": 1,
-        "parts": [
+        "sketches": [],
+        "bodies": [
             { "type": "box", "width": 1, "length": 1, "height": 1 },
             { "type": "sphere", "radius": 1 }
         ],

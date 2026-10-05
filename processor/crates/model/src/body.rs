@@ -2,9 +2,9 @@
 
 use serde::Deserialize;
 
-use crate::curve::{Path, Profile};
+use crate::curve::Path;
 use crate::op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
-use crate::value::{Angle, NonEmpty, Vec3, Scalar};
+use crate::value::{Angle, NonEmpty, Scalar, SketchIndex, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -39,15 +39,15 @@ pub enum Body<T> {
     },
     Halfspace,
     Extrude {
-        profile: Profile,
+        profile: SketchIndex,
         height: Scalar,
     },
     Revolve {
-        profile: Profile,
+        profile: SketchIndex,
         angle: Angle,
     },
     Sweep {
-        profile: Profile,
+        profile: SketchIndex,
         path: Path,
         #[serde(default)]
         mode: SweepMode,
@@ -83,6 +83,20 @@ pub enum Body<T> {
 }
 
 impl<T: Clone> Body<T> {
+    /// Visits the sketches this body references, in order (the `SketchIndex` counterpart of
+    /// `try_map`: sketches live in a separate arena and are never operands of `Body<T>`).
+    pub fn visit_sketches<E>(
+        &self,
+        mut f: impl FnMut(SketchIndex) -> std::result::Result<(), E>,
+    ) -> std::result::Result<(), E> {
+        match self {
+            Body::Extrude { profile, .. }
+            | Body::Revolve { profile, .. }
+            | Body::Sweep { profile, .. } => f(*profile),
+            _ => Ok(()),
+        }
+    }
+
     /// Functor over operands: rebuilds the body, applying `f` to every operand, in order.
     ///
     /// This is the single source of truth for "where are a body's operands". BodyIndex-level

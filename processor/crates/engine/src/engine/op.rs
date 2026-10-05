@@ -1,18 +1,19 @@
 use vg3_model::{BooleanKind, Body, NonEmpty, SweepMode, TransformOp};
 
-use crate::engine::contour::{build_path_wire, build_profile_wire};
+use crate::engine::contour::build_path_wire;
 use crate::engine::fillet::evaluate_fillet;
 use crate::engine::part::{make_part, Part};
+use crate::engine::sketch::Region;
 use crate::error::{Error, Result};
 use crate::sys::ffi;
 
 /// Applies a body's operation once all its operands are already evaluated.
 pub(super) trait Evaluate {
-    fn evaluate(self) -> Result<Part>;
+    fn evaluate(self, regions: &[Region]) -> Result<Part>;
 }
 
 impl Evaluate for Body<Part> {
-    fn evaluate(self) -> Result<Part> {
+    fn evaluate(self, regions: &[Region]) -> Result<Part> {
         match self {
             Body::Box {
                 width,
@@ -78,22 +79,22 @@ impl Evaluate for Body<Part> {
                 make_part(ffi::make_polyhedron(&positions, &indices, &offsets)?)
             }
             Body::Extrude { profile, height } => {
-                let wire = build_profile_wire(&profile)?;
-                make_part(ffi::extrude(&wire, height.value())?)
+                let face = regions[profile.value()].shape();
+                make_part(ffi::extrude(face, height.value())?)
             }
             Body::Revolve { profile, angle } => {
-                let wire = build_profile_wire(&profile)?;
-                make_part(ffi::revolve(&wire, angle.value())?)
+                let face = regions[profile.value()].shape();
+                make_part(ffi::revolve(face, angle.value())?)
             }
             Body::Sweep {
                 profile,
                 path,
                 mode,
             } => {
-                let profile_wire = build_profile_wire(&profile)?;
+                let profile_face = regions[profile.value()].shape();
                 let spine = build_path_wire(&path, false)?;
                 let follow = matches!(mode, SweepMode::Follow);
-                make_part(ffi::sweep(&profile_wire, &spine, follow)?)
+                make_part(ffi::sweep(profile_face, &spine, follow)?)
             }
             Body::Loft { sections, ruled } => {
                 if sections.len() < 2 {

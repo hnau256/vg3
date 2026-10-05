@@ -1,6 +1,7 @@
 {
   "version": 1,
-  "parts": [
+  "sketches": [],
+  "bodies": [
     { "type": "box", "width": 10, "length": 10, "height": 10 },
     { "type": "offset", "target": 0, "distance": 1 }
   ],

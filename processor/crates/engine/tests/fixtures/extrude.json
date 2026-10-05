@@ -1,38 +1,33 @@
 {
   "version": 1,
-  "parts": [
+  "sketches": [
     {
-      "type": "extrude",
-      "height": 5,
-      "profile": {
-        "start": {
+      "type": "polygon",
+      "points": [
+        {
           "x": 0,
           "y": 0
         },
-        "edges": [
-          {
-            "type": "line",
-            "to": {
-              "x": 10,
-              "y": 0
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": 10,
-              "y": 10
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": 0,
-              "y": 10
-            }
-          }
-        ]
-      }
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "height": 5,
+      "profile": 0
     }
   ],
   "export": [

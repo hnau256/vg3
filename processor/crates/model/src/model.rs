@@ -4,9 +4,10 @@ use serde::Deserialize;
 
 use crate::error::{Error, Result};
 use crate::body::Body;
-use crate::value::{Color, BodyIndex};
+use crate::sketch::Sketch;
+use crate::value::{Color, BodyIndex, SketchIndex};
 
-/// An explicit export entry: which part to output, its name and (optionally) its color.
+/// An explicit export entry: which body to output, its name and (optionally) its color.
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -29,7 +30,9 @@ pub struct Export {
 #[serde(deny_unknown_fields)]
 pub struct Model {
     pub version: u32,
-    pub parts: Vec<Body<BodyIndex>>,
+    /// Planar nodes; bodies reference them by index. Not exported directly.
+    pub sketches: Vec<Sketch<SketchIndex>>,
+    pub bodies: Vec<Body<BodyIndex>>,
     pub export: Vec<Export>,
 }
 

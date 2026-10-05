@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::value::{Angle, Scalar, Vec3};
+use crate::value::{Angle, Scalar, Vec2, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -27,6 +27,28 @@ pub enum TransformOp {
     },
     Matrix {
         m: [Scalar; 16],
+    },
+}
+
+/// A planar (2D) transformation of a sketch.
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TransformOp2 {
+    Translate {
+        value: Vec2,
+    },
+    Rotate {
+        center: Vec2,
+        angle: Angle,
+    },
+    Mirror {
+        center: Vec2,
+        normal: Vec2,
+    },
+    Scale {
+        x: Scalar,
+        y: Scalar,
     },
 }
 

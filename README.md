@@ -133,16 +133,20 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 
 ### Верхний уровень
 
-`{ "version": 1, "parts": [ ... ], "export": [ ... ] }`:
+`{ "version": 1, "sketches": [ ... ], "bodies": [ ... ], "export": [ ... ] }`:
 
 - `version` — целое; текущее `1`.
-- `parts` — **плоская арена**: список всех узлов в топологическом порядке (узел после тех, на которые
-  ссылается).
-- `export` — **явный список** экспортируемого (`index`/`name`/`color`), порядок = порядок вывода.
-  Что не указано в `export`, не экспортируется. Промежуточный узел — валидная цель экспорта.
+- `sketches` — **плоская арена 2D**: `Sketch`-узлы (планарные примитивы, булевы, трансформации) в
+  топологическом порядке. Эскизы существуют только для внутренней работы и **не экспортируются**.
+- `bodies` — **плоская арена 3D**: список всех узлов в топологическом порядке (узел после тех, на
+  которые ссылается).
+- `export` — **явный список** экспортируемого (`index`/`name`/`color`), `index` — в `bodies`; порядок =
+  порядок вывода. Что не указано в `export`, не экспортируется. Промежуточный узел — валидная цель
+  экспорта.
 
-**Ссылки (operand)** — всегда целое число: индекс **назад** в `parts` (`index < current`), inline-объектов
-нет. Ацикличность гарантирована по построению; `index >= current` — ошибка.
+**Ссылки** — всегда целое число: индекс **назад** в своей арене (`index < current`), inline-объектов нет.
+Тело может ссылаться на эскиз (`SketchIndex`), но эскиз на тело — никогда: миры независимы. Ацикличность
+гарантирована по построению; `index >= current` — ошибка.
 
 ### Базовые типы и канонизация
 
@@ -163,13 +167,16 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 на `θ` и `θ+2π` — разные ключи; `mirror` с `n` и `−n` — разные формулы.
 
 Списки, которые обязаны быть непустыми, типизированы как `NonEmpty<T>`: пустой массив отвергается **при
-десериализации**, а схема несёт `minItems: 1`. Так типизированы `Profile`/`Path.edges`,
-`Curve2/3.Spline.points`, `Loft.sections` и обе группы `bool` (`arguments`/`tools`).
+десериализации**, а схема несёт `minItems: 1`. Так типизированы `Sketch.Contour.edges`, `Path.edges`,
+`Sketch.Polygon.points`, `Curve2/3.Spline.points`, `Loft.sections` и обе группы `bool`
+(`arguments`/`tools`).
 
 Сахар (`mirrorXY`, `rotateX`, `circle`, …) существует **только в DSL** и разворачивается в канонические
 формы; в JSON не встречается.
 
 ### Кривые и контуры
+
+Profile больше нет: 2D-геометрия живёт в арене `sketches`. Свободный контур — это узел `Sketch.Contour`.
 
 ```jsonc
 // Curve2 (Vec2) / Curve3 (Vec3)
@@ -179,15 +186,29 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 // Curve3 only — винтовая линия вокруг +Z через начало:
 { "type": "helix", "pitch": Scalar, "height": Scalar, "right_handed": true }
 
-Profile = { "start": Vec2, "edges": [ Curve2... ] }   // edges непусто (≥1)
-Path    = { "start": Vec3, "edges": [ Curve3... ] }   // edges непусто (≥1)
+Path = { "start": Vec3, "edges": [ Curve3... ] }   // edges непусто (≥1)
 ```
 
 - `arc`/`spline` начинаются в конце предыдущего ребра (или в `start`).
 - `helix` начинается в предыдущей точке (радиус/фаза оттуда): число витков `height / pitch`.
-- **`Profile` авто-замыкается всегда**; **`Path` — только как секция `loft`**.
-- Круг — **двумя `arc`** (`circle` в JSON запрещён; в DSL — сахар).
-- Нулевое ребро / самопересечение / незамкнутый контур → ошибка.
+- **`Path` авто-замыкается только как секция `loft`**; иначе — открытая спина для `sweep`.
+
+### Эскизы (2D-арена)
+
+```jsonc
+rect(width, height)                 // угол в начале, +квадрант
+circle(radius)                      // центр в начале
+polygon(points)                     // замкнутая ломаная по точкам (Vec2)
+contour(start, edges)               // свободный 2D-контур (Curve2); edges непусто (≥1)
+bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
+transform(target, op)               // планарная трансформация (TransformOp2)
+```
+
+- `rect`/`circle`/`polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
+- Круг — одним `circle` (не двумя `arc`, как контур).
+- `TransformOp2`: `translate(Vec2)`, `rotate(center: Vec2, angle)`, `mirror(center: Vec2, normal: Vec2)`,
+  `scale(x, y)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
+- Эскизы не экспортируются; они нужны только как профиль для `extrude`/`revolve`/`sweep`.
 
 ### Операции
 
@@ -215,10 +236,10 @@ halfspace                           // бесконечный solid z ≤ 0; и�
 **Генерация тел:**
 
 ```jsonc
-extrude(profile, height)            // из XY вдоль +Z; height > 0
-revolve(profile, angle)             // вокруг оси Y; профиль по одну сторону
-sweep(profile, path, mode)          // mode: "follow" (default) | "rigid"
-loft(sections, ruled)               // default false; секций ≥ 2
+extrude(profile, height)            // profile: SketchIndex; из XY вдоль +Z; height > 0
+revolve(profile, angle)             // profile: SketchIndex; вокруг оси Y; профиль по одну сторону
+sweep(profile, path, mode)          // profile: SketchIndex; mode: "follow" (default) | "rigid"
+loft(sections, ruled)               // sections: [Path...]; default ruled false; секций ≥ 2
 ```
 
 - `revolve`: профиль не пересекает ось Y, иначе ошибка.
@@ -359,22 +380,26 @@ processor/            # самостоятельный Cargo workspace
 
 Доменная модель и её JSON-представление живут **вместе** (serde-атрибуты прямо на типах):
 
-- `Model { version, parts: Vec<Body>, export: Vec<Export> }` — верхний уровень.
-- `Body` — узел IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
-- Операнд — всегда `usize` (индекс назад).
-- `Profile`/`Path`, `Curve2`/`Curve3`.
+- `Model { version, sketches: Vec<Sketch>, bodies: Vec<Body>, export: Vec<Export> }` — верхний уровень.
+- `Body` — узел 3D IR: примитивы, генерация тел, булевы, трансформации, `fillet`.
+- `Sketch` — узел 2D IR: планарные примитивы (`rect`/`circle`/`polygon`/`contour`), булевы,
+  трансформации. Тела ссылаются на эскизы (`SketchIndex`), но не наоборот.
+- Операнды — всегда `usize` (индекс назад в своей арене).
+- `Sketch.Contour`, `Path` (`Curve2`/`Curve3`).
 - Канонические значения: `Scalar`, `Angle`, `Vec2`, `Vec3`.
 
 ### OCCT-процессор (`engine`)
 
 `evaluate`:
 
-1. **Валидирует ссылки** по всей арене (один `try_map`): каждый операнд — `index < current`.
-2. **Merkle-проход**: ключ узла — `H(версия ‖ узел ‖ ключи операндов…)`, bottom-up.
-3. **Строит корни**: операнды берутся из кэша по ключу или строятся рекурсивно, затем
+1. **Валидирует ссылки** по обеим аренам (один `try_map` на каждую): каждый операнд — `index < current`.
+2. **Строит эскизы** bottom-up в планарные `Region` (грани); ключ эскиза — `H(узел ‖ ключи операндов…)`.
+3. **Merkle-проход тел**: ключ узла — `H(версия ‖ узел ‖ ключи операндов… ‖ ключи используемых эскизов)`,
+   bottom-up (содержимое эскиза, а не только его индекс).
+4. **Строит корни**: операнды берутся из кэша по ключу или строятся рекурсивно, затем
    `Body<Part>::evaluate` применяет операцию; результат кладётся в кэш.
-4. После **каждой** операции — `IsDone()`, `BRepCheck_Analyzer`, инвариант «только `Solid`».
-5. Результат каждого узла нормализуется `unify`.
+5. После **каждой** операции — `IsDone()`, `BRepCheck_Analyzer`, инвариант «только `Solid`».
+6. Результат каждого узла нормализуется `unify`.
 
 `Part` — построенная сущность (`Rc` над нативным шейпом; дешёвый клон). Умеет `solid_count()`,
 `face_count()`, `volume()`, `bounding_box()`. Не путать с IR-узлом `Body` (описанием).
@@ -421,10 +446,11 @@ let outputs = vg3_engine::evaluate(&model, &mut cache)?;
 ```json
 {
   "version": 1,
-  "parts": [
+  "sketches": [],
+  "bodies": [
     { "type": "box", "width": 20, "length": 20, "height": 5 },
     { "type": "transform", "target": 0,
-      "op": { "type": "translate", "value": { "dx": 0, "dy": 0, "dz": 5 } } },
+      "op": { "type": "translate", "value": { "x": 0, "y": 0, "z": 5 } } },
     { "type": "cylinder", "radius": 5, "height": 10 },
     { "type": "bool", "kind": "fuse", "arguments": [1], "tools": [2] },
     { "type": "fillet", "kind": "fillet", "target": 3,

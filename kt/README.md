@@ -11,7 +11,7 @@
 kt/
   ktcad/        runtime-библиотека: сгенерированный ir, доменный Solid, Vg3, Format
   gen-schema/   кодогенератор: JSON Schema -> Kotlin ir-классы (универсальный)
-  gen-solid/    кодогенератор: KSP-процессор, ir.Body -> Solid + маппер + фабрики
+  gen-solid/    кодогенератор: KSP-процессор, ir.Body -> Solid, ir.Sketch -> Region (+ мапперы, фабрики)
 ```
 
 `gen-schema` и `gen-solid` — внутренние инструменты сборки библиотеки, **не публикуются**.
@@ -94,7 +94,7 @@ fun main() {
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
-  Возвращают `Solid`.
+  Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз).
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`.
@@ -102,12 +102,16 @@ fun main() {
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
-- **Контуры** — `Profile(start, segment…)` / `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
+- **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
   `arcTo`/`arcRel`, `splineTo` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
-  точку). Плюс `circle(radius)` / `circle(center, radius)`, `polygon(...)` (2D и 3D), `polyline(...)`
-  (3D), `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой контур невыразим.
-- **Построение тел из контуров:** `Profile.extrude(height)`, `Profile.revolve(angle)`,
-  `Profile.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
+  точку). 2D-контур: `contour(start, segment…)`; готовые: `rect(width, height)`, `circle(radius)`,
+  `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
+  имеет ≥1 ребро, поэтому пустой контур невыразим.
+- **`Region`** — immutable доменный 2D-узел (эскиз): `rect`/`circle`/`polygon`/`contour` + булевы
+  `union`/`cut`/`intersect` (`+`/`-`/`*`) и трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
+  `mirror(normal, center?)`, `scale(x, y)`. Эскизы **не экспортируются** — только служат профилем тел.
+- **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
+  `Region.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /
   **`Solid.fillet(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`): постоянным
   радиусом всем рёбрам, Rhai-выражением на ребро (число), либо булевым предикатом отбора рёбер
@@ -122,29 +126,32 @@ fun main() {
 
 ## Как это устроено
 
-Всё, что видит пользователь, — `Solid` и фабрики; индексы и `ir.Body` скрыты внутри.
+Всё, что видит пользователь, — `Solid`/`Region` и фабрики; индексы и `ir.Body`/`ir.Sketch` скрыты внутри.
 
 ```
 DSL:  box(...) :: Solid              Фабрики (генерируются из ir.Body)
+      rect(...) :: Region            Sugar над Region (ir.Sketch)
         │
         ▼
-      Solid                           Доменный граф: операнды — Solid
-        │  lower(operand: (Solid) -> BodyIndex)
+      Solid / Region                 Доменные графы: операнды — Solid / Region
+        │  lower(operand, sketch) / lower(operand)
         ▼
-      ir.Body                         Плоский узел с операндами-индексами
+      ir.Body / ir.Sketch            Плоские узлы с операндами-индексами
         │
         ▼
-      Model{parts, export}            Сериализация (@Serializable)
+      Model{sketches, bodies, export} Сериализация (@Serializable)
         │
         ▼
       vg3 (ядро)
 ```
 
-- **Кодогенерация.** `ir` (структура IR) генерируется из JSON Schema, а `Solid`/маппер/фабрики — KSP из
-  `ir.Body`. Обе таски выведены из одного источника (Rust-типы `vg3-model`), поэтому не расходятся.
-- **Arena.** `Vg3` складывает `Solid` в арену с дедупликацией по `equals`: один и тот же `Solid`
-  занимает одну позицию (переиспользование → один узел, несколько ссылок). Lowering идёт bottom-up,
-  так что операнды всегда получают индекс раньше родителя (`index < current`).
+- **Кодогенерация.** `ir` (структура IR) генерируется из JSON Schema, а `Solid`/`Region` + мапперы +
+  фабрики — KSP из `ir.Body`/`ir.Sketch`. Обе таски выведены из одного источника (Rust-типы
+  `vg3-model`), поэтому не расходятся.
+- **Arena.** `Vg3` складывает `Solid` и `Region` в две арены с дедупликацией по `equals`: один и тот же
+  узел занимает одну позицию (переиспользование → один узел, несколько ссылок). Lowering идёт bottom-up,
+  так что операнды всегда получают индекс раньше родителя (`index < current`); тело ссылается на эскиз,
+  эскиз на тело — никогда.
 
 ## Разработка библиотеки
 

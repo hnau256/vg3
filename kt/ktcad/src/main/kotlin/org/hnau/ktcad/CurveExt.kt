@@ -7,19 +7,18 @@ import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Path
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
-import org.hnau.ktcad.ir.Profile
 
 /**
  * DSL sugar for contours.
  *
- * A contour always has at least one edge (`edges` is a `NonEmptyList`), so it is built by a factory
- * (`Profile(...)`/`Path(...)`, capitalised like the generated class) from a start point and
- * **segments**. `…To` segments are absolute, `…Rel` are relative to the current point; a segment
- * receives the current point **lazily** (`() -> Point`), so an absolute segment does not force it —
- * which lets an absolute segment follow a `helix` (whose end the DSL cannot compute).
+ * A 2D contour is a [Region] with at least one edge (`edges` is a `NonEmptyList`), built by the
+ * `contour(...)` factory from a start point and **segments**. A 3D path is built by `Path(...)`.
+ * `…To` segments are absolute, `…Rel` are relative to the current point; a segment receives the
+ * current point **lazily** (`() -> Point`), so an absolute segment does not force it — which lets an
+ * absolute segment follow a `helix` (whose end the DSL cannot compute).
  */
 
-typealias ProfileSegment = (() -> Vec2) -> Curve2
+typealias ContourSegment = (() -> Vec2) -> Curve2
 typealias PathSegment = (() -> Vec3) -> Curve3
 
 // --- Points -----------------------------------------------------------------
@@ -30,21 +29,21 @@ fun p(x: Double, y: Double, z: Double): Vec3 = Vec3(x = x, y = y, z = z)
 
 // --- 2D segments ------------------------------------------------------------
 
-fun lineTo(x: Double, y: Double): ProfileSegment = lineTo(p(x, y))
+fun lineTo(x: Double, y: Double): ContourSegment = lineTo(p(x, y))
 
-fun lineTo(to: Vec2): ProfileSegment = { Curve2.Line(to = to) }
+fun lineTo(to: Vec2): ContourSegment = { Curve2.Line(to = to) }
 
-fun lineRel(dx: Double, dy: Double): ProfileSegment = { current ->
+fun lineRel(dx: Double, dy: Double): ContourSegment = { current ->
     val point = current()
     Curve2.Line(to = p(point.x + dx, point.y + dy))
 }
 
-fun arcTo(via: Vec2, to: Vec2): ProfileSegment = { Curve2.Arc(via = via, to = to) }
+fun arcTo(via: Vec2, to: Vec2): ContourSegment = { Curve2.Arc(via = via, to = to) }
 
-fun arcTo(viaX: Double, viaY: Double, toX: Double, toY: Double): ProfileSegment =
+fun arcTo(viaX: Double, viaY: Double, toX: Double, toY: Double): ContourSegment =
     arcTo(via = p(viaX, viaY), to = p(toX, toY))
 
-fun arcRel(viaDx: Double, viaDy: Double, toDx: Double, toDy: Double): ProfileSegment = { current ->
+fun arcRel(viaDx: Double, viaDy: Double, toDx: Double, toDy: Double): ContourSegment = { current ->
     val point = current()
     Curve2.Arc(
         via = p(point.x + viaDx, point.y + viaDy),
@@ -52,7 +51,7 @@ fun arcRel(viaDx: Double, viaDy: Double, toDx: Double, toDy: Double): ProfileSeg
     )
 }
 
-fun splineTo(initial: Vec2, vararg additional: Vec2): ProfileSegment =
+fun splineTo(initial: Vec2, vararg additional: Vec2): ContourSegment =
     { Curve2.Spline(points = nonEmptyListOf(initial, *additional)) }
 
 // --- 3D segments ------------------------------------------------------------
@@ -87,19 +86,20 @@ fun arcRel(
 fun splineTo(initial: Vec3, vararg additional: Vec3): PathSegment =
     { Curve3.Spline(points = nonEmptyListOf(initial, *additional)) }
 
-// --- Contour factories ------------------------------------------------------
+// --- Contour factory --------------------------------------------------------
 
-fun Profile(start: Vec2, segments: NonEmptyList<ProfileSegment>): Profile {
+/** A planar region from a start point and segments (relative segments see the current point). */
+fun contour(start: Vec2, segments: NonEmptyList<ContourSegment>): Region {
     val first = segments.head({ start })
     val (edges, _) = segments.tail.fold(nonEmptyListOf(first) to { first.end() }) { (acc, current), segment ->
         val curve = segment(current)
         (acc + curve) to { curve.end() }
     }
-    return Profile(start = start, edges = edges)
+    return Region.Contour(start = start, edges = edges)
 }
 
-fun Profile(start: Vec2, initial: ProfileSegment, vararg additional: ProfileSegment): Profile =
-    Profile(start, nonEmptyListOf(initial, *additional))
+fun contour(start: Vec2, initial: ContourSegment, vararg additional: ContourSegment): Region =
+    contour(start, nonEmptyListOf(initial, *additional))
 
 fun Path(start: Vec3, segments: NonEmptyList<PathSegment>): Path {
     val first = segments.head({ start })
@@ -113,21 +113,7 @@ fun Path(start: Vec3, segments: NonEmptyList<PathSegment>): Path {
 fun Path(start: Vec3, initial: PathSegment, vararg additional: PathSegment): Path =
     Path(start, nonEmptyListOf(initial, *additional))
 
-// --- Ready-made contours ----------------------------------------------------
-
-/** A full circle of [radius] centred at the origin, as two `arc`s. */
-fun circle(radius: Double): Profile = circle(center = p(0.0, 0.0), radius = radius)
-
-/** A full circle of [radius] centred at [center], as two `arc`s. */
-fun circle(center: Vec2, radius: Double): Profile = Profile(
-    start = p(center.x + radius, center.y),
-    arcTo(via = p(center.x, center.y + radius), to = p(center.x - radius, center.y)),
-    arcTo(via = p(center.x, center.y - radius), to = p(center.x + radius, center.y)),
-)
-
-/** A 2D polygon through the given absolute points (the engine auto-closes profiles). */
-fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Profile =
-    Profile(first, lineTo(second), *tail.map { lineTo(it) }.toTypedArray())
+// --- Ready-made 3D contours -------------------------------------------------
 
 /** An open 3D polyline through the given absolute points. */
 fun polyline(first: Vec3, second: Vec3, vararg tail: Vec3): Path =

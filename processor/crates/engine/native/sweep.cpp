@@ -10,6 +10,7 @@
 #include <BRepLib_MakeFace.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 #include <BRepOffsetAPI_ThruSections.hxx>
+#include <BRepTools.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 #include <TopoDS.hxx>
@@ -25,13 +26,32 @@ namespace vg3 {
 
 namespace {
 TopoDS_Face profile_face(const Shape& profile) {
-    BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(profile.topods()));
+    const TopoDS_Shape& shape = profile.topods();
+    if (shape.ShapeType() == TopAbs_FACE) {
+        return TopoDS::Face(shape);
+    }
+    BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(shape));
     if (!make_face.IsDone()) {
         throw std::runtime_error("profile is not a closed planar contour");
     }
     return make_face.Face();
 }
 }  // namespace
+
+std::unique_ptr<Shape> make_face(const Shape& wire) {
+    try {
+        BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(wire.topods()));
+        if (!make_face.IsDone()) {
+            throw std::runtime_error("cannot build a face from the given contour");
+        }
+        const TopoDS_Shape face = make_face.Face();
+        detail::ensure_valid(face);
+        return std::make_unique<Shape>(face);
+    } catch (const Standard_Failure& failure) {
+        detail::rethrow_as_std_error(failure);
+    }
+}
+
 std::unique_ptr<Shape> extrude(const Shape& profile, double height) {
     try {
         BRepPrimAPI_MakePrism maker(profile_face(profile), gp_Vec(0.0, 0.0, height));
@@ -68,6 +88,13 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
     try {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
 
+        // A sketch is a planar face; the pipe shell is built from its outer wire (holes are not
+        // part of a swept section — the same limitation as a bare contour profile).
+        const TopoDS_Shape& section = profile.topods();
+        const TopoDS_Shape section_wire = section.ShapeType() == TopAbs_FACE
+            ? BRepTools::OuterWire(TopoDS::Face(section))
+            : section;
+
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
         // to the tangent. Section frame (documented in FORMAT.md): local X is radial — away from
         // the Z axis — and local Y runs along +Z, so a profile swept along a helix about +Z
@@ -102,7 +129,7 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
             gp_Ax3(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)),
             gp_Ax3(start_point, tangent.Reversed(), gp_Dir(radial))
         );
-        BRepBuilderAPI_Transform transform(profile.topods(), placement, true);
+        BRepBuilderAPI_Transform transform(section_wire, placement, true);
         const TopoDS_Shape placed_profile = transform.Shape();
 
         BRepOffsetAPI_MakePipeShell pipe(spine_wire);

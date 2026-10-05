@@ -1,8 +1,8 @@
-//! Contours: 2D/3D curves, profiles and paths.
+//! Contours: 2D curves (edges of a sketch contour) and 3D paths (used by `sweep`/`loft`).
 
 use serde::Deserialize;
 
-use crate::value::{NonEmpty, Vec2, Vec3, Scalar};
+use crate::value::{NonEmpty, Scalar, Vec2, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -37,14 +37,6 @@ pub enum Curve3 {
 
 fn default_right_handed() -> bool {
     true
-}
-
-#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
-pub struct Profile {
-    pub start: Vec2,
-    pub edges: NonEmpty<Curve2>,
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]

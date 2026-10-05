@@ -1,38 +1,33 @@
 {
   "version": 1,
-  "parts": [
+  "sketches": [
     {
-      "type": "sweep",
-      "mode": "rigid",
-      "profile": {
-        "start": {
+      "type": "polygon",
+      "points": [
+        {
           "x": -1,
           "y": -1
         },
-        "edges": [
-          {
-            "type": "line",
-            "to": {
-              "x": 1,
-              "y": -1
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": 1,
-              "y": 1
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": -1,
-              "y": 1
-            }
-          }
-        ]
-      },
+        {
+          "x": 1,
+          "y": -1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": -1,
+          "y": 1
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "sweep",
+      "mode": "rigid",
+      "profile": 0,
       "path": {
         "start": {
           "x": 0,

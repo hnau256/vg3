@@ -1,38 +1,33 @@
 {
   "version": 1,
-  "parts": [
+  "sketches": [
     {
-      "type": "revolve",
-      "angle": 6.283185307179586,
-      "profile": {
-        "start": {
+      "type": "polygon",
+      "points": [
+        {
           "x": 2,
           "y": 0
         },
-        "edges": [
-          {
-            "type": "line",
-            "to": {
-              "x": 4,
-              "y": 0
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": 4,
-              "y": 3
-            }
-          },
-          {
-            "type": "line",
-            "to": {
-              "x": 2,
-              "y": 3
-            }
-          }
-        ]
-      }
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "revolve",
+      "angle": 6.283185307179586,
+      "profile": 0
     }
   ],
   "export": [

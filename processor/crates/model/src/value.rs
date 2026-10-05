@@ -80,6 +80,22 @@ impl BodyIndex {
     }
 }
 
+/// A back-reference to an earlier sketch in the arena (`index < current`).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(transparent)]
+pub struct SketchIndex(usize);
+
+impl SketchIndex {
+    pub fn new(index: usize) -> Self {
+        SketchIndex(index)
+    }
+
+    pub fn value(self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(with = "f64"))]

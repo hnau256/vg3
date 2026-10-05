@@ -6,20 +6,22 @@ import org.hnau.ktcad.ir.Export
 import org.hnau.ktcad.ir.Model
 import org.hnau.ktcad.ir.Body
 import org.hnau.ktcad.ir.BodyIndex
+import org.hnau.ktcad.ir.Sketch
+import org.hnau.ktcad.ir.SketchIndex
 import java.util.concurrent.TimeUnit
 
 /**
- * The vg3 frontend: builds the IR (a flat arena of `ir.Body`s) from the [Solid] domain graph and
- * hands it to the `vg3` binary.
+ * The vg3 frontend: builds the IR (two flat arenas — planar `Sketch`es and `ir.Body`s) from the
+ * [Solid] domain graph and hands it to the `vg3` binary.
  *
- * Mirrors the CLI: a model (`version`/`parts`/`export`) plus an `export` configuration.
+ * Mirrors the CLI: a model (`version`/`sketches`/`bodies`/`export`) plus an `export` configuration.
  */
 object Vg3 {
 
     private const val VERSION = 1
 
     /**
-     * Lowers [parts] to the flat arena, serializes the model and export config, and
+     * Lowers [parts] to the flat arenas, serializes the model and export config, and
      * runs `vg3`.
      *
      * `vg3` must be on `PATH` (override with the `VG3_BIN` environment variable).
@@ -31,14 +33,19 @@ object Vg3 {
         val arena = Arena()
         val exports = parts.map { part ->
             Export(
-                index = arena.get(part.solid),
+                index = arena.body(part.solid),
                 name = part.name,
                 color = part.color,
             )
         }
         val modelJson = modelJson.encodeToString(
             Model.serializer(),
-            Model(version = VERSION, parts = arena.bodies, export = exports),
+            Model(
+                version = VERSION,
+                sketches = arena.sketches,
+                bodies = arena.bodies,
+                export = exports,
+            ),
         )
         run(modelJson, format.toJson())
     }
@@ -71,18 +78,30 @@ data class Part(
 )
 
 /**
- * Lowers the reference DAG to the flat arena:
- * - every distinct `Solid` occupies exactly one position (structural `equals` dedup → reuse shares
- *   an entry), added bottom-up so operands always precede their parents;
- * - operands are indices strictly less than the body's own index (back-references only).
+ * Lowers the reference DAG to the flat arenas:
+ * - every distinct `Solid` occupies exactly one position in `bodies` (structural `equals` dedup →
+ *   reuse shares an entry), added bottom-up so operands always precede their parents;
+ * - every distinct `Region` a body references occupies exactly one position in `sketches`, lowered
+ *   on demand;
+ * - operands are indices strictly less than the node's own index (back-references only).
  */
 class Arena {
-    private val visited = HashMap<Solid, BodyIndex>()
+    private val solids = HashMap<Solid, BodyIndex>()
+    private val regions = HashMap<Region, SketchIndex>()
+
+    val sketches = mutableListOf<Sketch>()
     val bodies = mutableListOf<Body>()
 
-    /** The `BodyIndex` of [solid], lowering it (and its children first) into the arena if needed. */
-    fun get(solid: Solid): BodyIndex = visited.getOrPut(solid) {
-        val body = solid.lower(::get)
+    /** The `SketchIndex` of [region], lowering it (and its children first) into the sketch arena. */
+    fun region(region: Region): SketchIndex = regions.getOrPut(region) {
+        val sketch = region.lower(::region)
+        sketches += sketch
+        SketchIndex(sketches.lastIndex)
+    }
+
+    /** The `BodyIndex` of [solid], lowering it (and its children first) into the body arena. */
+    fun body(solid: Solid): BodyIndex = solids.getOrPut(solid) {
+        val body = solid.lower(::body, ::region)
         bodies += body
         BodyIndex(bodies.lastIndex)
     }

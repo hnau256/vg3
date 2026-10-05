@@ -70,6 +70,8 @@ pub(crate) mod ffi {
             face_offsets: &[u32],
         ) -> Result<UniquePtr<Shape>>;
 
+        fn make_face(wire: &Shape) -> Result<UniquePtr<Shape>>;
+
         fn extrude(profile: &Shape, height: f64) -> Result<UniquePtr<Shape>>;
 
         fn revolve(profile: &Shape, angle: f64) -> Result<UniquePtr<Shape>>;

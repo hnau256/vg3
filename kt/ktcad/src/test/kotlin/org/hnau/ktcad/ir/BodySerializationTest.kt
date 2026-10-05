@@ -24,10 +24,7 @@ class BodySerializationTest {
     @Test
     fun default_valued_properties_are_omitted() {
         val body = Body.Sweep(
-            profile = Profile(
-                start = Vec2(0.0, 0.0),
-                edges = nonEmptyListOf(Curve2.Line(Vec2(1.0, 0.0))),
-            ),
+            profile = SketchIndex(0),
             path = Path(
                 start = Vec3(0.0, 0.0, 0.0),
                 edges = nonEmptyListOf(Curve3.Line(Vec3(0.0, 0.0, 1.0))),

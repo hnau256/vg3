@@ -11,4 +11,8 @@ fn render_is_valid_json_schema_with_node_definition() {
         json["$defs"]["Body"].is_object(),
         "the schema must define `Body`"
     );
+    assert!(
+        json["$defs"]["Sketch"].is_object(),
+        "the schema must define `Sketch`"
+    );
 }
