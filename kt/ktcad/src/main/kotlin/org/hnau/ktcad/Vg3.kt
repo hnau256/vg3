@@ -38,7 +38,7 @@ object Vg3 {
                 color = part.color,
             )
         }
-        val modelJson = modelJson.encodeToString(
+        val modelJson = vg3Json.encodeToString(
             Model.serializer(),
             Model(
                 version = VERSION,
@@ -117,7 +117,7 @@ internal class Lowering<T, I, N>(
     }
 }
 
-internal val modelJson = Json {
+internal val vg3Json = Json {
     encodeDefaults = false
     explicitNulls = false
     prettyPrint = true

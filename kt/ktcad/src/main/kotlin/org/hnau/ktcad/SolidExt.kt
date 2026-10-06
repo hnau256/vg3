@@ -28,24 +28,10 @@ import org.hnau.ktcad.ir.TransformOp
  * Union of [parts] (mirrors OCCT's two groups: the first part is the object, the rest are tools —
  * OCCT requires both groups non-empty).
  */
-fun fuse(parts: List<Solid>): Solid {
-    require(parts.size >= 2) { "fuse needs at least two solids" }
-    return bool(
-        kind = BooleanKind.FUSE,
-        arguments = nonEmptyListOf(parts.first()),
-        tools = parts.drop(1).toNonEmptyListOrThrow(),
-    )
-}
+fun fuse(parts: List<Solid>): Solid = solidBool(BooleanKind.FUSE, parts, "fuse")
 
 /** Intersection of [parts] (see [fuse] for the object/tools split). */
-fun common(parts: List<Solid>): Solid {
-    require(parts.size >= 2) { "common needs at least two solids" }
-    return bool(
-        kind = BooleanKind.COMMON,
-        arguments = nonEmptyListOf(parts.first()),
-        tools = parts.drop(1).toNonEmptyListOrThrow(),
-    )
-}
+fun common(parts: List<Solid>): Solid = solidBool(BooleanKind.COMMON, parts, "common")
 
 /** `base` minus every solid in [tools]. */
 fun cut(base: Solid, tools: NonEmptyList<Solid>): Solid = bool(
@@ -53,6 +39,15 @@ fun cut(base: Solid, tools: NonEmptyList<Solid>): Solid = bool(
     arguments = nonEmptyListOf(base),
     tools = tools,
 )
+
+private fun solidBool(kind: BooleanKind, parts: List<Solid>, name: String): Solid {
+    require(parts.size >= 2) { "$name needs at least two solids" }
+    return bool(
+        kind = kind,
+        arguments = nonEmptyListOf(parts.first()),
+        tools = parts.drop(1).toNonEmptyListOrThrow(),
+    )
+}
 
 /** `fuse`: union of two solids. */
 operator fun Solid.plus(other: Solid): Solid = fuse(listOf(this, other))

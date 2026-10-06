@@ -89,29 +89,34 @@ fun splineTo(initial: Vec3, vararg additional: Vec3): PathSegment =
 // --- Contour factory --------------------------------------------------------
 
 /** A planar region from a start point and segments (relative segments see the current point). */
-fun contour(start: Vec2, segments: NonEmptyList<ContourSegment>): Region {
-    val first = segments.head({ start })
-    val (edges, _) = segments.tail.fold(nonEmptyListOf(first) to { first.end() }) { (acc, current), segment ->
-        val curve = segment(current)
-        (acc + curve) to { curve.end() }
-    }
-    return Region.Contour(start = start, edges = edges)
-}
+fun contour(start: Vec2, segments: NonEmptyList<ContourSegment>): Region =
+    Region.Contour(start = start, edges = buildChain(start, segments, Curve2::end))
 
 fun contour(start: Vec2, initial: ContourSegment, vararg additional: ContourSegment): Region =
     contour(start, nonEmptyListOf(initial, *additional))
 
-fun Path(start: Vec3, segments: NonEmptyList<PathSegment>): Path {
-    val first = segments.head({ start })
-    val (edges, _) = segments.tail.fold(nonEmptyListOf(first) to { first.end() }) { (acc, current), segment ->
-        val curve = segment(current)
-        (acc + curve) to { curve.end() }
-    }
-    return Path(start = start, edges = edges)
-}
+fun Path(start: Vec3, segments: NonEmptyList<PathSegment>): Path =
+    Path(start = start, edges = buildChain(start, segments, Curve3::end))
 
 fun Path(start: Vec3, initial: PathSegment, vararg additional: PathSegment): Path =
     Path(start, nonEmptyListOf(initial, *additional))
+
+/**
+ * Chains [segments] into edges: each segment is given the current point **lazily** (`() -> Point`),
+ * so an absolute segment does not force it, and [end] tracks the running endpoint.
+ */
+private fun <P, C> buildChain(
+    start: P,
+    segments: NonEmptyList<(() -> P) -> C>,
+    end: (C) -> P,
+): NonEmptyList<C> {
+    val first = segments.head({ start })
+    val (edges, _) = segments.tail.fold(nonEmptyListOf(first) to { end(first) }) { (acc, current), segment ->
+        val curve = segment(current)
+        (acc + curve) to { end(curve) }
+    }
+    return edges
+}
 
 // --- Ready-made 3D contours -------------------------------------------------
 

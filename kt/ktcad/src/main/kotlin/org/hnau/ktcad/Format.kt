@@ -2,7 +2,6 @@ package org.hnau.ktcad
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
@@ -56,10 +55,4 @@ sealed interface Output {
 }
 
 /** Serializes the export configuration exactly as the CLI expects. */
-internal fun Format.toJson(): String = exportConfigJson.encodeToString(Format.serializer(), this)
-
-internal val exportConfigJson = Json {
-    encodeDefaults = false
-    explicitNulls = false
-    prettyPrint = true
-}
+internal fun Format.toJson(): String = vg3Json.encodeToString(Format.serializer(), this)
