@@ -49,17 +49,17 @@ fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Region =
 
 // --- Booleans ---------------------------------------------------------------
 
-fun Region.union(other: Region): Region = regionBool(BooleanKind.FUSE, this, other)
+fun Region.fuse(other: Region): Region = regionBool(BooleanKind.FUSE, this, other)
 
 fun Region.cut(other: Region): Region = regionBool(BooleanKind.CUT, this, other)
 
-fun Region.intersect(other: Region): Region = regionBool(BooleanKind.COMMON, this, other)
+fun Region.common(other: Region): Region = regionBool(BooleanKind.COMMON, this, other)
 
-operator fun Region.plus(other: Region): Region = union(other)
+operator fun Region.plus(other: Region): Region = fuse(other)
 
 operator fun Region.minus(other: Region): Region = cut(other)
 
-operator fun Region.times(other: Region): Region = intersect(other)
+operator fun Region.times(other: Region): Region = common(other)
 
 private fun regionBool(kind: BooleanKind, first: Region, second: Region): Region = Region.Bool(
     kind = kind,

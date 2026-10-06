@@ -14,7 +14,7 @@ class RegionExtTest {
     @Test
     fun booleans_lower_to_a_single_sketch_bool() {
         val arena = Arena()
-        val index = arena.region(square.union(circle(2.0)))
+        val index = arena.region(square.fuse(circle(2.0)))
 
         // square, circle, bool — bottom-up, operands before the parent.
         assertEquals(3, arena.sketches.size)

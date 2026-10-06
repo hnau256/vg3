@@ -116,7 +116,7 @@ fun main() {
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
-  `union`/`cut`/`intersect` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
+  `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
   `mirror(normal, center?)`, `scale(x, y)`, и `offset2d(distance)`. Скругление углов (имя отражает
   способ выбора радиуса): `fillet2dAll(radius)` (постоянный всем), `fillet2dExpression(expression)`
   (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
