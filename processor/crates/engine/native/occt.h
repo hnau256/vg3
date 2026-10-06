@@ -253,8 +253,6 @@ std::unique_ptr<Shape> unify(const Shape& shape);
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance);
 
-bool write_step(const Shape& shape, rust::Str path);
-
 class StepBuilder {
 public:
     StepBuilder();

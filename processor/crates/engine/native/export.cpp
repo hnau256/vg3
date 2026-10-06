@@ -7,7 +7,6 @@
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <IFSelect_ReturnStatus.hxx>
 #include <STEPCAFControl_Writer.hxx>
-#include <STEPControl_Writer.hxx>
 #include <StlAPI_Writer.hxx>
 #include <Quantity_Color.hxx>
 #include <TDataStd_Name.hxx>
@@ -19,22 +18,6 @@
 #include <TopoDS_Shape.hxx>
 
 namespace vg3 {
-bool write_step(const Shape& shape, rust::Str path) {
-    try {
-        const std::string path_string(path.data(), path.size());
-        const Standard_CString file = path_string.c_str();
-        STEPControl_Writer writer;
-        const IFSelect_ReturnStatus transferred =
-            writer.Transfer(shape.topods(), STEPControl_AsIs);
-        if (transferred != IFSelect_RetDone) {
-            throw std::runtime_error("STEPControl_Writer::Transfer did not complete");
-        }
-        return writer.Write(file) == IFSelect_RetDone;
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
-}
-
 StepBuilder::StepBuilder() {
     Handle(TDocStd_Application) application = XCAFApp_Application::GetApplication();
     Handle(TDocStd_Document) document = new TDocStd_Document("MDTV-XCAF");

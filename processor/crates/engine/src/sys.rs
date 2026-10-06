@@ -175,8 +175,6 @@ pub(crate) mod ffi {
 
         fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<bool>;
 
-        fn write_step(shape: &Shape, path: &str) -> Result<bool>;
-
         type StepBuilder;
 
         fn new_step_builder() -> UniquePtr<StepBuilder>;
