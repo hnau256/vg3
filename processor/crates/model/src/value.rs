@@ -57,94 +57,78 @@ impl<T> TryFrom<Vec<T>> for NonEmpty<T> {
     }
 }
 
-/// A back-reference to an earlier body in the arena (`index < current`).
-///
-/// A plain newtype over `usize`: on the wire it is just an integer. Correctness (the reference
-/// points backwards) is checked during evaluation, not at construction.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(transparent)]
-pub struct BodyIndex(usize);
+/// A plain newtype over `usize` referencing an earlier node in an arena (`index < current`); on the
+/// wire it is just an integer. Correctness is checked during evaluation, not at construction.
+macro_rules! index_type {
+    ($(#[$meta:meta])* $name:ident) => {
+        $(#[$meta])*
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
+        #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+        #[serde(transparent)]
+        pub struct $name(usize);
+
+        impl $name {
+            pub fn value(self) -> usize {
+                self.0
+            }
+        }
+    };
+}
+
+index_type!(
+    /// A back-reference to an earlier body in the arena (`index < current`).
+    BodyIndex
+);
+
+index_type!(
+    /// A back-reference to an earlier sketch in the arena (`index < current`).
+    SketchIndex
+);
 
 impl BodyIndex {
     pub fn new(index: usize) -> Self {
         BodyIndex(index)
     }
-
-    pub fn value(self) -> usize {
-        self.0
-    }
 }
 
-/// A back-reference to an earlier sketch in the arena (`index < current`).
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(transparent)]
-pub struct SketchIndex(usize);
+/// A finite scalar, canonicalized at deserialization (`−0.0 → +0.0`).
+macro_rules! canonical_scalar {
+    ($(#[$meta:meta])* $name:ident) => {
+        $(#[$meta])*
+        #[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
+        #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+        #[cfg_attr(feature = "schema", schemars(with = "f64"))]
+        #[serde(try_from = "f64")]
+        pub struct $name(f64);
 
-impl SketchIndex {
-    pub fn value(self) -> usize {
-        self.0
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "schema", schemars(with = "f64"))]
-#[serde(try_from = "f64")]
-pub struct Scalar(f64);
-
-impl Scalar {
-    pub fn value(self) -> f64 {
-        self.0
-    }
-}
-
-impl Hash for Scalar {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
-}
-
-impl TryFrom<f64> for Scalar {
-    type Error = Error;
-
-    fn try_from(value: f64) -> Result<Self> {
-        if !value.is_finite() {
-            return Err(Error::NonFiniteScalar);
+        impl $name {
+            pub fn value(self) -> f64 {
+                self.0
+            }
         }
-        Ok(Scalar(if value == 0.0 { 0.0 } else { value }))
-    }
-}
 
-#[derive(Clone, Copy, PartialEq, Debug, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "schema", schemars(with = "f64"))]
-#[serde(try_from = "f64")]
-pub struct Angle(f64);
-
-impl Angle {
-    pub fn value(self) -> f64 {
-        self.0
-    }
-}
-
-impl Hash for Angle {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
-}
-
-impl TryFrom<f64> for Angle {
-    type Error = Error;
-
-    fn try_from(value: f64) -> Result<Self> {
-        if !value.is_finite() {
-            return Err(Error::NonFiniteScalar);
+        impl Hash for $name {
+            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                self.0.to_bits().hash(state);
+            }
         }
-        Ok(Angle(if value == 0.0 { 0.0 } else { value }))
-    }
+
+        impl TryFrom<f64> for $name {
+            type Error = Error;
+
+            fn try_from(value: f64) -> Result<Self> {
+                if !value.is_finite() {
+                    return Err(Error::NonFiniteScalar);
+                }
+                Ok($name(if value == 0.0 { 0.0 } else { value }))
+            }
+        }
+    };
 }
+
+canonical_scalar!(Scalar);
+
+canonical_scalar!(Angle);
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
