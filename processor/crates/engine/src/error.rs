@@ -14,17 +14,11 @@ pub enum Error {
     #[error("operation result is not composed solely of solids")]
     NotASolid,
 
-    #[error("contour has no edges")]
-    EmptyContour,
-
     #[error("reference index {index} must be less than the current index {current}")]
     InvalidReference { index: usize, current: usize },
 
     #[error("export index {index} is out of range (bodies has {bodies})")]
     ExportIndex { index: usize, bodies: usize },
-
-    #[error("body requires at least one operand")]
-    MissingOperand,
 
     #[error("loft requires at least two sections")]
     LoftNeedsTwoSections,

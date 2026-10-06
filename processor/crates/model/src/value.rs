@@ -28,10 +28,6 @@ impl<T> NonEmpty<T> {
     pub fn len(&self) -> usize {
         self.0.len()
     }
-
-    pub fn into_vec(self) -> Vec<T> {
-        self.0
-    }
 }
 
 impl<T: Clone> NonEmpty<T> {
@@ -87,10 +83,6 @@ impl BodyIndex {
 pub struct SketchIndex(usize);
 
 impl SketchIndex {
-    pub fn new(index: usize) -> Self {
-        SketchIndex(index)
-    }
-
     pub fn value(self) -> usize {
         self.0
     }
