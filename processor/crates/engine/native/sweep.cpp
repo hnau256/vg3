@@ -26,12 +26,6 @@
 
 namespace vg3 {
 
-namespace {
-TopoDS_Face profile_face(const Shape& profile) {
-    return TopoDS::Face(profile.topods());
-}
-}  // namespace
-
 std::unique_ptr<Shape> make_face(const Shape& wire) {
     try {
         BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(wire.topods()));
@@ -71,7 +65,7 @@ std::unique_ptr<Shape> make_circle(double radius) {
 
 std::unique_ptr<Shape> extrude(const Shape& profile, double height) {
     try {
-        BRepPrimAPI_MakePrism maker(profile_face(profile), gp_Vec(0.0, 0.0, height));
+        BRepPrimAPI_MakePrism maker(TopoDS::Face(profile.topods()), gp_Vec(0.0, 0.0, height));
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepPrimAPI_MakePrism did not complete");
         }
@@ -86,7 +80,7 @@ std::unique_ptr<Shape> extrude(const Shape& profile, double height) {
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
     try {
         BRepPrimAPI_MakeRevol maker(
-            profile_face(profile),
+            TopoDS::Face(profile.topods()),
             gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 1.0, 0.0)),
             angle
         );
@@ -112,7 +106,7 @@ std::unique_ptr<Shape> sweep(
 
         // A sketch is a planar face (possibly a compound); the pipe shell is built from its outer
         // wire (holes are not part of a swept section — the same limitation as a bare contour).
-        const TopoDS_Shape section_wire = BRepTools::OuterWire(profile_face(profile));
+        const TopoDS_Shape section_wire = BRepTools::OuterWire(TopoDS::Face(profile.topods()));
 
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
         // to the tangent. Section frame (documented in README.md): local X is radial — away from
