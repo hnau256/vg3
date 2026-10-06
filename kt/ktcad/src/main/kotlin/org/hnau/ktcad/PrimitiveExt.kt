@@ -29,15 +29,12 @@ fun box(
 
 /**
  * A cylinder with its base at the origin and axis `+Z`. An [angle] makes a cylindrical wedge. Its
- * base is already centred on the `Z` axis, so `centerX`/`centerY` change nothing (kept for a
- * uniform API); `centerZ` shifts it by half its height.
+ * base is already centred on the `Z` axis, so only `centerZ` is offered (shifts by half its height).
  */
 fun cylinder(
     radius: Double,
     height: Double,
     angle: Double? = null,
-    centerX: Boolean = false,
-    centerY: Boolean = false,
     centerZ: Boolean = false,
 ): Solid {
     val cylinder = Solid.Cylinder(radius = radius, height = height, angle = angle)

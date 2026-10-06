@@ -96,8 +96,8 @@ fun main() {
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
   Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `sphere`/`cylinder`/
   `cone`/`torus` принимают необязательный `angle` (сегмент-клин). `box`/`cylinder`/`rect`
-  необязательно центрируются по осям: `centerX`/`centerY`/`centerZ` (`Boolean = false`) — это sugar
-  над `translate` (у `cylinder` X/Y уже центрированы, у `rect` есть только X/Y).
+  необязательно центрируются по осям: `box` — `centerX`/`centerY`/`centerZ`, `cylinder` — `centerZ`,
+  `rect` — `centerX`/`centerY` (`Boolean = false`) — это sugar над `translate`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`. `cut` требует непустой `tools: NonEmptyList<Solid>`.
