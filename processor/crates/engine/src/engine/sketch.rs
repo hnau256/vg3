@@ -2,11 +2,11 @@
 
 use cxx::UniquePtr;
 
-use vg3_model::{BooleanKind, Sketch, SketchIndex, TransformOp2};
+use vg3_model::{Sketch, SketchIndex, TransformOp2};
 
 use crate::engine::contour::build_contour_wire;
 use crate::engine::fillet2d::evaluate_fillet2d;
-use crate::engine::op::join_code;
+use crate::engine::op::{boolean_code, join_code};
 use crate::error::Result;
 use crate::sys::ffi;
 
@@ -57,11 +57,7 @@ fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<R
             arguments,
             tools,
         } => {
-            let kind_code = match kind {
-                BooleanKind::Fuse => 0,
-                BooleanKind::Cut => 1,
-                BooleanKind::Common => 2,
-            };
+            let kind_code = boolean_code(*kind);
             let mut builder = ffi::new_boolean_builder(kind_code);
             for argument in arguments.iter() {
                 builder.pin_mut().add_argument(region(regions, *argument)?.shape())?;

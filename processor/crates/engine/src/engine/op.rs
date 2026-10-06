@@ -25,6 +25,15 @@ pub(super) fn join_code(join: JoinKind) -> u8 {
     }
 }
 
+/// The native code of a boolean kind (`0` = fuse, `1` = cut, `2` = common).
+pub(super) fn boolean_code(kind: BooleanKind) -> u8 {
+    match kind {
+        BooleanKind::Fuse => 0,
+        BooleanKind::Cut => 1,
+        BooleanKind::Common => 2,
+    }
+}
+
 /// The native code of a sweep transition kind (`BRepBuilderAPI_TransitionMode`).
 fn transition_code(transition: TransitionKind) -> u8 {
     match transition {
@@ -214,11 +223,7 @@ fn evaluate_boolean(
     arguments: NonEmpty<Part>,
     tools: NonEmpty<Part>,
 ) -> Result<Part> {
-    let kind_code = match kind {
-        BooleanKind::Fuse => 0,
-        BooleanKind::Cut => 1,
-        BooleanKind::Common => 2,
-    };
+    let kind_code = boolean_code(kind);
     let mut builder = ffi::new_boolean_builder(kind_code);
     for argument in arguments.iter() {
         builder.pin_mut().add_argument(argument.shape())?;
