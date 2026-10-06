@@ -12,7 +12,7 @@ fn build_outputs(case: &str) -> Vec<vg3_engine::Output> {
         .join(format!("{case}_in.json"));
     let source = std::fs::read_to_string(path).expect("case is readable");
     let model = vg3_model::parse(&source).expect("case parses");
-    engine::evaluate(&model, &mut vg3_cache::Noop).expect("case builds")
+    engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).expect("case builds")
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn two_named_outputs() -> Vec<vg3_engine::Output> {
         ]
     }"#;
     let model = vg3_model::parse(source).expect("parses");
-    engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds")
+    engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).expect("builds")
 }
 
 #[test]
@@ -97,7 +97,8 @@ fn multi_output_rejects_duplicate_names() {
         ]
     }"#;
     let model = vg3_model::parse(source).expect("parses");
-    let outputs = engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds");
+    let outputs =
+        engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).expect("builds");
     let directory = std::env::temp_dir().join("vg3_multi_export_dup");
     let config = vg3_engine::export::ExportConfig::from_json(&format!(
         r#"{{ "format": "stl",

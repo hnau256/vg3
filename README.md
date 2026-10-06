@@ -37,7 +37,7 @@ Kotlin-фронтенд (типизированный DSL) ──serialize──
 | Шаг | Сигнатура | Что делает |
 |---|---|---|
 | 1. parse | `vg3_model::parse(&str) -> Result<Model>` | JSON → доменное дерево; канонизация в типах |
-| 2. evaluate | `vg3_engine::evaluate(&Model, &mut Cache) -> Result<Vec<Output>>` | обход дерева, вызовы OCCT, построение шейпов |
+| 2. evaluate | `vg3_engine::evaluate(&Model, &mut Parts, &mut Sketches) -> Result<Vec<Output>>` | обход дерева, вызовы OCCT, построение шейпов |
 | 3. export | `ExportConfig::export(&[Output])` | STL / STEP / рендер PNG / отчёт JSON |
 
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируется
@@ -438,7 +438,7 @@ processor/            # самостоятельный Cargo workspace
   crates/
     cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk. Зависит только от blake3.
     model/   vg3-model   — IR: Body/Model + parse + канонические типы. Зависит только от serde.
-    engine/  vg3-engine  — Body->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/STEP/PNG/JSON.
+    engine/  vg3-engine  — Body->Part (OCCT через cxx), BrepPartCodec/BrepRegionCodec, evaluate, экспорт STL/STEP/PNG/JSON.
                            Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
     cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
     schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).
@@ -465,7 +465,8 @@ processor/            # самостоятельный Cargo workspace
 `evaluate`:
 
 1. **Валидирует ссылки** по обеим аренам (один `try_map` на каждую): каждый операнд — `index < current`.
-2. **Строит эскизы** bottom-up в планарные `Region` (грани); ключ эскиза — `H(узел ‖ ключи операндов…)`.
+2. **Строит эскизы** bottom-up в планарные `Region` (грани) через кэш регионов; ключ эскиза —
+   `H(узел ‖ ключи операндов…)`.
 3. **Merkle-проход тел**: ключ узла — `H(версия ‖ узел ‖ ключи операндов… ‖ ключи используемых эскизов)`,
    bottom-up (содержимое эскиза, а не только его индекс).
 4. **Строит корни**: операнды берутся из кэша по ключу или строятся рекурсивно, затем
@@ -474,7 +475,8 @@ processor/            # самостоятельный Cargo workspace
 6. Результат каждого узла нормализуется `unify`.
 
 `Part` — построенная сущность (`Rc` над нативным шейпом; дешёвый клон). Умеет `solid_count()`,
-`face_count()`, `volume()`, `bounding_box()`. Не путать с IR-узлом `Body` (описанием).
+`face_count()`, `volume()`, `bounding_box()`. `Region` — её 2D-аналог (грань), тоже `Rc` и дешёвый клон.
+Не путать с IR-узлами `Body`/`Sketch` (описаниями).
 
 ### Кэш
 
@@ -483,15 +485,18 @@ compute)`. Объектно-безопасен. Реализации — `Noop`,
 `back.wrap_with(front)` (CLI: `disk.wrap_with(memory)`).
 
 Кэш **не знает домена**. `Disk` работает с байтами; значения превращает **`Codec<T>`** (`encode`/`decode`).
-Домен живёт в `engine`: `BrepCodec: Codec<Part>` (BREP через `BRepTools`) и Merkle-обход (`key_of`).
-Ключ — `Fingerprinter::of(value)` (BLAKE3); версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался
-при смене семантики.
+Домен живёт в `engine`: `BrepPartCodec: Codec<Part>` и `BrepRegionCodec: Codec<Region>` (BREP через
+`BRepTools`) плюс Merkle-обход (`key_of`, `sketch_keys`). Ключ — `Fingerprinter::of(value)` (BLAKE3);
+версия (vg3 + OCCT) подмешивается, чтобы кэш не переиспользовался при смене семантики.
 
-`BrepCodec` **публичен**, поэтому кэш собирается снаружи:
+Тела и эскизы кэшируются **раздельно** — два независимых кэша (`Cache<Key, Part>` и `Cache<Key, Region>`),
+ключи живут в непересекающихся входных доменах, поэтому обе части пишутся в одну папку. Оба кодека
+**публичны**, поэтому кэши собираются снаружи:
 
 ```rust
-let cache = Disk::new(dir, BrepCodec).wrap_with(Memory::default());
-let outputs = vg3_engine::evaluate(&model, &mut cache)?;
+let mut parts = Disk::new(dir.clone(), BrepPartCodec).wrap_with(Memory::default());
+let mut sketches = Disk::new(dir, BrepRegionCodec).wrap_with(Memory::default());
+let outputs = vg3_engine::evaluate(&model, &mut parts, &mut sketches)?;
 ```
 
 ### Нативный слой (`native` + `sys`)

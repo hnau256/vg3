@@ -74,8 +74,8 @@ fn case_inputs() -> Vec<PathBuf> {
 /// Builds the model and returns its `json` metadata report.
 fn build_report(source: &str) -> Result<String, String> {
     let model = vg3_model::parse(source).map_err(|error| error.to_string())?;
-    let outputs =
-        engine::evaluate(&model, &mut vg3_cache::Noop).map_err(|error| error.to_string())?;
+    let outputs = engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop)
+        .map_err(|error| error.to_string())?;
     let path = std::env::temp_dir().join(format!("vg3-report-{}.json", std::process::id()));
     let config = vg3_engine::export::ExportConfig::from_json(&format!(
         r#"{{ "format": "json", "filename": {:?} }}"#,

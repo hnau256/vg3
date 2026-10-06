@@ -72,9 +72,9 @@ pub(super) fn make_part(shape: UniquePtr<ffi::Shape>) -> Result<Part> {
 }
 
 /// `Part` <-> bytes, as OpenCASCADE BREP — the engine's own codec for the disk cache.
-pub struct BrepCodec;
+pub struct BrepPartCodec;
 
-impl vg3_cache::Codec<Part> for BrepCodec {
+impl vg3_cache::Codec<Part> for BrepPartCodec {
     fn encode(&self, part: &Part) -> vg3_cache::Result<Vec<u8>> {
         ffi::brep_encode(part.shape()).map_err(|error| vg3_cache::Error::Message(error.to_string()))
     }

@@ -12,14 +12,15 @@ fn forward_reference_is_rejected() {
     let source = r#"{ "version": 1, "sketches": [],
         "bodies": [ { "type": "bool", "kind": "fuse", "arguments": [0], "tools": [0] } ], "export": [] }"#;
     let model = model::parse(source).expect("parses");
-    assert!(engine::evaluate(&model, &mut vg3_cache::Noop).is_err());
+    assert!(engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).is_err());
 }
 
 #[test]
 fn empty_model_is_valid() {
     let source = r#"{ "version": 1, "sketches": [], "bodies": [], "export": [] }"#;
     let model = model::parse(source).expect("parses");
-    let outputs = engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds");
+    let outputs =
+        engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).expect("builds");
     assert!(outputs.is_empty());
 }
 
@@ -38,7 +39,8 @@ fn explicit_export_selects_what_is_built() {
         ]
     }"#;
     let model = model::parse(source).expect("parses");
-    let outputs = engine::evaluate(&model, &mut vg3_cache::Noop).expect("builds");
+    let outputs =
+        engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).expect("builds");
     assert_eq!(outputs.len(), 2);
     assert_eq!(outputs[0].name, "ball");
     assert_eq!(outputs[1].name, "cube");
@@ -53,5 +55,5 @@ fn out_of_range_export_index_is_rejected() {
         "export": [ { "index": 5, "name": "nope" } ]
     }"#;
     let model = model::parse(source).expect("parses");
-    assert!(engine::evaluate(&model, &mut vg3_cache::Noop).is_err());
+    assert!(engine::evaluate(&model, &mut vg3_cache::Noop, &mut vg3_cache::Noop).is_err());
 }

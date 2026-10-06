@@ -5,7 +5,7 @@ use std::process::ExitCode;
 use clap::{ArgGroup, Parser};
 use run::RunConfig;
 use vg3_cache::{Cache, Disk, Memory};
-use vg3_engine::{BrepCodec, ExportConfig};
+use vg3_engine::{BrepPartCodec, BrepRegionCodec, ExportConfig};
 
 mod run;
 
@@ -67,14 +67,18 @@ fn execute(args: &Args) -> Result<(), Box<dyn Error>> {
     };
 
     // Cache: memory alone, or memory backed by disk at the directory the run config resolves to.
+    // Parts and regions share the directory — their Merkle keys live in disjoint input domains.
     let outputs = match run_config.cache_dir() {
         Some(directory) => {
-            let mut cache = Disk::new(directory, BrepCodec).wrap_with(Memory::default());
-            vg3_engine::evaluate(&model, &mut cache)?
+            let mut parts =
+                Disk::new(directory.clone(), BrepPartCodec).wrap_with(Memory::default());
+            let mut sketches = Disk::new(directory, BrepRegionCodec).wrap_with(Memory::default());
+            vg3_engine::evaluate(&model, &mut parts, &mut sketches)?
         }
         None => {
-            let mut cache = Memory::default();
-            vg3_engine::evaluate(&model, &mut cache)?
+            let mut parts = Memory::default();
+            let mut sketches = Memory::default();
+            vg3_engine::evaluate(&model, &mut parts, &mut sketches)?
         }
     };
 
