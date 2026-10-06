@@ -12,20 +12,7 @@ use crate::sys::ffi;
 
 /// The body's bounding box, exposed as `box` (`min`/`max`/`center` 3D points).
 pub(super) fn body(shape: &ffi::Shape) -> Data {
-    let bounds = ffi::bounding_box(shape);
-    let (min_x, min_y, min_z, max_x, max_y, max_z) = bounds6(&bounds);
-    let mut map = Map::new();
-    map.insert("min".into(), Dynamic::from(math3d::point(min_x, min_y, min_z)));
-    map.insert("max".into(), Dynamic::from(math3d::point(max_x, max_y, max_z)));
-    map.insert(
-        "center".into(),
-        Dynamic::from(math3d::point(
-            0.5 * (min_x + max_x),
-            0.5 * (min_y + max_y),
-            0.5 * (min_z + max_z),
-        )),
-    );
-    Data::new("box", map)
+    Data::new("box", bounds_map(&ffi::bounding_box(shape), math3d::point))
 }
 
 /// An edge, exposed as `edge`.
@@ -66,19 +53,10 @@ pub(super) fn edge(data: &[f64]) -> Data {
 
 /// A planar region's bounding box, exposed as `profile` (`min`/`max`/`center` 2D points).
 pub(super) fn profile(shape: &ffi::Shape) -> Data {
-    let bounds = ffi::bounding_box(shape);
-    let (min_x, min_y, _, max_x, max_y, _) = bounds6(&bounds);
-    let mut map = Map::new();
-    map.insert("min".into(), Dynamic::from(math2d::point(min_x, min_y)));
-    map.insert("max".into(), Dynamic::from(math2d::point(max_x, max_y)));
-    map.insert(
-        "center".into(),
-        Dynamic::from(math2d::point(
-            0.5 * (min_x + max_x),
-            0.5 * (min_y + max_y),
-        )),
-    );
-    Data::new("profile", map)
+    Data::new(
+        "profile",
+        bounds_map(&ffi::bounding_box(shape), |x, y, _| math2d::point(x, y)),
+    )
 }
 
 /// A corner vertex, exposed as `vertex` (`point`, `direction1`, `direction2`, `angle`).
@@ -123,10 +101,23 @@ pub(super) fn face(data: &[f64]) -> Data {
     Data::new("face", face)
 }
 
-fn bounds6(bounds: &[f64]) -> (f64, f64, f64, f64, f64, f64) {
-    (
+/// Builds a `min`/`max`/`center` map from a bounding box, using `point` for each corner.
+fn bounds_map(bounds: &[f64], point: impl Fn(f64, f64, f64) -> Map) -> Map {
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = (
         bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5],
-    )
+    );
+    let mut map = Map::new();
+    map.insert("min".into(), Dynamic::from(point(min_x, min_y, min_z)));
+    map.insert("max".into(), Dynamic::from(point(max_x, max_y, max_z)));
+    map.insert(
+        "center".into(),
+        Dynamic::from(point(
+            0.5 * (min_x + max_x),
+            0.5 * (min_y + max_y),
+            0.5 * (min_z + max_z),
+        )),
+    );
+    map
 }
 
 fn curve_type_name(code: f64) -> &'static str {
