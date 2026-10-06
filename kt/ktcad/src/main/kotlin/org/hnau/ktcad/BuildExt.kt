@@ -27,8 +27,8 @@ fun Region.revolve(angle: Double): Solid = revolve(angle = angle, profile = this
  */
 fun Region.sweep(
     path: Path,
-    mode: SweepMode? = null,
-    transition: TransitionKind? = null,
+    mode: SweepMode = SweepMode.FOLLOW,
+    transition: TransitionKind = TransitionKind.RIGHT_CORNER,
 ): Solid = sweep(mode = mode, path = path, profile = this, transition = transition)
 
 /**

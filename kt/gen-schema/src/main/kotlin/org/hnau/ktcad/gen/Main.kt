@@ -40,6 +40,9 @@ private var nonEmptyList = ClassName("arrow.core", "NonEmptyList")
 /** Serializer the generated non-empty properties are annotated with; set from the command line. */
 private var nonEmptyListSerializer = ClassName("arrow.core.serialization", "NonEmptyListSerializer")
 
+/** Names of `$defs` that are enums; used to render enum-typed schema defaults as `Enum.CONSTANT`. */
+private var enumNames: Set<String> = emptySet()
+
 private val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
 private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
 private val JVM_INLINE = ClassName("kotlin.jvm", "JvmInline")
@@ -68,6 +71,7 @@ fun main(args: Array<String>) {
     args.getOrNull(4)?.let { nonEmptyListSerializer = ClassName.bestGuess(it) }
     val schema = Json.parseToJsonElement(File(args[0]).readText()).jsonObject
     val definitions = schema.getValue("\$defs").jsonObject
+    enumNames = definitions.filterValues { it.jsonObject["enum"] != null }.keys
     val outputDir = File(args[1]).apply { mkdirs() }
 
     definitions.forEach { (name, definition) ->
@@ -204,7 +208,7 @@ private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field 
     val nullable = !required && !hasDefault
     val type = if (nullable) baseType.copy(nullable = true) else baseType
     val default = when {
-        hasDefault -> literal(schema.getValue("default").jsonPrimitive)
+        hasDefault -> defaultLiteral(baseType, schema.getValue("default").jsonPrimitive)
         !required -> "null"
         else -> null
     }
@@ -292,6 +296,16 @@ private fun literal(value: JsonPrimitive): String = when {
     value.booleanOrNull != null -> value.booleanOrNull.toString()
     value.isString -> "\"${value.content.replace("\"", "\\\"")}\""
     else -> value.content
+}
+
+/** Renders a schema default: an enum default becomes `EnumType.CONSTANT`, others a plain literal. */
+private fun defaultLiteral(type: TypeName, value: JsonPrimitive): String {
+    val simpleName = (type as? ClassName)?.simpleName
+    return if (simpleName != null && simpleName in enumNames) {
+        "$simpleName.${enumConstantName(value.content)}"
+    } else {
+        literal(value)
+    }
 }
 
 private fun pascalCase(value: String): String =

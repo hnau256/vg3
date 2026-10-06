@@ -338,18 +338,30 @@ class SolidProcessor(
 
     /**
      * The Kotlin default for a parameter that has one in the IR. KSP does not expose the actual
-     * value, so only the two cases the generator can reproduce are supported; anything else fails
-     * the build loudly instead of silently emitting a wrong default.
+     * value, so only the cases the generator can reproduce are supported; anything else fails the
+     * build loudly instead of silently emitting a wrong default.
+     *
+     * An enum's default is taken to be its first constant: the IR marks the default variant with
+     * `#[default]`, and enum constants are emitted in declaration order.
      */
     private fun defaultSource(type: KSType): String {
         if (type.isMarkedNullable) {
             return "null"
         }
-        val name = type.declaration.qualifiedName?.asString()
-        check(name == "kotlin.Boolean") {
-            "SolidProcessor: unsupported non-null default for $name " +
-                "(only Boolean → false and nullable → null are supported)"
+        val declaration = type.declaration
+        val name = declaration.qualifiedName?.asString()
+        if (name == "kotlin.Boolean") {
+            return "false"
         }
-        return "false"
+        if (declaration is KSClassDeclaration && declaration.classKind == ClassKind.ENUM_CLASS) {
+            val first = declaration.declarations
+                .filterIsInstance<KSClassDeclaration>()
+                .firstOrNull()
+                ?.simpleName
+                ?.asString()
+            check(first != null) { "SolidProcessor: enum $name has no constants" }
+            return "$name.$first"
+        }
+        error("SolidProcessor: unsupported non-null default for $name")
     }
 }

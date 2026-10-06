@@ -27,7 +27,7 @@ class BuildExtTest {
     @Test
     fun sweep_maps_to_factory() {
         val spine = Path(p(0.0, 0.0, 0.0), lineTo(0.0, 0.0, 20.0))
-        assertEquals(sweep(mode = null, path = spine, profile = square), square.sweep(spine))
+        assertEquals(sweep(path = spine, profile = square), square.sweep(spine))
         assertEquals(
             sweep(mode = SweepMode.RIGID, path = spine, profile = square),
             square.sweep(spine, SweepMode.RIGID),

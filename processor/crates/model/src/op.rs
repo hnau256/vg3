@@ -1,6 +1,6 @@
 //! Operations: transforms and the parameters of `fillet`/`sweep`.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::value::{Angle, Scalar, Vec2, Vec3};
 
@@ -49,7 +49,7 @@ pub enum TransformOp2 {
     },
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum SweepMode {
@@ -58,7 +58,7 @@ pub enum SweepMode {
     Rigid,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum FilletKind {
@@ -78,7 +78,7 @@ pub enum BooleanKind {
 }
 
 /// How offset shells are joined (mirrors `GeomAbs_JoinType`).
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum JoinKind {
@@ -90,7 +90,7 @@ pub enum JoinKind {
 
 /// How a sweep joins the pipe at fractures (corners) of the spine
 /// (mirrors `BRepBuilderAPI_TransitionMode`).
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum TransitionKind {

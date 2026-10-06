@@ -122,7 +122,7 @@ fun main() {
   (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
   отбора углов). Эскизы **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
-  `Region.sweep(path, mode?, transition?)` (transition — `TransitionKind` на изломах спины),
+  `Region.sweep(path, mode = FOLLOW, transition = RIGHT_CORNER)` (transition — `TransitionKind` на изломах спины),
   `NonEmptyList<Path>.loft(ruled?, smoothing?, continuity?, parametrization?, maxDegree?, skipCompatibility?)`.
 - **`Solid.filletAll(radius, kind = FILLET)`** / **`Solid.filletExpression(expression, kind = FILLET)`** /
   **`Solid.filletSelected(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`),
