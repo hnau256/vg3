@@ -14,7 +14,7 @@ pub fn render() -> String {
     )
 }
 
-/// The committed schema path: `<repo>/scheme/vg3.schema.json`.
+/// The generated schema path: `<repo>/scheme/vg3.schema.json` (a build artifact, not committed).
 pub fn output_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../scheme/vg3.schema.json")
 }

@@ -115,7 +115,7 @@ std::unique_ptr<Shape> sweep(
         const TopoDS_Shape section_wire = BRepTools::OuterWire(profile_face(profile));
 
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
-        // to the tangent. Section frame (documented in FORMAT.md): local X is radial — away from
+        // to the tangent. Section frame (documented in README.md): local X is radial — away from
         // the Z axis — and local Y runs along +Z, so a profile swept along a helix about +Z
         // becomes a thread ridge rather than a thin fin.
         BRepAdaptor_CompCurve start_curve(spine_wire);
