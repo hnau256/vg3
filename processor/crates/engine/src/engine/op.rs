@@ -180,7 +180,7 @@ impl Evaluate for Body<Part> {
                 continuity,
                 parametrization,
                 max_degree,
-                check_compatibility,
+                skip_compatibility,
             } => {
                 if sections.len() < 2 {
                     return Err(Error::LoftNeedsTwoSections);
@@ -191,7 +191,7 @@ impl Evaluate for Body<Part> {
                     continuity_code(continuity),
                     parametrization_code(parametrization),
                     max_degree.map_or(0, |degree| degree as i32),
-                    check_compatibility.unwrap_or(true),
+                    !skip_compatibility,
                 );
                 for section in sections.iter() {
                     let wire = build_path_wire(section, true)?;

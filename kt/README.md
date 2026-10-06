@@ -123,7 +123,7 @@ fun main() {
   отбора углов). Эскизы **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
   `Region.sweep(path, mode?, transition?)` (transition — `TransitionKind` на изломах спины),
-  `NonEmptyList<Path>.loft(ruled?, smoothing?, continuity?, parametrization?, maxDegree?, checkCompatibility?)`.
+  `NonEmptyList<Path>.loft(ruled?, smoothing?, continuity?, parametrization?, maxDegree?, skipCompatibility?)`.
 - **`Solid.filletAll(radius, kind = FILLET)`** / **`Solid.filletExpression(expression, kind = FILLET)`** /
   **`Solid.filletSelected(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`),
   имя отражает способ выбора рёбер: постоянный радиус всем, Rhai-выражение на ребро (число), либо

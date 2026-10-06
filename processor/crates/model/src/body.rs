@@ -82,7 +82,7 @@ pub enum Body<T> {
         #[serde(default)]
         max_degree: Option<u32>,
         #[serde(default)]
-        check_compatibility: Option<bool>,
+        skip_compatibility: bool,
     },
     Bool {
         kind: BooleanKind,
@@ -238,7 +238,7 @@ impl<T: Clone> Body<T> {
                 continuity,
                 parametrization,
                 max_degree,
-                check_compatibility,
+                skip_compatibility,
             } => Body::Loft {
                 sections: sections.clone(),
                 ruled: *ruled,
@@ -246,7 +246,7 @@ impl<T: Clone> Body<T> {
                 continuity: *continuity,
                 parametrization: *parametrization,
                 max_degree: *max_degree,
-                check_compatibility: *check_compatibility,
+                skip_compatibility: *skip_compatibility,
             },
             Body::Bool {
                 kind,

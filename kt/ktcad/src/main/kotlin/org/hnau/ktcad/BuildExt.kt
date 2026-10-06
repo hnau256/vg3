@@ -33,8 +33,8 @@ fun Region.sweep(
 
 /**
  * Loft through [this] sections (`size >= 2`). [ruled] switches from smooth to ruled surfaces; the
- * rest tune the approximation (`smoothing`, `continuity`, `parametrization`, `maxDegree`,
- * `checkCompatibility`).
+ * rest tune the approximation (`smoothing`, `continuity`, `parametrization`, `maxDegree`), and
+ * [skipCompatibility] disables the automatic section orientation check (OCCT checks by default).
  */
 fun NonEmptyList<Path>.loft(
     ruled: Boolean = false,
@@ -42,7 +42,7 @@ fun NonEmptyList<Path>.loft(
     continuity: Continuity? = null,
     parametrization: Parametrization? = null,
     maxDegree: Int? = null,
-    checkCompatibility: Boolean? = null,
+    skipCompatibility: Boolean = false,
 ): Solid = loft(
     ruled = ruled,
     sections = this,
@@ -50,7 +50,7 @@ fun NonEmptyList<Path>.loft(
     continuity = continuity,
     parametrization = parametrization,
     max_degree = maxDegree,
-    check_compatibility = checkCompatibility,
+    skip_compatibility = skipCompatibility,
 )
 
 /** Fillet every edge with a constant [radius] (`RadiusSpec.All`; chamfer with `kind = CHAMFER`). */

@@ -7,7 +7,6 @@
       "continuity": "c2",
       "parametrization": "centripetal",
       "max_degree": 8,
-      "check_compatibility": true,
       "sections": [
         {
           "start": { "x": -2, "y": -2, "z": 0 },
