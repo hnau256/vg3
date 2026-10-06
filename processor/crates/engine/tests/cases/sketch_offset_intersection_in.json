@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "type": "offset2d",
+      "target": 0,
+      "distance": 1,
+      "join": "intersection"
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 1,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_offset_intersection"
+    }
+  ]
+}

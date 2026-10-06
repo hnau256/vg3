@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "torus",
+      "major_radius": 5,
+      "minor_radius": 1
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "torus"
+    }
+  ]
+}

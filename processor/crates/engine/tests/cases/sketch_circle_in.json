@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "circle",
+      "radius": 3
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 0,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_circle"
+    }
+  ]
+}

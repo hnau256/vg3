@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "contour",
+      "start": {
+        "x": 0,
+        "y": 0
+      },
+      "edges": [
+        {
+          "type": "line",
+          "to": {
+            "x": 4,
+            "y": 0
+          }
+        },
+        {
+          "type": "arc",
+          "via": {
+            "x": 5,
+            "y": 1
+          },
+          "to": {
+            "x": 4,
+            "y": 2
+          }
+        },
+        {
+          "type": "spline",
+          "points": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 0,
+              "y": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 0,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_contour"
+    }
+  ]
+}

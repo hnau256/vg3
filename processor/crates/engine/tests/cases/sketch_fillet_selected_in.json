@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "type": "fillet2d",
+      "target": 0,
+      "radius": {
+        "type": "selected",
+        "expression": "vertex.angle > 1.0",
+        "radius": 1
+      }
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 1,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_fillet_selected"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "sphere",
+      "radius": 3
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sphere"
+    }
+  ]
+}

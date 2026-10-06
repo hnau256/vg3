@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 4,
+      "length": 4,
+      "height": 4
+    },
+    {
+      "type": "offset",
+      "target": 0,
+      "distance": 1,
+      "join": "arc"
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "offset_arc"
+    }
+  ]
+}

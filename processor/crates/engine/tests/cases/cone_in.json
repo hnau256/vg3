@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "cone",
+      "radius_bottom": 3,
+      "radius_top": 1,
+      "height": 4
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "cone"
+    }
+  ]
+}

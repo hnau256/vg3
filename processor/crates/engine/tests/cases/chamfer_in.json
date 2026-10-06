@@ -3,18 +3,18 @@
   "bodies": [
     {
       "type": "box",
-      "width": 10,
-      "length": 10,
-      "height": 10
+      "width": 4,
+      "length": 4,
+      "height": 4
     },
     {
       "type": "fillet",
-      "kind": "chamfer",
       "target": 0,
       "radius": {
         "type": "all",
         "radius": 1
-      }
+      },
+      "kind": "chamfer"
     }
   ],
   "export": [

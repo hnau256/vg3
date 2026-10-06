@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "cone",
+      "radius_bottom": 3,
+      "radius_top": 1,
+      "height": 4,
+      "angle": 3.141592653589793
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "cone_wedge"
+    }
+  ]
+}

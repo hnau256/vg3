@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 3
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 0,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_polygon"
+    }
+  ]
+}

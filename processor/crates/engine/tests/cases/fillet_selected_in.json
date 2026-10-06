@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 4,
+      "length": 4,
+      "height": 4
+    },
+    {
+      "type": "fillet",
+      "target": 0,
+      "radius": {
+        "type": "selected",
+        "expression": "true",
+        "radius": 1
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "fillet_selected"
+    }
+  ]
+}

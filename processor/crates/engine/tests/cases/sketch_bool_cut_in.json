@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "circle",
+      "radius": 3
+    },
+    {
+      "type": "circle",
+      "radius": 1
+    },
+    {
+      "type": "bool",
+      "kind": "cut",
+      "arguments": [
+        0
+      ],
+      "tools": [
+        1
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 2,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_bool_cut"
+    }
+  ]
+}

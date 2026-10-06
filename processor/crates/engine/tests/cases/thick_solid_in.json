@@ -3,9 +3,9 @@
   "bodies": [
     {
       "type": "box",
-      "width": 10,
-      "length": 10,
-      "height": 10
+      "width": 4,
+      "length": 4,
+      "height": 4
     },
     {
       "type": "thick_solid",
@@ -13,7 +13,7 @@
       "offset": -1,
       "faces": {
         "type": "selected",
-        "expression": "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)"
+        "expression": "is_parallel(face.normal, Z)"
       }
     }
   ],

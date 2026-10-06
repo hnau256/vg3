@@ -1,7 +1,7 @@
 {
   "bodies": [
     {
-      "area": 6.0,
+      "area": 2.3660254037844384,
       "bounds": {
         "max": {
           "x": 1.0000001,
@@ -14,11 +14,11 @@
           "z": -1e-7
         }
       },
-      "edges": 12,
-      "faces": 6,
-      "name": "cube",
+      "edges": 6,
+      "faces": 4,
+      "name": "polyhedron",
       "solids": 1,
-      "volume": 0.9999999999999998
+      "volume": 0.16666666666666655
     }
   ],
   "version": 1

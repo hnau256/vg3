@@ -3,31 +3,27 @@
   "bodies": [
     {
       "type": "box",
-      "width": 10,
-      "length": 10,
-      "height": 10
+      "width": 4,
+      "length": 4,
+      "height": 4
     },
     {
       "type": "halfspace"
     },
     {
-      "type": "transform",
-      "target": 1,
-      "op": {
-        "type": "translate",
-        "value": { "x": 0, "y": 0, "z": 5 }
-      }
-    },
-    {
       "type": "bool",
       "kind": "cut",
-      "arguments": [0],
-      "tools": [2]
+      "arguments": [
+        0
+      ],
+      "tools": [
+        1
+      ]
     }
   ],
   "export": [
     {
-      "index": 3,
+      "index": 2,
       "name": "halfspace"
     }
   ]

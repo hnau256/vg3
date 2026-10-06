@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 4,
+      "length": 4,
+      "height": 4
+    },
+    {
+      "type": "sphere",
+      "radius": 3
+    },
+    {
+      "type": "bool",
+      "kind": "cut",
+      "arguments": [
+        0
+      ],
+      "tools": [
+        1
+      ]
+    }
+  ],
+  "export": [
+    {
+      "index": 2,
+      "name": "bool_cut"
+    }
+  ]
+}

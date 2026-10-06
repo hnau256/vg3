@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "sweep",
+      "profile": 0,
+      "path": {
+        "start": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "edges": [
+          {
+            "type": "arc",
+            "via": {
+              "x": 5,
+              "y": 5,
+              "z": 0
+            },
+            "to": {
+              "x": 10,
+              "y": 0,
+              "z": 0
+            }
+          }
+        ]
+      },
+      "mode": "follow"
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "path_arc"
+    }
+  ]
+}

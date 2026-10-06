@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "circle",
+      "radius": 3
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "translate",
+        "value": {
+          "x": 2,
+          "y": 0
+        }
+      }
+    },
+    {
+      "type": "bool",
+      "kind": "common",
+      "arguments": [
+        0
+      ],
+      "tools": [
+        1
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 2,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_bool_common"
+    }
+  ]
+}

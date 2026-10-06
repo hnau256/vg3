@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 2,
+      "length": 2,
+      "height": 2
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "mirror",
+        "center": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "normal": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        }
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "transform_mirror"
+    }
+  ]
+}

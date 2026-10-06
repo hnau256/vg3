@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "torus",
+      "major_radius": 5,
+      "minor_radius": 1,
+      "angle": 3.141592653589793
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "torus_wedge"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 2,
+      "length": 2,
+      "height": 2
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "rotate",
+        "center": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "axis": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "angle": 0.5
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "transform_rotate"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "loft",
+      "sections": [
+        {
+          "start": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "edges": [
+            {
+              "type": "line",
+              "to": {
+                "x": 4,
+                "y": 0,
+                "z": 0
+              }
+            },
+            {
+              "type": "line",
+              "to": {
+                "x": 4,
+                "y": 4,
+                "z": 0
+              }
+            }
+          ]
+        },
+        {
+          "start": {
+            "x": 0,
+            "y": 0,
+            "z": 10
+          },
+          "edges": [
+            {
+              "type": "line",
+              "to": {
+                "x": 2,
+                "y": 0,
+                "z": 10
+              }
+            },
+            {
+              "type": "line",
+              "to": {
+                "x": 2,
+                "y": 2,
+                "z": 10
+              }
+            }
+          ]
+        }
+      ],
+      "smoothing": true,
+      "continuity": "c2",
+      "parametrization": "centripetal",
+      "max_degree": 8
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "loft_settings"
+    }
+  ]
+}

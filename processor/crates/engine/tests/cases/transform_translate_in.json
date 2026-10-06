@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 2,
+      "length": 2,
+      "height": 2
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "translate",
+        "value": {
+          "x": 1,
+          "y": 2,
+          "z": 3
+        }
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "transform_translate"
+    }
+  ]
+}

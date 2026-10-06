@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "wedge",
+      "width": 4,
+      "length": 5,
+      "height": 6,
+      "top_width": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "wedge"
+    }
+  ]
+}

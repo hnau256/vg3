@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "translate",
+        "value": {
+          "x": 2,
+          "y": 1
+        }
+      }
+    }
+  ],
+  "bodies": [
+    {
+      "type": "extrude",
+      "profile": 1,
+      "height": 2
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sketch_transform_translate"
+    }
+  ]
+}

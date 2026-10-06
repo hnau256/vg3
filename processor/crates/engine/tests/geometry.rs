@@ -118,13 +118,13 @@ fn step_export_is_a_single_file() {
         path.display()
     ))
     .expect("step config parses");
-    let outputs = build_outputs("bottle");
+    let outputs = build_outputs("box");
     config.export(&outputs).expect("step export succeeds");
     let contents = std::fs::read_to_string(&path).expect("step file is written");
     assert!(contents.starts_with("ISO-10303-21;"));
     assert!(contents.contains("AUTOMOTIVE_DESIGN"));
-    // The bottle case has a color and a name, so STEP carries both.
+    // The box case has a color and a name, so STEP carries both.
     assert!(contents.contains("COLOUR_RGB"));
-    assert!(contents.contains("PRODUCT('bottle'"));
+    assert!(contents.contains("PRODUCT('box'"));
     let _ = std::fs::remove_file(&path);
 }

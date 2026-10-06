@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 2,
+      "length": 2,
+      "height": 2
+    },
+    {
+      "type": "transform",
+      "target": 0,
+      "op": {
+        "type": "matrix",
+        "m": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0,
+          1,
+          3,
+          0,
+          0,
+          0,
+          1
+        ]
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "transform_matrix"
+    }
+  ]
+}
