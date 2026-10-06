@@ -7,12 +7,12 @@
 use rhai::{Dynamic, Map};
 
 use crate::engine::expression::Data;
-use crate::engine::{math2d, math3d};
+use crate::engine::math;
 use crate::sys::ffi;
 
 /// The body's bounding box, exposed as `box` (`min`/`max`/`center` 3D points).
 pub(super) fn body(shape: &ffi::Shape) -> Data {
-    Data::new("box", bounds_map(&ffi::bounding_box(shape), math3d::point))
+    Data::new("box", bounds_map(&ffi::bounding_box(shape)))
 }
 
 /// An edge, exposed as `edge`.
@@ -25,28 +25,28 @@ pub(super) fn edge(data: &[f64]) -> Data {
     );
     edge.insert(
         "direction".into(),
-        Dynamic::from(math3d::point(data[2], data[3], data[4])),
+        Dynamic::from(math::point(data[2], data[3], data[4])),
     );
     edge.insert("radius".into(), Dynamic::from(data[5]));
     edge.insert(
         "start".into(),
-        Dynamic::from(math3d::point(data[6], data[7], data[8])),
+        Dynamic::from(math::point(data[6], data[7], data[8])),
     );
     edge.insert(
         "end".into(),
-        Dynamic::from(math3d::point(data[9], data[10], data[11])),
+        Dynamic::from(math::point(data[9], data[10], data[11])),
     );
     edge.insert(
         "center".into(),
-        Dynamic::from(math3d::point(data[12], data[13], data[14])),
+        Dynamic::from(math::point(data[12], data[13], data[14])),
     );
     edge.insert(
         "min".into(),
-        Dynamic::from(math3d::point(data[15], data[16], data[17])),
+        Dynamic::from(math::point(data[15], data[16], data[17])),
     );
     edge.insert(
         "max".into(),
-        Dynamic::from(math3d::point(data[18], data[19], data[20])),
+        Dynamic::from(math::point(data[18], data[19], data[20])),
     );
     Data::new("edge", edge)
 }
@@ -55,7 +55,7 @@ pub(super) fn edge(data: &[f64]) -> Data {
 pub(super) fn profile(shape: &ffi::Shape) -> Data {
     Data::new(
         "profile",
-        bounds_map(&ffi::bounding_box(shape), |x, y, _| math2d::point(x, y)),
+        bounds_map(&ffi::bounding_box(shape)),
     )
 }
 
@@ -64,15 +64,15 @@ pub(super) fn vertex(data: &[f64]) -> Data {
     let mut vertex = Map::new();
     vertex.insert(
         "point".into(),
-        Dynamic::from(math2d::point(data[0], data[1])),
+        Dynamic::from(math::point(data[0], data[1], 0.0)),
     );
     vertex.insert(
         "direction1".into(),
-        Dynamic::from(math2d::point(data[3], data[4])),
+        Dynamic::from(math::point(data[3], data[4], 0.0)),
     );
     vertex.insert(
         "direction2".into(),
-        Dynamic::from(math2d::point(data[6], data[7])),
+        Dynamic::from(math::point(data[6], data[7], 0.0)),
     );
     vertex.insert("angle".into(), Dynamic::from(data[9]));
     Data::new("vertex", vertex)
@@ -83,35 +83,35 @@ pub(super) fn face(data: &[f64]) -> Data {
     let mut face = Map::new();
     face.insert(
         "normal".into(),
-        Dynamic::from(math3d::point(data[0], data[1], data[2])),
+        Dynamic::from(math::point(data[0], data[1], data[2])),
     );
     face.insert(
         "center".into(),
-        Dynamic::from(math3d::point(data[3], data[4], data[5])),
+        Dynamic::from(math::point(data[3], data[4], data[5])),
     );
     face.insert("area".into(), Dynamic::from(data[6]));
     face.insert(
         "min".into(),
-        Dynamic::from(math3d::point(data[7], data[8], data[9])),
+        Dynamic::from(math::point(data[7], data[8], data[9])),
     );
     face.insert(
         "max".into(),
-        Dynamic::from(math3d::point(data[10], data[11], data[12])),
+        Dynamic::from(math::point(data[10], data[11], data[12])),
     );
     Data::new("face", face)
 }
 
 /// Builds a `min`/`max`/`center` map from a bounding box, using `point` for each corner.
-fn bounds_map(bounds: &[f64], point: impl Fn(f64, f64, f64) -> Map) -> Map {
+fn bounds_map(bounds: &[f64]) -> Map {
     let (min_x, min_y, min_z, max_x, max_y, max_z) = (
         bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5],
     );
     let mut map = Map::new();
-    map.insert("min".into(), Dynamic::from(point(min_x, min_y, min_z)));
-    map.insert("max".into(), Dynamic::from(point(max_x, max_y, max_z)));
+    map.insert("min".into(), Dynamic::from(math::point(min_x, min_y, min_z)));
+    map.insert("max".into(), Dynamic::from(math::point(max_x, max_y, max_z)));
     map.insert(
         "center".into(),
-        Dynamic::from(point(
+        Dynamic::from(math::point(
             0.5 * (min_x + max_x),
             0.5 * (min_y + max_y),
             0.5 * (min_z + max_z),

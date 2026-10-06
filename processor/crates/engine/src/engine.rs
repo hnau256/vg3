@@ -13,6 +13,7 @@ mod expression;
 mod fillet;
 mod fillet2d;
 mod info;
+mod math;
 mod math2d;
 mod math3d;
 mod op;
