@@ -355,3 +355,36 @@ fn fillet2d_selected_uses_the_corner_angle() {
     let expected = (100.0 - (4.0 - std::f64::consts::PI) * 4.0) * 5.0;
     assert_close(parts[0].volume(), expected, 1e-3);
 }
+
+#[test]
+fn thick_solid_hollows_a_box_open_at_the_top() {
+    let parts = build("thick_solid.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_eq!(parts[0].face_count(), 11); // 6 outer + 5 inner (the top is open)
+    // Wall thickness 1: 1000 - 8*8*9 = 424.
+    assert_close(parts[0].volume(), 424.0, 1e-3);
+    assert_bounds(&parts[0], [0.0, 0.0, 0.0, 10.0, 10.0, 10.0]);
+}
+
+#[test]
+fn cylinder_wedge_is_half_the_cylinder() {
+    let parts = build("cylinder_wedge.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), std::f64::consts::PI * 25.0 * 10.0 / 2.0, 1e-3);
+}
+
+#[test]
+fn sphere_wedge_is_a_hemisphere() {
+    let parts = build("sphere_wedge.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), 2.0 / 3.0 * std::f64::consts::PI * 1000.0, 1e-3);
+}
+
+#[test]
+fn offset_with_intersection_join_makes_sharp_corners() {
+    let parts = build("offset_intersection.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    // A 10x10x10 box grown by 1 with the intersection join is exactly 12x12x12.
+    assert_close(parts[0].volume(), 1728.0, 1e-3);
+    assert_bounds(&parts[0], [-1.0, -1.0, -1.0, 11.0, 11.0, 11.0]);
+}

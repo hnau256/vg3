@@ -47,13 +47,18 @@ pub(crate) mod ffi {
 
         fn make_box(width: f64, length: f64, height: f64) -> Result<UniquePtr<Shape>>;
 
-        fn make_sphere(radius: f64) -> Result<UniquePtr<Shape>>;
+        fn make_sphere(radius: f64, angle: f64) -> Result<UniquePtr<Shape>>;
 
-        fn make_cylinder(radius: f64, height: f64) -> Result<UniquePtr<Shape>>;
+        fn make_cylinder(radius: f64, height: f64, angle: f64) -> Result<UniquePtr<Shape>>;
 
-        fn make_cone(radius_bottom: f64, radius_top: f64, height: f64) -> Result<UniquePtr<Shape>>;
+        fn make_cone(
+            radius_bottom: f64,
+            radius_top: f64,
+            height: f64,
+            angle: f64,
+        ) -> Result<UniquePtr<Shape>>;
 
-        fn make_torus(major_radius: f64, minor_radius: f64) -> Result<UniquePtr<Shape>>;
+        fn make_torus(major_radius: f64, minor_radius: f64, angle: f64) -> Result<UniquePtr<Shape>>;
 
         fn make_wedge(
             width: f64,
@@ -120,9 +125,11 @@ pub(crate) mod ffi {
 
         fn translate(shape: &Shape, x: f64, y: f64, z: f64) -> Result<UniquePtr<Shape>>;
 
-        fn offset(shape: &Shape, distance: f64) -> Result<UniquePtr<Shape>>;
+        fn offset(shape: &Shape, distance: f64, join: u8) -> Result<UniquePtr<Shape>>;
 
-        fn offset2d(profile: &Shape, distance: f64) -> Result<UniquePtr<Shape>>;
+        fn offset2d(profile: &Shape, distance: f64, join: u8) -> Result<UniquePtr<Shape>>;
+
+        fn thick_solid(shape: &Shape, faces: &[u32], offset: f64, join: u8) -> Result<UniquePtr<Shape>>;
 
         fn rotate(
             shape: &Shape,
@@ -154,6 +161,8 @@ pub(crate) mod ffi {
         fn solid_count(shape: &Shape) -> usize;
 
         fn face_count(shape: &Shape) -> usize;
+
+        fn face_data(shape: &Shape, index: usize) -> Vec<f64>;
 
         fn unify(shape: &Shape) -> Result<UniquePtr<Shape>>;
 

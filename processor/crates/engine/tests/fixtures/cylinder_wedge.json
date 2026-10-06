@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "bodies": [
+    { "type": "cylinder", "radius": 5, "height": 10, "angle": 3.141592653589793 }
+  ],
+  "export": [ { "index": 0, "name": "cylinder_wedge" } ]
+}

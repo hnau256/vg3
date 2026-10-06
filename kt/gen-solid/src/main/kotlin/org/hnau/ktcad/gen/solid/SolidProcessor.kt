@@ -147,7 +147,7 @@ class SolidProcessor(
                 )
                 return@forEach
             }
-            val parameters = variant.primaryConstructor!!.parameters
+            val parameters = orderedParameters(variant)
             val type = TypeSpec.classBuilder(name).addSuperinterface(domainType)
             if (parameters.isEmpty()) {
                 builder.addType(type.build())
@@ -157,7 +157,15 @@ class SolidProcessor(
             val properties = parameters.map { parameter ->
                 val parameterName = parameter.name!!.asString()
                 val typeName = domainType(domain, parameter.type.resolve(), domainType)
-                constructor.addParameter(parameterName, typeName)
+                constructor.addParameter(
+                    ParameterSpec.builder(parameterName, typeName)
+                        .apply {
+                            if (parameter.hasDefault) {
+                                defaultValue("%L", defaultSource(parameter.type.resolve()))
+                            }
+                        }
+                        .build(),
+                )
                 PropertySpec.builder(parameterName, typeName).initializer(parameterName).build()
             }
             type.addModifiers(KModifier.DATA)
@@ -241,8 +249,7 @@ class SolidProcessor(
                 .addCode("return %T.%L", domainType, variant.simpleName.asString())
                 .build()
         }
-        val constructor = variant.primaryConstructor!!
-        val arguments = constructor.parameters.map { parameter ->
+        val arguments = orderedParameters(variant).map { parameter ->
             val parameterName = parameter.name!!.asString()
             val type = domainType(domain, parameter.type.resolve(), domainType)
             builder.addParameter(
@@ -314,6 +321,10 @@ class SolidProcessor(
         }
         return FieldKind.NONE
     }
+
+    /** The variant's constructor parameters, required ones first (defaulted ones last). */
+    private fun orderedParameters(variant: KSClassDeclaration): List<KSValueParameter> =
+        variant.primaryConstructor!!.parameters.sortedBy { it.hasDefault }
 
     private fun argumentList(
         variant: KSClassDeclaration,

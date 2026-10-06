@@ -204,7 +204,7 @@ contour(start, edges)               // свободный 2D-контур (Curve
 bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
 transform(target, op)               // планарная трансформация (TransformOp2)
 fillet2d(target, radius)            // скругление углов; radius — как у fillet (RadiusSpec)
-offset2d(target, distance)          // рост (>0) / усадка (<0) контура (BRepOffsetAPI_MakeOffset)
+offset2d(target, distance, join?)   // рост (>0) / усадка (<0) контура (BRepOffsetAPI_MakeOffset)
 ```
 
 - `polygon`/`contour` авто-замыкаются; нулевое ребро / самопересечение → ошибка.
@@ -228,13 +228,16 @@ offset2d(target, distance)          // рост (>0) / усадка (<0) кон�
 
 ```jsonc
 box(width, length, height)          // угол в начале, +октант
-sphere(radius)                      // центр в начале
-cylinder(radius, height)            // основание в начале, ось +Z
-cone(radius_bottom, radius_top, height)
-torus(major_radius, minor_radius)   // центр в начале, пл. XY
+sphere(radius, angle?)              // центр в начале; angle — сферический клин (2π = вся сфера)
+cylinder(radius, height, angle?)    // основание в начале, ось +Z; angle — клин
+cone(radius_bottom, radius_top, height, angle?)
+torus(major_radius, minor_radius, angle?)   // центр в начале, пл. XY; angle — клин
 wedge(width, length, height, top_width)
 halfspace                           // бесконечный solid z ≤ 0; инструмент для cut
 ```
+
+- `angle` (необязательный) делает из примитива **сегмент-клин** вокруг оси/центра
+  (`BRepPrimAPI_Make{Sphere,Cylinder,Cone,Torus}` с углом); без него — полный примитив.
 
 ```jsonc
 { "type": "polyhedron",
@@ -306,8 +309,22 @@ loft(sections, ruled)               // sections: [Path...]; default ruled false;
 **Offset** — утолщение/утоньшение тела смещением оболочек:
 
 ```jsonc
-{ "type": "offset", "target": operand, "distance": Scalar }   // >0 наружу, <0 внутрь
+{ "type": "offset", "target": operand, "distance": Scalar,
+  "join"?: "arc" | "tangent" | "intersection" }   // >0 наружу, <0 внутрь; join по умолчанию arc
 ```
+
+**Thick solid** — оболочка заданной толщины с открытыми гранями (`BRepOffsetAPI_MakeThickSolid`):
+
+```jsonc
+{ "type": "thick_solid", "target": operand, "offset": Scalar,
+  "faces": { "type": "selected", "expression": "<Rhai bool>" },   // какие грани убрать (открыть)
+  "join"?: "arc" | "tangent" | "intersection" }
+```
+
+- `offset` — знаковое смещение оболочки, как у `offset` (OCCT): `>0` — наружу, `<0` — внутрь (полое
+  тело — отрицательное, как в туториалах OCCT).
+- `faces.selected` — булев предикат по граням (`face`); истинные грани удаляются (становятся
+  проёмами). Если ни одна не выбрана, получится замкнутая полая оболочка.
 
 ### Выражения (Rhai)
 
@@ -337,6 +354,17 @@ Bounding box тела: `box.min`, `box.max`, `box.center`. Оси: `X`, `Y`, `Z`
 | `vertex.angle` | угол между ними (радианы, `0..π`) |
 
 Пример — скруглить только острые углы: `vertex.angle < 1.5`.
+
+**Элемент `thick_solid`.** Грань `face` (3D); `box` — bbox тела:
+
+| Поле | Смысл |
+|---|---|
+| `face.normal` | единичная нормаль грани (с учётом ориентации) |
+| `face.center` | центр масс грани |
+| `face.area` | площадь грани |
+| `face.min`, `face.max` | bbox грани |
+
+Пример — открыть верхнюю грань: `is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)`.
 
 **Функции.** `dot(a, b)`, `cross(a, b)`, `length(v)`, `normalized(v)`, `distance(a, b)`, `angle(a, b)`,
 `vec(x, y, z)`, `add(a, b)`, `sub(a, b)`, `scale(v, s)`, `is_close(a, b)`, `is_close_point(a, b)`,
@@ -372,7 +400,10 @@ IO не регистрируется. Тернарного `? :` нет — `if 
 - **Булевы**: `bool` (fuse / cut / common).
 - **Трансформации**: `translate`, `rotate`, `mirror`, `scale`, `matrix`.
 - **Fillet / chamfer** с `radius: all | selected | expression` (Rhai), пропуск швов.
-- **Offset**: утолщение/утоньшение тела (`BRepOffsetAPI_MakeOffsetShape`).
+- **Offset**: утолщение/утоньшение тела (`BRepOffsetAPI_MakeOffsetShape`), сшивание `join`.
+- **Thick solid**: полая оболочка с открытыми гранями (`BRepOffsetAPI_MakeThickSolid`), грани
+  выбираются Rhai-выражением, сшивание `join`.
+- **Сегменты примитивов**: необязательный `angle` у `sphere`/`cylinder`/`cone`/`torus`.
 - **Кривые**: `line`, `arc`, `spline`, `helix`.
 - **Экспорт**: STL (бинарный), STEP (AP214, один файл, с именами и цветами частей), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
 

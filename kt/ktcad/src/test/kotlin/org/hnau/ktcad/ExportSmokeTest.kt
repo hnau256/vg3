@@ -70,4 +70,21 @@ class ExportSmokeTest {
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
+
+    @Test
+    fun thick_solid_exports_to_stl() {
+        val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-thick.stl")
+        output.delete()
+
+        val hollow = box(10.0, 10.0, 10.0).thickSolid(
+            offset = -1.0,
+            expression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
+        )
+        Vg3.export(
+            parts = listOf(Part(name = "hollow", solid = hollow)),
+            format = Format.Stl(output = Output.Single(output.absolutePath)),
+        )
+
+        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+    }
 }

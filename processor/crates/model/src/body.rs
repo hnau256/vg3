@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 use crate::curve::Path;
-use crate::op::{BooleanKind, FilletKind, RadiusSpec, SweepMode, TransformOp};
+use crate::op::{BooleanKind, FaceSelection, FilletKind, JoinKind, RadiusSpec, SweepMode, TransformOp};
 use crate::value::{Angle, NonEmpty, Scalar, SketchIndex, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
@@ -17,19 +17,31 @@ pub enum Body<T> {
     },
     Sphere {
         radius: Scalar,
+        /// Wedge angle (a spherical wedge); absent = the full sphere.
+        #[serde(default)]
+        angle: Option<Angle>,
     },
     Cylinder {
         radius: Scalar,
         height: Scalar,
+        /// Wedge angle (a cylindrical wedge); absent = the full cylinder.
+        #[serde(default)]
+        angle: Option<Angle>,
     },
     Cone {
         radius_bottom: Scalar,
         radius_top: Scalar,
         height: Scalar,
+        /// Wedge angle (a conical wedge); absent = the full cone.
+        #[serde(default)]
+        angle: Option<Angle>,
     },
     Torus {
         major_radius: Scalar,
         minor_radius: Scalar,
+        /// Wedge angle (a toroidal wedge); absent = the full torus.
+        #[serde(default)]
+        angle: Option<Angle>,
     },
     Wedge {
         width: Scalar,
@@ -69,6 +81,16 @@ pub enum Body<T> {
     Offset {
         target: T,
         distance: Scalar,
+        #[serde(default)]
+        join: JoinKind,
+    },
+    /// Hollows `target` into a shell of wall thickness `offset`, opening the selected `faces`.
+    ThickSolid {
+        target: T,
+        offset: Scalar,
+        faces: FaceSelection,
+        #[serde(default)]
+        join: JoinKind,
     },
     Polyhedron {
         points: NonEmpty<Vec3>,
@@ -105,6 +127,7 @@ impl<T: Clone> Body<T> {
             | Body::Bool { .. }
             | Body::Transform { .. }
             | Body::Offset { .. }
+            | Body::ThickSolid { .. }
             | Body::Polyhedron { .. }
             | Body::Fillet { .. } => Vec::new(),
         }
@@ -129,26 +152,38 @@ impl<T: Clone> Body<T> {
                 length: *length,
                 height: *height,
             },
-            Body::Sphere { radius } => Body::Sphere { radius: *radius },
-            Body::Cylinder { radius, height } => Body::Cylinder {
+            Body::Sphere { radius, angle } => Body::Sphere {
+                radius: *radius,
+                angle: *angle,
+            },
+            Body::Cylinder {
+                radius,
+                height,
+                angle,
+            } => Body::Cylinder {
                 radius: *radius,
                 height: *height,
+                angle: *angle,
             },
             Body::Cone {
                 radius_bottom,
                 radius_top,
                 height,
+                angle,
             } => Body::Cone {
                 radius_bottom: *radius_bottom,
                 radius_top: *radius_top,
                 height: *height,
+                angle: *angle,
             },
             Body::Torus {
                 major_radius,
                 minor_radius,
+                angle,
             } => Body::Torus {
                 major_radius: *major_radius,
                 minor_radius: *minor_radius,
+                angle: *angle,
             },
             Body::Wedge {
                 width,
@@ -196,9 +231,25 @@ impl<T: Clone> Body<T> {
                 target: f(target.clone())?,
                 op: op.clone(),
             },
-            Body::Offset { target, distance } => Body::Offset {
+            Body::Offset {
+                target,
+                distance,
+                join,
+            } => Body::Offset {
                 target: f(target.clone())?,
                 distance: *distance,
+                join: *join,
+            },
+            Body::ThickSolid {
+                target,
+                offset,
+                faces,
+                join,
+            } => Body::ThickSolid {
+                target: f(target.clone())?,
+                offset: *offset,
+                faces: faces.clone(),
+                join: *join,
             },
             Body::Polyhedron { points, faces } => Body::Polyhedron {
                 points: points.clone(),

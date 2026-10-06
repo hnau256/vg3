@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 use crate::curve::Curve2;
-use crate::op::{BooleanKind, RadiusSpec, TransformOp2};
+use crate::op::{BooleanKind, JoinKind, RadiusSpec, TransformOp2};
 use crate::value::{NonEmpty, Scalar, Vec2};
 
 /// A planar node: primitives, a contour, booleans over them and planar transforms.
@@ -47,6 +47,8 @@ pub enum Sketch<T> {
     Offset {
         target: T,
         distance: Scalar,
+        #[serde(default)]
+        join: JoinKind,
     },
 }
 
@@ -82,9 +84,14 @@ impl<T: Clone> Sketch<T> {
                 target: f(target.clone())?,
                 radius: radius.clone(),
             },
-            Sketch::Offset { target, distance } => Sketch::Offset {
+            Sketch::Offset {
+                target,
+                distance,
+                join,
+            } => Sketch::Offset {
                 target: f(target.clone())?,
                 distance: *distance,
+                join: *join,
             },
         })
     }

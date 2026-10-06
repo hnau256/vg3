@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "bodies": [
+    { "type": "sphere", "radius": 10, "angle": 3.141592653589793 }
+  ],
+  "export": [ { "index": 0, "name": "sphere_wedge" } ]
+}

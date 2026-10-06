@@ -2,6 +2,8 @@ package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.ir.FaceSelection
+import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.TransformOp
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,5 +54,27 @@ class SolidExtTest {
     @Test
     fun offset_maps_to_the_offset_node() {
         assertEquals(offset(distance = 2.0, target = a), a.offset(2.0))
+    }
+
+    @Test
+    fun wedge_angle_and_join_map_to_the_ir() {
+        val wedge = cylinder(5.0, 10.0, angle = 1.5)
+        wedge as Solid.Cylinder
+        assertEquals(1.5, wedge.angle)
+
+        val grown = box(1.0, 1.0, 1.0).offset(2.0, JoinKind.INTERSECTION)
+        grown as Solid.Offset
+        assertEquals(JoinKind.INTERSECTION, grown.join)
+    }
+
+    @Test
+    fun thickSolid_maps_to_the_thick_solid_node() {
+        val hollow = box(10.0, 10.0, 10.0).thickSolid(-1.0, "is_parallel(face.normal, Z)")
+        hollow as Solid.ThickSolid
+        assertEquals(-1.0, hollow.offset)
+        assertEquals(
+            FaceSelection.Selected(expression = "is_parallel(face.normal, Z)"),
+            hollow.faces,
+        )
     }
 }

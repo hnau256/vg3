@@ -1,11 +1,26 @@
-use vg3_model::{BooleanKind, Body, NonEmpty, SweepMode, TransformOp};
+use vg3_model::{Angle, BooleanKind, Body, JoinKind, NonEmpty, SweepMode, TransformOp};
 
 use crate::engine::contour::build_path_wire;
 use crate::engine::fillet::evaluate_fillet;
+use crate::engine::thick_solid::evaluate_thick_solid;
 use crate::engine::part::{make_part, Part};
 use crate::engine::sketch::Region;
 use crate::error::{Error, Result};
 use crate::sys::ffi;
+
+/// A primitive's optional wedge angle as the native sentinel (`<= 0` = the full primitive).
+pub(super) fn angle_value(angle: Option<Angle>) -> f64 {
+    angle.map_or(0.0, |angle| angle.value())
+}
+
+/// The native code of a join kind (`GeomAbs_JoinType`).
+pub(super) fn join_code(join: JoinKind) -> u8 {
+    match join {
+        JoinKind::Arc => 0,
+        JoinKind::Tangent => 1,
+        JoinKind::Intersection => 2,
+    }
+}
 
 /// Applies a body's operation once all its operands are already evaluated.
 pub(super) trait Evaluate {
@@ -24,23 +39,38 @@ impl Evaluate for Body<Part> {
                 length.value(),
                 height.value(),
             )?),
-            Body::Sphere { radius } => make_part(ffi::make_sphere(radius.value())?),
-            Body::Cylinder { radius, height } => {
-                make_part(ffi::make_cylinder(radius.value(), height.value())?)
+            Body::Sphere { radius, angle } => {
+                make_part(ffi::make_sphere(radius.value(), angle_value(angle))?)
             }
+            Body::Cylinder {
+                radius,
+                height,
+                angle,
+            } => make_part(ffi::make_cylinder(
+                radius.value(),
+                height.value(),
+                angle_value(angle),
+            )?),
             Body::Cone {
                 radius_bottom,
                 radius_top,
                 height,
+                angle,
             } => make_part(ffi::make_cone(
                 radius_bottom.value(),
                 radius_top.value(),
                 height.value(),
+                angle_value(angle),
             )?),
             Body::Torus {
                 major_radius,
                 minor_radius,
-            } => make_part(ffi::make_torus(major_radius.value(), minor_radius.value())?),
+                angle,
+            } => make_part(ffi::make_torus(
+                major_radius.value(),
+                minor_radius.value(),
+                angle_value(angle),
+            )?),
             Body::Wedge {
                 width,
                 length,
@@ -59,9 +89,17 @@ impl Evaluate for Body<Part> {
                 tools,
             } => evaluate_boolean(kind, arguments, tools),
             Body::Transform { target, op } => apply_transform(target, &op),
-            Body::Offset { target, distance } => {
-                make_part(ffi::offset(target.shape(), distance.value())?)
-            }
+            Body::Offset {
+                target,
+                distance,
+                join,
+            } => make_part(ffi::offset(target.shape(), distance.value(), join_code(join))?),
+            Body::ThickSolid {
+                target,
+                offset,
+                faces,
+                join,
+            } => evaluate_thick_solid(target, offset.value(), &faces, join),
             Body::Polyhedron { points, faces } => {
                 let positions: Vec<f64> = points
                     .iter()

@@ -5,6 +5,7 @@
 #include <cstddef>
 
 #include <Standard_Failure.hxx>
+#include <GeomAbs_JoinType.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
@@ -17,6 +18,18 @@ namespace detail {
 
 constexpr double kPointTolerance = 1e-7;
 constexpr double kOffsetTolerance = 1e-3;
+
+/// Maps the IR join kind (`0` = arc, `1` = tangent, `2` = intersection) to `GeomAbs_JoinType`.
+inline GeomAbs_JoinType join_type(std::uint8_t code) {
+    switch (code) {
+        case 1:
+            return GeomAbs_Tangent;
+        case 2:
+            return GeomAbs_Intersection;
+        default:
+            return GeomAbs_Arc;
+    }
+}
 
 /// Translates an OCCT failure into the `std::runtime_error` the cxx bridge expects.
 [[noreturn]] void rethrow_as_std_error(const Standard_Failure& failure);

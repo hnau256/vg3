@@ -18,6 +18,7 @@ mod math3d;
 mod op;
 mod radius;
 mod sketch;
+mod thick_solid;
 mod part;
 
 pub use part::{BrepCodec, Part};

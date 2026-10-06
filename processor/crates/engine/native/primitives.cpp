@@ -34,10 +34,16 @@ std::unique_ptr<Shape> make_box(double width, double length, double height) {
     }
 }
 
-std::unique_ptr<Shape> make_sphere(double radius) {
+std::unique_ptr<Shape> make_sphere(double radius, double angle) {
     try {
-        BRepPrimAPI_MakeSphere maker(radius);
-        const TopoDS_Shape shape = maker.Shape();
+        TopoDS_Shape shape;
+        if (angle > 0.0) {
+            BRepPrimAPI_MakeSphere maker(radius, angle);
+            shape = maker.Shape();
+        } else {
+            BRepPrimAPI_MakeSphere maker(radius);
+            shape = maker.Shape();
+        }
         detail::ensure_valid(shape);
         return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {
@@ -45,10 +51,16 @@ std::unique_ptr<Shape> make_sphere(double radius) {
     }
 }
 
-std::unique_ptr<Shape> make_cylinder(double radius, double height) {
+std::unique_ptr<Shape> make_cylinder(double radius, double height, double angle) {
     try {
-        BRepPrimAPI_MakeCylinder maker(radius, height);
-        const TopoDS_Shape shape = maker.Shape();
+        TopoDS_Shape shape;
+        if (angle > 0.0) {
+            BRepPrimAPI_MakeCylinder maker(radius, height, angle);
+            shape = maker.Shape();
+        } else {
+            BRepPrimAPI_MakeCylinder maker(radius, height);
+            shape = maker.Shape();
+        }
         detail::ensure_valid(shape);
         return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {
@@ -56,10 +68,21 @@ std::unique_ptr<Shape> make_cylinder(double radius, double height) {
     }
 }
 
-std::unique_ptr<Shape> make_cone(double radius_bottom, double radius_top, double height) {
+std::unique_ptr<Shape> make_cone(
+    double radius_bottom,
+    double radius_top,
+    double height,
+    double angle
+) {
     try {
-        BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height);
-        const TopoDS_Shape shape = maker.Shape();
+        TopoDS_Shape shape;
+        if (angle > 0.0) {
+            BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height, angle);
+            shape = maker.Shape();
+        } else {
+            BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height);
+            shape = maker.Shape();
+        }
         detail::ensure_valid(shape);
         return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {
@@ -67,10 +90,16 @@ std::unique_ptr<Shape> make_cone(double radius_bottom, double radius_top, double
     }
 }
 
-std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius) {
+std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius, double angle) {
     try {
-        BRepPrimAPI_MakeTorus maker(major_radius, minor_radius);
-        const TopoDS_Shape shape = maker.Shape();
+        TopoDS_Shape shape;
+        if (angle > 0.0) {
+            BRepPrimAPI_MakeTorus maker(major_radius, minor_radius, angle);
+            shape = maker.Shape();
+        } else {
+            BRepPrimAPI_MakeTorus maker(major_radius, minor_radius);
+            shape = maker.Shape();
+        }
         detail::ensure_valid(shape);
         return std::make_unique<Shape>(shape);
     } catch (const Standard_Failure& failure) {

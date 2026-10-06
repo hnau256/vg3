@@ -100,6 +100,29 @@ pub(super) fn vertex(data: &[f64]) -> Data {
     Data::new("vertex", vertex)
 }
 
+/// A face, exposed as `face` (`normal`, `center`, `area`, `min`, `max`).
+pub(super) fn face(data: &[f64]) -> Data {
+    let mut face = Map::new();
+    face.insert(
+        "normal".into(),
+        Dynamic::from(math3d::point(data[0], data[1], data[2])),
+    );
+    face.insert(
+        "center".into(),
+        Dynamic::from(math3d::point(data[3], data[4], data[5])),
+    );
+    face.insert("area".into(), Dynamic::from(data[6]));
+    face.insert(
+        "min".into(),
+        Dynamic::from(math3d::point(data[7], data[8], data[9])),
+    );
+    face.insert(
+        "max".into(),
+        Dynamic::from(math3d::point(data[10], data[11], data[12])),
+    );
+    Data::new("face", face)
+}
+
 fn bounds6(bounds: &[f64]) -> (f64, f64, f64, f64, f64, f64) {
     (
         bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5],

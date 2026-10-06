@@ -94,13 +94,18 @@ fun main() {
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
-  Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `box`/`cylinder`/`rect`
+  Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `sphere`/`cylinder`/
+  `cone`/`torus` принимают необязательный `angle` (сегмент-клин). `box`/`cylinder`/`rect`
   необязательно центрируются по осям: `centerX`/`centerY`/`centerZ` (`Boolean = false`) — это sugar
   над `translate` (у `cylinder` X/Y уже центрированы, у `rect` есть только X/Y).
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`. `cut` требует непустой `tools: NonEmptyList<Solid>`.
-- **`offset(distance)`** — утолщение (положительное) / утоньшение (отрицательное) тела.
+- **`offset(distance)`** — утолщение (положительное) / утоньшение (отрицательное) тела; есть
+  перегрузка с `join: JoinKind` (`ARC`/`TANGENT`/`INTERSECTION`).
+- **`thickSolid(offset, expression)`** — полая оболочка толщиной `offset` (отрицательное — внутрь,
+  как в OCCT); `expression` — булев Rhai-предикат по граням (`face`, плюс `box`), выбирающий проёмы;
+  есть перегрузка с `join`.
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).

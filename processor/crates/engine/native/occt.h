@@ -90,13 +90,18 @@ rust::String occt_version();
 
 std::unique_ptr<Shape> make_box(double width, double length, double height);
 
-std::unique_ptr<Shape> make_sphere(double radius);
+std::unique_ptr<Shape> make_sphere(double radius, double angle);
 
-std::unique_ptr<Shape> make_cylinder(double radius, double height);
+std::unique_ptr<Shape> make_cylinder(double radius, double height, double angle);
 
-std::unique_ptr<Shape> make_cone(double radius_bottom, double radius_top, double height);
+std::unique_ptr<Shape> make_cone(
+    double radius_bottom,
+    double radius_top,
+    double height,
+    double angle
+);
 
-std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius);
+std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius, double angle);
 
 std::unique_ptr<Shape> make_wedge(double width, double length, double height, double top_width);
 
@@ -181,9 +186,16 @@ std::unique_ptr<BooleanBuilder> new_boolean_builder(std::uint8_t kind);
 
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z);
 
-std::unique_ptr<Shape> offset(const Shape& shape, double distance);
+std::unique_ptr<Shape> offset(const Shape& shape, double distance, std::uint8_t join);
 
-std::unique_ptr<Shape> offset2d(const Shape& profile, double distance);
+std::unique_ptr<Shape> offset2d(const Shape& profile, double distance, std::uint8_t join);
+
+std::unique_ptr<Shape> thick_solid(
+    const Shape& shape,
+    rust::Slice<const std::uint32_t> faces,
+    double offset,
+    std::uint8_t join
+);
 
 std::unique_ptr<Shape> rotate(
     const Shape& shape,
@@ -215,6 +227,8 @@ bool is_solids_only(const Shape& shape);
 std::size_t solid_count(const Shape& shape);
 
 std::size_t face_count(const Shape& shape);
+
+rust::Vec<double> face_data(const Shape& shape, std::size_t index);
 
 std::unique_ptr<Shape> unify(const Shape& shape);
 

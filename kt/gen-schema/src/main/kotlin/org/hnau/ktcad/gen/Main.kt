@@ -15,6 +15,7 @@ import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -230,10 +231,13 @@ private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field 
  * A non-empty list: an array with `minItems >= 1` and no `maxItems` (fixed-size arrays like the
  * `matrix` stay plain `List`). Maps to the Kotlin `NonEmptyList` with its Arrow serializer.
  */
-private fun isNonEmptyList(schema: JsonObject): Boolean =
-    schema["type"]?.jsonPrimitive?.contentOrNull == "array" &&
+private fun isNonEmptyList(schema: JsonObject): Boolean {
+    val type = schema["type"]
+    if (type is JsonArray) return false
+    return type?.jsonPrimitive?.contentOrNull == "array" &&
         (schema["minItems"]?.jsonPrimitive?.intOrNull ?: 0) >= 1 &&
         !schema.containsKey("maxItems")
+}
 
 private fun resolveType(schema: JsonObject): TypeName {
     schema["\$ref"]?.let { reference ->
@@ -245,7 +249,14 @@ private fun resolveType(schema: JsonObject): TypeName {
         }
         return resolveType(concrete.jsonObject).copy(nullable = true)
     }
-    return when (schema["type"]?.jsonPrimitive?.contentOrNull) {
+    val type = schema["type"]
+    // A nullable primitive: `"type": ["number", "null"]`.
+    if (type is JsonArray) {
+        val names = type.map { it.jsonPrimitive.content }
+        val concrete = names.first { it != "null" }
+        return primitiveTypeName(concrete).copy(nullable = "null" in names)
+    }
+    return when (type?.jsonPrimitive?.contentOrNull) {
         "array" -> {
             val element = resolveType(schema.getValue("items").jsonObject)
             if (isNonEmptyList(schema)) nonEmptyList.parameterizedBy(element) else LIST.parameterizedBy(element)
@@ -254,16 +265,27 @@ private fun resolveType(schema: JsonObject): TypeName {
     }
 }
 
-private fun isScalar(schema: JsonObject): Boolean =
-    schema["type"]?.jsonPrimitive?.contentOrNull in setOf("number", "integer", "string", "boolean")
+private fun isScalar(schema: JsonObject): Boolean {
+    val type = schema["type"] ?: return false
+    val names = if (type is JsonArray) {
+        type.map { it.jsonPrimitive.content }
+    } else {
+        listOf(type.jsonPrimitive.content)
+    }
+    return names.any { it in setOf("number", "integer", "string", "boolean") }
+}
 
 /** The Kotlin primitive backing a scalar schema type. */
-private fun primitiveType(schema: JsonObject): TypeName = when (schema["type"]?.jsonPrimitive?.contentOrNull) {
+private fun primitiveType(schema: JsonObject): TypeName = primitiveTypeName(
+    schema["type"]?.jsonPrimitive?.contentOrNull ?: error("vg3 codegen: not a scalar: $schema"),
+)
+
+private fun primitiveTypeName(name: String): TypeName = when (name) {
     "number" -> DOUBLE
     "integer" -> INT
     "string" -> STRING
     "boolean" -> BOOLEAN
-    else -> error("vg3 codegen: not a scalar: $schema")
+    else -> error("vg3 codegen: not a scalar type: $name")
 }
 
 private fun literal(value: JsonPrimitive): String = when {

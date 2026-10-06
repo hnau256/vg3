@@ -77,6 +77,17 @@ pub enum BooleanKind {
     Common,
 }
 
+/// How offset shells are joined (mirrors `GeomAbs_JoinType`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum JoinKind {
+    #[default]
+    Arc,
+    Tangent,
+    Intersection,
+}
+
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -92,5 +103,16 @@ pub enum RadiusSpec {
     Selected {
         expression: String,
         radius: Scalar,
+    },
+}
+
+/// Which faces of a `thick_solid` are removed (opened).
+#[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum FaceSelection {
+    /// Faces for which the boolean Rhai predicate is true are removed.
+    Selected {
+        expression: String,
     },
 }

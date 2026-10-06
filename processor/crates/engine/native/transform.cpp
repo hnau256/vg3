@@ -8,9 +8,12 @@
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepOffsetAPI_MakeOffsetShape.hxx>
+#include <BRepOffsetAPI_MakeThickSolid.hxx>
+#include <BRepOffset_Mode.hxx>
 #include <BRep_Tool.hxx>
 #include <GeomAbs_JoinType.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopTools_ListOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Wire.hxx>
@@ -21,6 +24,7 @@
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
+#include <set>
 
 namespace vg3 {
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z) {
@@ -36,10 +40,19 @@ std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double 
     }
 }
 
-std::unique_ptr<Shape> offset(const Shape& shape, double distance) {
+std::unique_ptr<Shape> offset(const Shape& shape, double distance, std::uint8_t join) {
     try {
         BRepOffsetAPI_MakeOffsetShape maker;
-        maker.PerformByJoin(shape.topods(), distance, detail::kOffsetTolerance);
+        maker.PerformByJoin(
+            shape.topods(),
+            distance,
+            detail::kOffsetTolerance,
+            BRepOffset_Skin,
+            Standard_False,
+            Standard_False,
+            detail::join_type(join),
+            Standard_False
+        );
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakeOffsetShape did not complete");
         }
@@ -51,14 +64,14 @@ std::unique_ptr<Shape> offset(const Shape& shape, double distance) {
     }
 }
 
-std::unique_ptr<Shape> offset2d(const Shape& profile, double distance) {
+std::unique_ptr<Shape> offset2d(const Shape& profile, double distance, std::uint8_t join) {
     try {
         const TopoDS_Face face = TopoDS::Face(profile.topods());
 
         // Offset the whole face (not just the outer wire): holes are offset in the right direction
         // and preserved. The result is a compound of wires; rebuild the face from all of them —
         // OCCT classifies the outer boundary and the holes itself.
-        BRepOffsetAPI_MakeOffset maker(face, GeomAbs_Arc, Standard_False);
+        BRepOffsetAPI_MakeOffset maker(face, detail::join_type(join), Standard_False);
         maker.Perform(distance);
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakeOffset did not complete");
@@ -72,6 +85,47 @@ std::unique_ptr<Shape> offset2d(const Shape& profile, double distance) {
             throw std::runtime_error("cannot build a face from the offset contour");
         }
         const TopoDS_Shape result = make_face.Face();
+        detail::ensure_valid(result);
+        return std::make_unique<Shape>(result);
+    } catch (const Standard_Failure& failure) {
+        detail::rethrow_as_std_error(failure);
+    }
+}
+
+std::unique_ptr<Shape> thick_solid(
+    const Shape& shape,
+    rust::Slice<const std::uint32_t> faces,
+    double offset,
+    std::uint8_t join
+) {
+    try {
+        const std::set<std::size_t> selected(faces.begin(), faces.end());
+        TopTools_ListOfShape closing;
+        std::size_t index = 0;
+        for (TopExp_Explorer explorer(shape.topods(), TopAbs_FACE); explorer.More();
+             explorer.Next()) {
+            if (selected.count(index) != 0) {
+                closing.Append(explorer.Current());
+            }
+            ++index;
+        }
+
+        BRepOffsetAPI_MakeThickSolid maker;
+        maker.MakeThickSolidByJoin(
+            shape.topods(),
+            closing,
+            offset,
+            detail::kOffsetTolerance,
+            BRepOffset_Skin,
+            Standard_False,
+            Standard_False,
+            detail::join_type(join),
+            Standard_False
+        );
+        if (!maker.IsDone()) {
+            throw std::runtime_error("BRepOffsetAPI_MakeThickSolid did not complete");
+        }
+        const TopoDS_Shape result = maker.Shape();
         detail::ensure_valid(result);
         return std::make_unique<Shape>(result);
     } catch (const Standard_Failure& failure) {

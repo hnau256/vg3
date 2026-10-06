@@ -4,6 +4,7 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve2
+import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
@@ -105,3 +106,7 @@ fun Region.fillet2dSelected(expression: String, radius: Double): Region =
 
 /** Grow (positive [distance]) or shrink (negative) the region's contour (`BRepOffsetAPI_MakeOffset`). */
 fun Region.offset2d(distance: Double): Region = Region.Offset2d(target = this, distance = distance)
+
+/** As [offset2d], joining the offset contour with [join]. */
+fun Region.offset2d(distance: Double, join: JoinKind): Region =
+    Region.Offset2d(target = this, distance = distance, join = join)

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "bodies": [
+    {
+      "type": "box",
+      "width": 10,
+      "length": 10,
+      "height": 10
+    },
+    {
+      "type": "thick_solid",
+      "target": 0,
+      "offset": -1,
+      "faces": {
+        "type": "selected",
+        "expression": "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)"
+      }
+    }
+  ],
+  "export": [
+    {
+      "index": 1,
+      "name": "thick_solid"
+    }
+  ]
+}

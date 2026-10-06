@@ -4,6 +4,8 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.BooleanKind
+import org.hnau.ktcad.ir.FaceSelection
+import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.TransformOp
 
@@ -138,6 +140,28 @@ fun Solid.mirror(normal: Vec3, center: Vec3 = ORIGIN): Solid =
 
 /** Grow (positive [distance]) or shrink (negative) the solid by offsetting its shells. */
 fun Solid.offset(distance: Double): Solid = offset(distance = distance, target = this)
+
+/** As [offset], joining the offset shells with [join]. */
+fun Solid.offset(distance: Double, join: JoinKind): Solid =
+    offset(distance = distance, join = join, target = this)
+
+// --- Thick solid ------------------------------------------------------------
+
+/**
+ * Hollow [this] into a shell of wall thickness [offset] (negative = inward, as in OCCT), opening
+ * the faces selected by a boolean Rhai [expression] (variable `face`, plus `box` for the body's
+ * bounding box).
+ */
+fun Solid.thickSolid(offset: Double, expression: String): Solid =
+    thickSolid(offset = offset, faces = FaceSelection.Selected(expression = expression), target = this)
+
+/** As [thickSolid], joining the offset shells with [join]. */
+fun Solid.thickSolid(offset: Double, expression: String, join: JoinKind): Solid = thickSolid(
+    offset = offset,
+    faces = FaceSelection.Selected(expression = expression),
+    join = join,
+    target = this,
+)
 
 private val ORIGIN = Vec3(x = 0.0, y = 0.0, z = 0.0)
 private val AXIS_X = Vec3(x = 1.0, y = 0.0, z = 0.0)

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "bodies": [
+    { "type": "box", "width": 10, "length": 10, "height": 10 },
+    { "type": "offset", "target": 0, "distance": 1, "join": "intersection" }
+  ],
+  "export": [ { "index": 1, "name": "offset_intersection" } ]
+}
