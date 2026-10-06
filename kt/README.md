@@ -112,16 +112,16 @@ fun main() {
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
   `union`/`cut`/`intersect` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
-  `mirror(normal, center?)`, `scale(x, y)`, и `offset2d(distance)`. `fillet2d` скругляет углы:
-  `fillet2d(radius)`, `fillet2d(expression)` (Rhai, переменная `vertex`) или
-  `fillet2d(expression, radius)` (предикат отбора углов). Эскизы **не экспортируются** — только
-  служат профилем тел.
+  `mirror(normal, center?)`, `scale(x, y)`, и `offset2d(distance)`. Скругление углов (имя отражает
+  способ выбора радиуса): `fillet2dAll(radius)` (постоянный всем), `fillet2dExpression(expression)`
+  (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
+  отбора углов). Эскизы **не экспортируются** — только служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
   `Region.sweep(path, mode?)`, `NonEmptyList<Path>.loft(ruled?)`.
-- **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /
-  **`Solid.fillet(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`): постоянным
-  радиусом всем рёбрам, Rhai-выражением на ребро (число), либо булевым предикатом отбора рёбер
-  с постоянным радиусом.
+- **`Solid.filletAll(radius, kind = FILLET)`** / **`Solid.filletExpression(expression, kind = FILLET)`** /
+  **`Solid.filletSelected(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`),
+  имя отражает способ выбора рёбер: постоянный радиус всем, Rhai-выражение на ребро (число), либо
+  булев предикат отбора рёбер с постоянным радиусом.
 - **`polyhedron(faces)`** — многогранник из граней (`NonEmptyList<List<Vec3>>`); каждая грань — список
   точек по порядку (движку нужно ≥3), общие точки (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.

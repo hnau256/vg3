@@ -50,7 +50,7 @@ class ExportSmokeTest {
         output.delete()
 
         Vg3.export(
-            parts = listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2d(2.0).extrude(5.0))),
+            parts = listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2dAll(2.0).extrude(5.0))),
             format = Format.Stl(output = Output.Single(output.absolutePath)),
         )
 

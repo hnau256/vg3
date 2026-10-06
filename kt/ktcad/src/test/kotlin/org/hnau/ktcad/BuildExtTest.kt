@@ -42,11 +42,11 @@ class BuildExtTest {
     }
 
     @Test
-    fun fillet_with_constant_and_expression() {
+    fun fillet_all_and_expression() {
         val solid = box(10.0, 10.0, 10.0)
         assertEquals(
             fillet(kind = FilletKind.FILLET, radius = RadiusSpec.All(2.0), target = solid),
-            solid.fillet(2.0),
+            solid.filletAll(2.0),
         )
         assertEquals(
             fillet(
@@ -54,12 +54,12 @@ class BuildExtTest {
                 radius = RadiusSpec.Expression("1.0"),
                 target = solid,
             ),
-            solid.fillet("1.0", FilletKind.CHAMFER),
+            solid.filletExpression("1.0", FilletKind.CHAMFER),
         )
     }
 
     @Test
-    fun fillet_with_predicate_and_radius() {
+    fun fillet_selected_with_radius() {
         val solid = box(10.0, 10.0, 10.0)
         assertEquals(
             fillet(
@@ -67,7 +67,7 @@ class BuildExtTest {
                 radius = RadiusSpec.Selected(expression = "true", radius = 1.0),
                 target = solid,
             ),
-            solid.fillet("true", 1.0),
+            solid.filletSelected("true", 1.0),
         )
     }
 }

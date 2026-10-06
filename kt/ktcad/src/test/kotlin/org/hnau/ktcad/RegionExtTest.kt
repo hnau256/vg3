@@ -56,7 +56,7 @@ class RegionExtTest {
     @Test
     fun fillet2d_lowers_to_a_sketch_fillet() {
         val arena = Arena()
-        val index = arena.region(square.fillet2d(1.0))
+        val index = arena.region(square.fillet2dAll(1.0))
 
         assertEquals(2, arena.sketches.size)
         val fillet = arena.sketches[index.value] as Sketch.Fillet2d
@@ -66,8 +66,8 @@ class RegionExtTest {
 
     @Test
     fun fillet2d_expression_and_selection_lower_to_radius_specs() {
-        assertTrue(square.fillet2d("vertex.angle > 1.5") is Region.Fillet2d)
-        val selected = square.fillet2d("vertex.angle > 1.5", 2.0) as Region.Fillet2d
+        assertTrue(square.fillet2dExpression("vertex.angle > 1.5") is Region.Fillet2d)
+        val selected = square.fillet2dSelected("vertex.angle > 1.5", 2.0) as Region.Fillet2d
         assertEquals(
             RadiusSpec.Selected(expression = "vertex.angle > 1.5", radius = 2.0),
             selected.radius,

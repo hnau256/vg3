@@ -25,14 +25,14 @@ fun Region.sweep(path: Path, mode: SweepMode? = null): Solid =
 /** Loft through [this] sections (`size >= 2`); [ruled] switches from smooth to ruled surfaces. */
 fun NonEmptyList<Path>.loft(ruled: Boolean = false): Solid = loft(ruled = ruled, sections = this)
 
-/** Fillet every edge with a constant [radius] (or chamfer with `kind = CHAMFER`). */
-fun Solid.fillet(radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
+/** Fillet every edge with a constant [radius] (`RadiusSpec.All`; chamfer with `kind = CHAMFER`). */
+fun Solid.filletAll(radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
     fillet(kind = kind, radius = RadiusSpec.All(radius = radius), target = this)
 
-/** Fillet every edge with a per-edge Rhai [expression] (variable `edge`). */
-fun Solid.fillet(expression: String, kind: FilletKind = FilletKind.FILLET): Solid =
+/** Fillet every edge with a per-edge Rhai [expression] returning the radius (`RadiusSpec.Expression`). */
+fun Solid.filletExpression(expression: String, kind: FilletKind = FilletKind.FILLET): Solid =
     fillet(kind = kind, radius = RadiusSpec.Expression(expression = expression), target = this)
 
-/** Fillet only the edges selected by a boolean [expression], with a constant [radius]. */
-fun Solid.fillet(expression: String, radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
+/** Fillet only the edges selected by a boolean [expression], with a constant [radius] (`RadiusSpec.Selected`). */
+fun Solid.filletSelected(expression: String, radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =
     fillet(kind = kind, radius = RadiusSpec.Selected(expression = expression, radius = radius), target = this)

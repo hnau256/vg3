@@ -91,16 +91,16 @@ fun Region.scale(x: Double, y: Double): Region =
 
 // --- Fillet / offset --------------------------------------------------------
 
-/** Round every corner of the region with a constant [radius] (`BRepFilletAPI_MakeFillet2d`). */
-fun Region.fillet2d(radius: Double): Region =
+/** Round every corner of the region with a constant [radius] (`RadiusSpec.All`, `BRepFilletAPI_MakeFillet2d`). */
+fun Region.fillet2dAll(radius: Double): Region =
     Region.Fillet2d(target = this, radius = RadiusSpec.All(radius = radius))
 
-/** Round every corner with a per-corner Rhai [expression] (variable `vertex`, result: number). */
-fun Region.fillet2d(expression: String): Region =
+/** Round every corner with a per-corner Rhai [expression] returning the radius (`RadiusSpec.Expression`). */
+fun Region.fillet2dExpression(expression: String): Region =
     Region.Fillet2d(target = this, radius = RadiusSpec.Expression(expression = expression))
 
-/** Round only the corners selected by a boolean [expression] (variable `vertex`), with [radius]. */
-fun Region.fillet2d(expression: String, radius: Double): Region =
+/** Round only the corners selected by a boolean [expression] (variable `vertex`), with [radius] (`RadiusSpec.Selected`). */
+fun Region.fillet2dSelected(expression: String, radius: Double): Region =
     Region.Fillet2d(target = this, radius = RadiusSpec.Selected(expression = expression, radius = radius))
 
 /** Grow (positive [distance]) or shrink (negative) the region's contour (`BRepOffsetAPI_MakeOffset`). */
