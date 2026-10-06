@@ -1,10 +1,13 @@
 package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
+import org.hnau.ktcad.ir.Continuity
 import org.hnau.ktcad.ir.FilletKind
+import org.hnau.ktcad.ir.Parametrization
 import org.hnau.ktcad.ir.Path
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
+import org.hnau.ktcad.ir.TransitionKind
 
 /**
  * DSL sugar for turning planar regions into solids, and for `fillet`/`chamfer`.
@@ -18,12 +21,37 @@ fun Region.extrude(height: Double): Solid = extrude(height = height, profile = t
 /** Revolve a region around the Y axis by [angle] (radians); the region must stay on one side. */
 fun Region.revolve(angle: Double): Solid = revolve(angle = angle, profile = this)
 
-/** Sweep a region along [path]; [mode] defaults to the engine's `follow`. */
-fun Region.sweep(path: Path, mode: SweepMode? = null): Solid =
-    sweep(mode = mode, path = path, profile = this)
+/**
+ * Sweep a region along [path]; [mode] defaults to the engine's `follow`, [transition] to the
+ * right-corner join at spine fractures.
+ */
+fun Region.sweep(
+    path: Path,
+    mode: SweepMode? = null,
+    transition: TransitionKind? = null,
+): Solid = sweep(mode = mode, path = path, profile = this, transition = transition)
 
-/** Loft through [this] sections (`size >= 2`); [ruled] switches from smooth to ruled surfaces. */
-fun NonEmptyList<Path>.loft(ruled: Boolean = false): Solid = loft(ruled = ruled, sections = this)
+/**
+ * Loft through [this] sections (`size >= 2`). [ruled] switches from smooth to ruled surfaces; the
+ * rest tune the approximation (`smoothing`, `continuity`, `parametrization`, `maxDegree`,
+ * `checkCompatibility`).
+ */
+fun NonEmptyList<Path>.loft(
+    ruled: Boolean = false,
+    smoothing: Boolean = false,
+    continuity: Continuity? = null,
+    parametrization: Parametrization? = null,
+    maxDegree: Int? = null,
+    checkCompatibility: Boolean? = null,
+): Solid = loft(
+    ruled = ruled,
+    sections = this,
+    smoothing = smoothing,
+    continuity = continuity,
+    parametrization = parametrization,
+    max_degree = maxDegree,
+    check_compatibility = checkCompatibility,
+)
 
 /** Fillet every edge with a constant [radius] (`RadiusSpec.All`; chamfer with `kind = CHAMFER`). */
 fun Solid.filletAll(radius: Double, kind: FilletKind = FilletKind.FILLET): Solid =

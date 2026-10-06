@@ -1,4 +1,7 @@
-use vg3_model::{Angle, BooleanKind, Body, JoinKind, NonEmpty, SweepMode, TransformOp};
+use vg3_model::{
+    Angle, BooleanKind, Body, Continuity, JoinKind, NonEmpty, Parametrization, SweepMode,
+    TransformOp, TransitionKind,
+};
 
 use crate::engine::contour::build_path_wire;
 use crate::engine::fillet::evaluate_fillet;
@@ -19,6 +22,36 @@ pub(super) fn join_code(join: JoinKind) -> u8 {
         JoinKind::Arc => 0,
         JoinKind::Tangent => 1,
         JoinKind::Intersection => 2,
+    }
+}
+
+/// The native code of a sweep transition kind (`BRepBuilderAPI_TransitionMode`).
+fn transition_code(transition: TransitionKind) -> u8 {
+    match transition {
+        TransitionKind::RightCorner => 0,
+        TransitionKind::Transformed => 1,
+        TransitionKind::RoundCorner => 2,
+    }
+}
+
+/// The native code of an optional loft continuity (`0..3` = C0..C3; unset = `0xff`).
+fn continuity_code(continuity: Option<Continuity>) -> u8 {
+    match continuity {
+        None => 0xff,
+        Some(Continuity::C0) => 0,
+        Some(Continuity::C1) => 1,
+        Some(Continuity::C2) => 2,
+        Some(Continuity::C3) => 3,
+    }
+}
+
+/// The native code of an optional loft parametrization (`Approx_ParametrizationType`; unset = `0xff`).
+fn parametrization_code(parametrization: Option<Parametrization>) -> u8 {
+    match parametrization {
+        None => 0xff,
+        Some(Parametrization::ChordLength) => 0,
+        Some(Parametrization::Centripetal) => 1,
+        Some(Parametrization::IsoParametric) => 2,
     }
 }
 
@@ -128,17 +161,38 @@ impl Evaluate for Body<Part> {
                 profile,
                 path,
                 mode,
+                transition,
             } => {
                 let profile_face = regions[profile.value()].shape();
                 let spine = build_path_wire(&path, false)?;
                 let follow = matches!(mode, SweepMode::Follow);
-                make_part(ffi::sweep(profile_face, &spine, follow)?)
+                make_part(ffi::sweep(
+                    profile_face,
+                    &spine,
+                    follow,
+                    transition_code(transition),
+                )?)
             }
-            Body::Loft { sections, ruled } => {
+            Body::Loft {
+                sections,
+                ruled,
+                smoothing,
+                continuity,
+                parametrization,
+                max_degree,
+                check_compatibility,
+            } => {
                 if sections.len() < 2 {
                     return Err(Error::LoftNeedsTwoSections);
                 }
-                let mut builder = ffi::new_loft_builder(ruled);
+                let mut builder = ffi::new_loft_builder(
+                    ruled,
+                    smoothing,
+                    continuity_code(continuity),
+                    parametrization_code(parametrization),
+                    max_degree.map_or(0, |degree| degree as i32),
+                    check_compatibility.unwrap_or(true),
+                );
                 for section in sections.iter() {
                     let wire = build_path_wire(section, true)?;
                     builder.pin_mut().add(&wire)?;

@@ -388,3 +388,19 @@ fn offset_with_intersection_join_makes_sharp_corners() {
     assert_close(parts[0].volume(), 1728.0, 1e-3);
     assert_bounds(&parts[0], [-1.0, -1.0, -1.0, 11.0, 11.0, 11.0]);
 }
+
+#[test]
+fn round_corner_transition_rounds_the_sweep_bend() {
+    let parts = build("sweep_round.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    // A rounded corner removes a little material versus the right-corner join (volume 80).
+    let volume = parts[0].volume();
+    assert!(volume > 79.0 && volume < 80.0, "unexpected volume {volume}");
+}
+
+#[test]
+fn loft_settings_keep_the_frustum_volume() {
+    let parts = build("loft_smooth.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    assert_close(parts[0].volume(), 10.0 / 3.0 * 28.0, 1e-3);
+}

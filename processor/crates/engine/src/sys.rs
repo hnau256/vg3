@@ -85,11 +85,18 @@ pub(crate) mod ffi {
 
         fn revolve(profile: &Shape, angle: f64) -> Result<UniquePtr<Shape>>;
 
-        fn sweep(profile: &Shape, spine: &Shape, follow: bool) -> Result<UniquePtr<Shape>>;
+        fn sweep(profile: &Shape, spine: &Shape, follow: bool, transition: u8) -> Result<UniquePtr<Shape>>;
 
         type LoftBuilder;
 
-        fn new_loft_builder(ruled: bool) -> UniquePtr<LoftBuilder>;
+        fn new_loft_builder(
+            ruled: bool,
+            smoothing: bool,
+            continuity: u8,
+            parametrization: u8,
+            max_degree: i32,
+            check_compatibility: bool,
+        ) -> UniquePtr<LoftBuilder>;
 
         fn add(self: Pin<&mut LoftBuilder>, section: &Shape) -> Result<()>;
 

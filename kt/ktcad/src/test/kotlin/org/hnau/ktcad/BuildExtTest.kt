@@ -1,10 +1,12 @@
 package org.hnau.ktcad
 
 import arrow.core.toNonEmptyListOrThrow
+import org.hnau.ktcad.ir.Continuity
 import org.hnau.ktcad.ir.FilletKind
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
+import org.hnau.ktcad.ir.TransitionKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -56,6 +58,24 @@ class BuildExtTest {
             ),
             solid.filletExpression("1.0", FilletKind.CHAMFER),
         )
+    }
+
+    @Test
+    fun sweep_and_loft_settings_map_to_the_ir() {
+        val spine = Path(p(0.0, 0.0, 0.0), lineTo(0.0, 0.0, 10.0))
+        val square = polygon(Vec2(-1.0, -1.0), Vec2(1.0, -1.0), Vec2(1.0, 1.0))
+        val sweep = square.sweep(spine, transition = TransitionKind.ROUND_CORNER)
+        sweep as Solid.Sweep
+        assertEquals(TransitionKind.ROUND_CORNER, sweep.transition)
+
+        val sections = listOf(
+            Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0), lineTo(10.0, 10.0, 0.0)),
+            Path(p(0.0, 0.0, 10.0), lineTo(10.0, 0.0, 10.0), lineTo(10.0, 10.0, 10.0)),
+        )
+        val loft = sections.toNonEmptyListOrThrow().loft(continuity = Continuity.C2, maxDegree = 8)
+        loft as Solid.Loft
+        assertEquals(Continuity.C2, loft.continuity)
+        assertEquals(8, loft.max_degree)
     }
 
     @Test

@@ -124,11 +124,23 @@ std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle);
 
-std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool follow);
+std::unique_ptr<Shape> sweep(
+    const Shape& profile,
+    const Shape& spine,
+    bool follow,
+    std::uint8_t transition
+);
 
 class LoftBuilder {
 public:
-    explicit LoftBuilder(bool ruled);
+    explicit LoftBuilder(
+        bool ruled,
+        bool smoothing,
+        std::uint8_t continuity,
+        std::uint8_t parametrization,
+        std::int32_t max_degree,
+        bool check_compatibility
+    );
 
     void add(const Shape& section);
 
@@ -138,7 +150,14 @@ private:
     BRepOffsetAPI_ThruSections thru_;
 };
 
-std::unique_ptr<LoftBuilder> new_loft_builder(bool ruled);
+std::unique_ptr<LoftBuilder> new_loft_builder(
+    bool ruled,
+    bool smoothing,
+    std::uint8_t continuity,
+    std::uint8_t parametrization,
+    std::int32_t max_degree,
+    bool check_compatibility
+);
 
 rust::Vec<double> triangulation(const Shape& shape, double tolerance);
 

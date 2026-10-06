@@ -3,7 +3,10 @@
 use serde::Deserialize;
 
 use crate::curve::Path;
-use crate::op::{BooleanKind, FaceSelection, FilletKind, JoinKind, RadiusSpec, SweepMode, TransformOp};
+use crate::op::{
+    BooleanKind, Continuity, FaceSelection, FilletKind, JoinKind, Parametrization, RadiusSpec,
+    SweepMode, TransformOp, TransitionKind,
+};
 use crate::value::{Angle, NonEmpty, Scalar, SketchIndex, Vec3};
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
@@ -63,11 +66,23 @@ pub enum Body<T> {
         path: Path,
         #[serde(default)]
         mode: SweepMode,
+        #[serde(default)]
+        transition: TransitionKind,
     },
     Loft {
         sections: NonEmpty<Path>,
         #[serde(default)]
         ruled: bool,
+        #[serde(default)]
+        smoothing: bool,
+        #[serde(default)]
+        continuity: Option<Continuity>,
+        #[serde(default)]
+        parametrization: Option<Parametrization>,
+        #[serde(default)]
+        max_degree: Option<u32>,
+        #[serde(default)]
+        check_compatibility: Option<bool>,
     },
     Bool {
         kind: BooleanKind,
@@ -209,14 +224,29 @@ impl<T: Clone> Body<T> {
                 profile,
                 path,
                 mode,
+                transition,
             } => Body::Sweep {
                 profile: profile.clone(),
                 path: path.clone(),
                 mode: *mode,
+                transition: *transition,
             },
-            Body::Loft { sections, ruled } => Body::Loft {
+            Body::Loft {
+                sections,
+                ruled,
+                smoothing,
+                continuity,
+                parametrization,
+                max_degree,
+                check_compatibility,
+            } => Body::Loft {
                 sections: sections.clone(),
                 ruled: *ruled,
+                smoothing: *smoothing,
+                continuity: *continuity,
+                parametrization: *parametrization,
+                max_degree: *max_degree,
+                check_compatibility: *check_compatibility,
             },
             Body::Bool {
                 kind,

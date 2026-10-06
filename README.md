@@ -253,14 +253,20 @@ halfspace                           // бесконечный solid z ≤ 0; и�
 ```jsonc
 extrude(profile, height)            // profile: SketchIndex; из XY вдоль +Z; height > 0
 revolve(profile, angle)             // profile: SketchIndex; вокруг оси Y; профиль по одну сторону
-sweep(profile, path, mode)          // profile: SketchIndex; mode: "follow" (default) | "rigid"
-loft(sections, ruled)               // sections: [Path...]; default ruled false; секций ≥ 2
+sweep(profile, path, mode, transition?)   // profile: SketchIndex; mode: "follow" (default) | "rigid"
+loft(sections, ruled?, smoothing?, continuity?, parametrization?, max_degree?, check_compatibility?)
+                                    // sections: [Path...]; секций ≥ 2
 ```
 
 - `revolve`: профиль не пересекает ось Y, иначе ошибка.
 - `sweep`: профиль ставится в начало спины перпендикулярно касательной; `follow` — поворот по спине
   (Frenet), `rigid` — жёсткий перенос. Вдоль `helix` это даёт резьбу.
-- `loft`: секции авто-замыкаются; проверяется совместимость (число/порядок рёбер).
+  `transition` — стык труб на изломах спины: `right_corner` (default, в стык), `round_corner`
+  (скругление), `transformed` (может дать самопересекающуюся оболочку — тогда ошибка).
+- `loft`: секции авто-замыкаются. `ruled` — линейчатые поверхности между секциями (иначе сглаженные);
+  `smoothing` — вариационное сглаживание; `continuity` (`c0|c1|c2|c3`); `parametrization`
+  (`chord_length|centripetal|iso_parametric`); `max_degree` — макс. степень поверхности;
+  `check_compatibility` (default true) — авто-ориентация секций против «перекрута».
 
 **Булевы** — один узел на все три операции (`BRepAlgoAPI_BooleanOperation`): `kind` плюс две группы операндов `arguments` (Objects) и `tools` (Tools), которые OCCT объединяет/вычитает/пересекает одним вызовом (обе группы должны быть непустыми):
 
@@ -404,6 +410,8 @@ IO не регистрируется. Тернарного `? :` нет — `if 
 - **Thick solid**: полая оболочка с открытыми гранями (`BRepOffsetAPI_MakeThickSolid`), грани
   выбираются Rhai-выражением, сшивание `join`.
 - **Сегменты примитивов**: необязательный `angle` у `sphere`/`cylinder`/`cone`/`torus`.
+- **Sweep transition** (`right_corner`/`round_corner`/`transformed`) и настройки loft
+  (`smoothing`/`continuity`/`parametrization`/`max_degree`/`check_compatibility`).
 - **Кривые**: `line`, `arc`, `spline`, `helix`.
 - **Экспорт**: STL (бинарный), STEP (AP214, один файл, с именами и цветами частей), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
 

@@ -101,7 +101,12 @@ std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
     }
 }
 
-std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool follow) {
+std::unique_ptr<Shape> sweep(
+    const Shape& profile,
+    const Shape& spine,
+    bool follow,
+    std::uint8_t transition
+) {
     try {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
 
@@ -152,8 +157,11 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
         } else {
             pipe.SetMode(gp_Ax2(start_point, tangent));
         }
-        pipe.SetTransitionMode(BRepBuilderAPI_RightCorner);
-        pipe.Add(placed_profile, Standard_False, Standard_False);
+        // Round-corner transitions require a section strictly orthogonal to the spine
+        // (`WithCorrection = true`); the other modes keep the section as placed.
+        const bool round_corner = transition == 2;
+        pipe.SetTransitionMode(detail::transition_mode(transition));
+        pipe.Add(placed_profile, Standard_False, round_corner ? Standard_True : Standard_False);
         pipe.Build();
         if (!pipe.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakePipeShell did not complete");
@@ -167,7 +175,28 @@ std::unique_ptr<Shape> sweep(const Shape& profile, const Shape& spine, bool foll
     }
 }
 
-LoftBuilder::LoftBuilder(bool ruled) : thru_(Standard_True, ruled) {}
+LoftBuilder::LoftBuilder(
+    bool ruled,
+    bool smoothing,
+    std::uint8_t continuity,
+    std::uint8_t parametrization,
+    std::int32_t max_degree,
+    bool check_compatibility
+) : thru_(Standard_True, ruled) {
+    thru_.CheckCompatibility(check_compatibility);
+    if (smoothing) {
+        thru_.SetSmoothing(Standard_True);
+    }
+    if (continuity != detail::kUnset) {
+        thru_.SetContinuity(detail::continuity_shape(continuity));
+    }
+    if (parametrization != detail::kUnset) {
+        thru_.SetParType(detail::parametrization_type(parametrization));
+    }
+    if (max_degree > 0) {
+        thru_.SetMaxDegree(max_degree);
+    }
+}
 
 void LoftBuilder::add(const Shape& section) {
     thru_.AddWire(TopoDS::Wire(section.topods()));
@@ -187,7 +216,21 @@ std::unique_ptr<Shape> LoftBuilder::finish() {
     }
 }
 
-std::unique_ptr<LoftBuilder> new_loft_builder(bool ruled) {
-    return std::make_unique<LoftBuilder>(ruled);
+std::unique_ptr<LoftBuilder> new_loft_builder(
+    bool ruled,
+    bool smoothing,
+    std::uint8_t continuity,
+    std::uint8_t parametrization,
+    std::int32_t max_degree,
+    bool check_compatibility
+) {
+    return std::make_unique<LoftBuilder>(
+        ruled,
+        smoothing,
+        continuity,
+        parametrization,
+        max_degree,
+        check_compatibility
+    );
 }
 }  // namespace vg3

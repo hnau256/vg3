@@ -5,7 +5,10 @@
 #include <cstddef>
 
 #include <Standard_Failure.hxx>
+#include <Approx_ParametrizationType.hxx>
+#include <BRepBuilderAPI_TransitionMode.hxx>
 #include <GeomAbs_JoinType.hxx>
+#include <GeomAbs_Shape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
@@ -30,6 +33,49 @@ inline GeomAbs_JoinType join_type(std::uint8_t code) {
             return GeomAbs_Arc;
     }
 }
+
+/// Maps the IR transition kind (`0` = right corner, `1` = transformed, `2` = round) to
+/// `BRepBuilderAPI_TransitionMode`.
+inline BRepBuilderAPI_TransitionMode transition_mode(std::uint8_t code) {
+    switch (code) {
+        case 1:
+            return BRepBuilderAPI_Transformed;
+        case 2:
+            return BRepBuilderAPI_RoundCorner;
+        default:
+            return BRepBuilderAPI_RightCorner;
+    }
+}
+
+/// Maps the IR continuity (`0..3` = C0..C3) to `GeomAbs_Shape`.
+inline GeomAbs_Shape continuity_shape(std::uint8_t code) {
+    switch (code) {
+        case 0:
+            return GeomAbs_C0;
+        case 2:
+            return GeomAbs_C2;
+        case 3:
+            return GeomAbs_C3;
+        default:
+            return GeomAbs_C1;
+    }
+}
+
+/// Maps the IR parametrization (`0` = chord length, `1` = centripetal, `2` = iso) to
+/// `Approx_ParametrizationType`.
+inline Approx_ParametrizationType parametrization_type(std::uint8_t code) {
+    switch (code) {
+        case 1:
+            return Approx_Centripetal;
+        case 2:
+            return Approx_IsoParametric;
+        default:
+            return Approx_ChordLength;
+    }
+}
+
+/// The "not set" sentinel for an optional native code.
+constexpr std::uint8_t kUnset = 0xff;
 
 /// Translates an OCCT failure into the `std::runtime_error` the cxx bridge expects.
 [[noreturn]] void rethrow_as_std_error(const Standard_Failure& failure);

@@ -13,8 +13,8 @@ pub use curve::{Curve2, Curve3, Path};
 pub use error::{Error, Result};
 pub use model::{parse, Export, Model};
 pub use op::{
-    BooleanKind, FaceSelection, FilletKind, JoinKind, RadiusSpec, SweepMode, TransformOp,
-    TransformOp2,
+    BooleanKind, Continuity, FaceSelection, FilletKind, JoinKind, Parametrization, RadiusSpec,
+    SweepMode, TransformOp, TransformOp2, TransitionKind,
 };
 pub use sketch::Sketch;
 pub use value::{Angle, BodyIndex, Color, NonEmpty, Scalar, SketchIndex, Vec2, Vec3};

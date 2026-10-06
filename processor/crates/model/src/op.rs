@@ -88,6 +88,40 @@ pub enum JoinKind {
     Intersection,
 }
 
+/// How a sweep joins the pipe at fractures (corners) of the spine
+/// (mirrors `BRepBuilderAPI_TransitionMode`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum TransitionKind {
+    #[default]
+    RightCorner,
+    Transformed,
+    RoundCorner,
+}
+
+/// Continuity of a lofted surface (mirrors `GeomAbs_Shape`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum Continuity {
+    C0,
+    C1,
+    C2,
+    C3,
+}
+
+/// Parametrization of a lofted surface approximation
+/// (mirrors `Approx_ParametrizationType`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum Parametrization {
+    ChordLength,
+    Centripetal,
+    IsoParametric,
+}
+
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case")]

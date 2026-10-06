@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "polygon",
+      "points": [{ "x": -1, "y": -1 }, { "x": 1, "y": -1 }, { "x": 1, "y": 1 }, { "x": -1, "y": 1 }]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "sweep",
+      "mode": "follow",
+      "transition": "round_corner",
+      "profile": 0,
+      "path": {
+        "start": { "x": 0, "y": 0, "z": 0 },
+        "edges": [
+          { "type": "line", "to": { "x": 0, "y": 0, "z": 10 } },
+          { "type": "line", "to": { "x": 10, "y": 0, "z": 10 } }
+        ]
+      }
+    }
+  ],
+  "export": [ { "index": 0, "name": "sweep_round" } ]
+}
