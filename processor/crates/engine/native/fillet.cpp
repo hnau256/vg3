@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <BRepAdaptor_Curve.hxx>
@@ -24,6 +25,49 @@
 #include <gp_Vec.hxx>
 
 namespace vg3 {
+
+namespace {
+/// Adds a value to a fresh maker for every non-seam edge of `solid`, skipping non-positive values,
+/// and builds the result (or returns `solid` unchanged when nothing was added).
+template <typename Maker>
+TopoDS_Shape fillet_solid(
+    const TopoDS_Shape& solid,
+    const TopTools_IndexedDataMapOfShapeListOfShape& edge_faces,
+    rust::Slice<const double> values,
+    std::size_t& global,
+    std::size_t& added_total,
+    const char* maker_name,
+    const char* value_name
+) {
+    Maker make(solid);
+    std::size_t added = 0;
+    for (TopExp_Explorer edges(solid, TopAbs_EDGE); edges.More(); edges.Next()) {
+        const TopoDS_Edge edge = TopoDS::Edge(edges.Current());
+        if (detail::is_seam_edge(edge, edge_faces)) {
+            continue;
+        }
+        if (global >= values.size()) {
+            throw std::runtime_error(std::string(value_name) + " value array is too short");
+        }
+        const double value = values[global];
+        ++global;
+        if (value > 0.0) {
+            make.Add(value, edge);
+            ++added;
+        }
+    }
+    added_total += added;
+    if (added == 0) {
+        return solid;
+    }
+    make.Build();
+    if (!make.IsDone()) {
+        throw std::runtime_error(std::string(maker_name) + " did not complete");
+    }
+    return make.Shape();
+}
+}  // namespace
+
 std::unique_ptr<Shape> fillet(
     const Shape& shape,
     std::uint8_t kind,
@@ -41,65 +85,14 @@ std::unique_ptr<Shape> fillet(
             const TopoDS_Shape solid = solids.Current();
             TopTools_IndexedDataMapOfShapeListOfShape edge_faces;
             TopExp::MapShapesAndAncestors(solid, TopAbs_EDGE, TopAbs_FACE, edge_faces);
-            std::size_t added = 0;
-            TopoDS_Shape result;
-
-            if (kind == 0) {
-                BRepFilletAPI_MakeFillet make(solid);
-                for (TopExp_Explorer edges(solid, TopAbs_EDGE); edges.More(); edges.Next()) {
-                    const TopoDS_Edge edge = TopoDS::Edge(edges.Current());
-                    if (detail::is_seam_edge(edge, edge_faces)) {
-                        continue;
-                    }
-                    if (global >= values.size()) {
-                        throw std::runtime_error("fillet value array is too short");
-                    }
-                    const double value = values[global];
-                    ++global;
-                    if (value > 0.0) {
-                        make.Add(value, edge);
-                        ++added;
-                    }
-                }
-                if (added > 0) {
-                    make.Build();
-                    if (!make.IsDone()) {
-                        throw std::runtime_error("BRepFilletAPI_MakeFillet did not complete");
-                    }
-                    result = make.Shape();
-                } else {
-                    result = solid;
-                }
-            } else {
-                BRepFilletAPI_MakeChamfer make(solid);
-                for (TopExp_Explorer edges(solid, TopAbs_EDGE); edges.More(); edges.Next()) {
-                    const TopoDS_Edge edge = TopoDS::Edge(edges.Current());
-                    if (detail::is_seam_edge(edge, edge_faces)) {
-                        continue;
-                    }
-                    if (global >= values.size()) {
-                        throw std::runtime_error("chamfer value array is too short");
-                    }
-                    const double value = values[global];
-                    ++global;
-                    if (value > 0.0) {
-                        make.Add(value, edge);
-                        ++added;
-                    }
-                }
-                if (added > 0) {
-                    make.Build();
-                    if (!make.IsDone()) {
-                        throw std::runtime_error("BRepFilletAPI_MakeChamfer did not complete");
-                    }
-                    result = make.Shape();
-                } else {
-                    result = solid;
-                }
-            }
-
+            const TopoDS_Shape result = kind == 0
+                ? fillet_solid<BRepFilletAPI_MakeFillet>(
+                      solid, edge_faces, values, global, added_total,
+                      "BRepFilletAPI_MakeFillet", "fillet")
+                : fillet_solid<BRepFilletAPI_MakeChamfer>(
+                      solid, edge_faces, values, global, added_total,
+                      "BRepFilletAPI_MakeChamfer", "chamfer");
             builder.Add(compound, result);
-            added_total += added;
         }
 
         if (added_total == 0) {
