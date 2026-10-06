@@ -26,12 +26,6 @@ class CurveExtTest {
     }
 
     @Test
-    fun contour_accepts_a_non_empty_list_constructor() {
-        val region = contour(start = p(0.0, 0.0), edges = nonEmptyListOf(Curve2.Line(p(1.0, 0.0)))) as Region.Contour
-        assertEquals(listOf(Curve2.Line(Vec2(1.0, 0.0))), region.edges.toList())
-    }
-
-    @Test
     fun path_builds_from_segments() {
         val path = Path(p(0.0, 0.0, 0.0), lineTo(1.0, 2.0, 3.0))
         assertEquals(listOf(Curve3.Line(Vec3(1.0, 2.0, 3.0))), path.edges.toList())

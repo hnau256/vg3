@@ -3,7 +3,6 @@ package org.hnau.ktcad
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.BooleanKind
-import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp2
@@ -47,12 +46,6 @@ fun circle(radius: Double): Region = Region.Circle(radius = radius)
 
 fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Region =
     Region.Polygon(points = nonEmptyListOf(first, second, *tail))
-
-fun contour(start: Vec2, edges: NonEmptyList<Curve2>): Region =
-    Region.Contour(start = start, edges = edges)
-
-fun contour(start: Vec2, initial: Curve2, vararg additional: Curve2): Region =
-    contour(start, nonEmptyListOf(initial, *additional))
 
 // --- Booleans ---------------------------------------------------------------
 
