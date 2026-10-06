@@ -80,4 +80,10 @@ double volume(const Shape& shape) {
     BRepGProp::VolumeProperties(shape.topods(), properties);
     return properties.Mass();
 }
+
+double surface_area(const Shape& shape) {
+    GProp_GProps properties;
+    BRepGProp::SurfaceProperties(shape.topods(), properties);
+    return properties.Mass();
+}
 }  // namespace vg3

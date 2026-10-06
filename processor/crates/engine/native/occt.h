@@ -174,6 +174,7 @@ rust::Vec<double> triangulation(const Shape& shape, double tolerance);
 rust::Vec<double> bounding_box(const Shape& shape);
 
 double volume(const Shape& shape);
+double surface_area(const Shape& shape);
 
 std::size_t solid_edge_count(const Shape& shape, std::size_t solid_index);
 
@@ -256,6 +257,8 @@ bool is_solids_only(const Shape& shape);
 std::size_t solid_count(const Shape& shape);
 
 std::size_t face_count(const Shape& shape);
+
+std::size_t edge_count(const Shape& shape);
 
 rust::Vec<double> face_data(const Shape& shape, std::size_t index);
 

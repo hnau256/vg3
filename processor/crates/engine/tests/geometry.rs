@@ -404,3 +404,32 @@ fn loft_settings_keep_the_frustum_volume() {
     assert_eq!(parts[0].solid_count(), 1);
     assert_close(parts[0].volume(), 10.0 / 3.0 * 28.0, 1e-3);
 }
+
+#[test]
+fn json_export_reports_body_metadata() {
+    let path = std::env::temp_dir().join("vg3-json-report.json");
+    let _ = std::fs::remove_file(&path);
+    let config = vg3_engine::ExportConfig::from_json(&format!(
+        r#"{{ "format": "json", "filename": "{}" }}"#,
+        path.display()
+    ))
+    .expect("json config parses");
+
+    let outputs = build_outputs("box.json");
+    config.export(&outputs).expect("json export succeeds");
+
+    let text = std::fs::read_to_string(&path).expect("report is written");
+    let report: serde_json::Value = serde_json::from_str(&text).expect("report is valid json");
+    let body = &report["bodies"][0];
+    assert_eq!(body["name"], "box");
+    assert_eq!(body["solids"], 1);
+    assert_eq!(body["faces"], 6);
+    assert_eq!(body["edges"], 12);
+    assert!((body["volume"].as_f64().expect("volume") - 2000.0).abs() < 1e-6);
+    assert!(body["color"].is_null(), "no color in the box fixture");
+    let min_x = body["bounds"]["min"]["x"].as_f64().expect("min x");
+    assert!(min_x.abs() < 1e-6, "min x ~ 0, got {min_x}");
+    let max_z = body["bounds"]["max"]["z"].as_f64().expect("max z");
+    assert!((max_z - 5.0).abs() < 1e-6, "max z ~ 5, got {max_z}");
+    let _ = std::fs::remove_file(&path);
+}

@@ -33,4 +33,12 @@ class FormatSerializationTest {
         val expected = Json.parseToJsonElement("""{ "format": "step", "filename": "out.step" }""")
         assertEquals(expected, actual)
     }
+
+    @Test
+    fun json_report_is_a_single_file_without_layout() {
+        val format = Format.Json(filename = "report.json")
+        val actual = Json.parseToJsonElement(format.toJson())
+        val expected = Json.parseToJsonElement("""{ "format": "json", "filename": "report.json" }""")
+        assertEquals(expected, actual)
+    }
 }

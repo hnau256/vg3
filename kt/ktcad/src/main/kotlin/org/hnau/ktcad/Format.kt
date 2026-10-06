@@ -37,6 +37,13 @@ sealed interface Format {
     data class Step(
         val filename: String,
     ) : Format
+
+    /** A metadata report (name, color, bounds, volume/area, topology counts) as a single JSON file. */
+    @SerialName("json")
+    @Serializable
+    data class Json(
+        val filename: String,
+    ) : Format
 }
 
 /** How an exporter lays its results out on disk (`single` or `multi`). */

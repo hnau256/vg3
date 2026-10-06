@@ -10,8 +10,10 @@
 #include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopAbs.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <gp_Dir.hxx>
@@ -39,6 +41,12 @@ std::size_t face_count(const Shape& shape) {
         ++count;
     }
     return count;
+}
+
+std::size_t edge_count(const Shape& shape) {
+    TopTools_IndexedMapOfShape edges;
+    TopExp::MapShapes(shape.topods(), TopAbs_EDGE, edges);
+    return edges.Extent();
 }
 
 rust::Vec<double> face_data(const Shape& shape, std::size_t index) {

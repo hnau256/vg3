@@ -121,6 +121,8 @@ pub(crate) mod ffi {
 
         fn volume(shape: &Shape) -> f64;
 
+        fn surface_area(shape: &Shape) -> f64;
+
         fn solid_edge_count(shape: &Shape, solid_index: usize) -> usize;
 
         fn solid_edge_data(shape: &Shape, solid_index: usize, edge_index: usize) -> Vec<f64>;
@@ -181,6 +183,8 @@ pub(crate) mod ffi {
         fn solid_count(shape: &Shape) -> usize;
 
         fn face_count(shape: &Shape) -> usize;
+
+        fn edge_count(shape: &Shape) -> usize;
 
         fn face_data(shape: &Shape, index: usize) -> Vec<f64>;
 

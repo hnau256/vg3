@@ -87,4 +87,18 @@ class ExportSmokeTest {
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
+
+    @Test
+    fun json_report_exports() {
+        val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-report.json")
+        output.delete()
+
+        Vg3.export(
+            parts = listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0))),
+            format = Format.Json(filename = output.absolutePath),
+        )
+
+        assertTrue(output.exists() && output.length() > 0, "report must be written: ${output.absolutePath}")
+        assertTrue(output.readText().contains("\"name\": \"box\""), "report names the body")
+    }
 }

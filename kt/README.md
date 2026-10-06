@@ -133,7 +133,9 @@ fun main() {
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?)`** /
-  **`Format.Step(filename)`** (STEP всегда один файл, без `output`).
+  **`Format.Step(filename)`** (STEP всегда один файл, без `output`) /
+  **`Format.Json(filename)`** (отчёт-метаданные о телах: имя, цвет, bbox, объём/площадь, число
+  solid/face/edge; всегда один файл).
 - **`Output.Single(filename)`** / **`Output.Multi(path)`** — раскладка вывода для STL/PNG.
 
 ## Как это устроено

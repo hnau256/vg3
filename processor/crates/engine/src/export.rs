@@ -99,6 +99,10 @@ pub enum ExportConfig {
     Step {
         filename: PathBuf,
     },
+    /// A metadata report (name, color, bounds, volume/area, topology counts) as a single JSON file.
+    Json {
+        filename: PathBuf,
+    },
 }
 
 impl ExportConfig {
@@ -131,6 +135,7 @@ impl ExportConfig {
                 },
             ),
             ExportConfig::Step { filename } => export_step(outputs, filename),
+            ExportConfig::Json { filename } => export_json(outputs, filename),
         }
     }
 }
@@ -165,6 +170,85 @@ fn export_step(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
     }
     builder.pin_mut().write(path)?;
     Ok(())
+}
+
+/// The `json` report: metadata for every exported body.
+#[derive(serde::Serialize)]
+struct ModelReport {
+    version: u32,
+    bodies: Vec<BodyReport>,
+}
+
+#[derive(serde::Serialize)]
+struct BodyReport {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    color: Option<ColorReport>,
+    bounds: BoundsReport,
+    volume: f64,
+    area: f64,
+    solids: usize,
+    faces: usize,
+    edges: usize,
+}
+
+#[derive(serde::Serialize)]
+struct ColorReport {
+    r: f64,
+    g: f64,
+    b: f64,
+}
+
+#[derive(serde::Serialize)]
+struct PointReport {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+#[derive(serde::Serialize)]
+struct BoundsReport {
+    min: PointReport,
+    max: PointReport,
+}
+
+fn export_json(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
+    let report = ModelReport {
+        version: 1,
+        bodies: outputs.iter().map(body_report).collect(),
+    };
+    let json =
+        serde_json::to_string_pretty(&report).map_err(|error| Error::Export(error.to_string()))?;
+    std::fs::write(filename, json)?;
+    Ok(())
+}
+
+fn body_report(output: &Output) -> BodyReport {
+    let [min_x, min_y, min_z, max_x, max_y, max_z] = output.part.bounding_box();
+    BodyReport {
+        name: output.name.clone(),
+        color: output.color.map(|color| {
+            let [r, g, b] = color.components();
+            ColorReport { r, g, b }
+        }),
+        bounds: BoundsReport {
+            min: PointReport {
+                x: min_x,
+                y: min_y,
+                z: min_z,
+            },
+            max: PointReport {
+                x: max_x,
+                y: max_y,
+                z: max_z,
+            },
+        },
+        volume: output.part.volume(),
+        area: output.part.surface_area(),
+        solids: output.part.solid_count(),
+        faces: output.part.face_count(),
+        edges: output.part.edge_count(),
+    }
 }
 
 fn export_png(

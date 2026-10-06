@@ -1,6 +1,6 @@
 # vg3
 
-*vector graphics 3* — инструмент для генерации твёрдотельных 3D-моделей кодом и их экспорта в STL/STEP/PNG.
+*vector graphics 3* — инструмент для генерации твёрдотельных 3D-моделей кодом и их экспорта в STL/STEP/PNG и отчёта JSON.
 
 `vg3` — тонкая обёртка над [OpenCASCADE Technology (OCCT)](https://dev.opencascade.org/): модель
 описывается типизированным JSON (IR), лёгкий нативный движок строит OCCT-шейпы и экспортирует их.
@@ -31,14 +31,14 @@ Kotlin-фронтенд (типизированный DSL) ──serialize──
         └───────────────────────────────────────────────────────┘
                                                      │
                                                      ▼
-                                                STL / STEP / PNG
+                                                STL / STEP / PNG / JSON
 ```
 
 | Шаг | Сигнатура | Что делает |
 |---|---|---|
 | 1. parse | `vg3_model::parse(&str) -> Result<Model>` | JSON → доменное дерево; канонизация в типах |
 | 2. evaluate | `vg3_engine::evaluate(&Model, &mut Cache) -> Result<Vec<Output>>` | обход дерева, вызовы OCCT, построение шейпов |
-| 3. export | `ExportConfig::export(&[Output])` | STL / STEP / рендер PNG |
+| 3. export | `ExportConfig::export(&[Output])` | STL / STEP / рендер PNG / отчёт JSON |
 
 Поток **односторонний**: движок только читает IR и никогда не сериализует его обратно. Экспортируется
 то, что перечислено в `export` (в этом порядке). Экспортируемый узел может быть и промежуточным.
@@ -87,6 +87,7 @@ vg3 [--model-file <PATH> | --model-json <JSON>]
 { "format": "png",  "output": { "type": "single", "filename": "out.png" }, "size": 512, "azimuth": 35, "elevation": 25 }
 { "format": "png",  "output": { "type": "multi", "path": "out" } }
 { "format": "step", "filename": "out.step" }
+{ "format": "json", "filename": "report.json" }
 ```
 
 - `output` (STL/PNG): `single` — всё в один файл (`filename`); `multi` — по файлу на экспортируемую
@@ -98,6 +99,9 @@ vg3 [--model-file <PATH> | --model-json <JSON>]
 - `step`: **всегда один файл** (`filename`), без раскладки `output`; схема AP214 (`AUTOMOTIVE_DESIGN`).
   Каждая часть пишется отдельным изделием с **именем** и **цветом** из `export` (XCAF), поэтому
   предпросмотрщик показывает части разноцветными.
+- `json`: **всегда один файл** (`filename`) — **отчёт-метаданные** о телах (геометрия не пишется):
+  `{ "version": 1, "bodies": [ { "name", "color"?, "bounds": {min,max}, "volume", "area",
+  "solids", "faces", "edges" }, … ] }` (порядок — как в `export`; `color` опускается, если нет).
 
 В `single` несколько экспортируемых `Part` пишутся в **один** файл (общий `Compound` / одно
 изображение). Цвет учитывает PNG и STEP (имя и цвет изделия); STL его игнорирует.
@@ -413,7 +417,7 @@ IO не регистрируется. Тернарного `? :` нет — `if 
 - **Sweep transition** (`right_corner`/`round_corner`/`transformed`) и настройки loft
   (`smoothing`/`continuity`/`parametrization`/`max_degree`/`skip_compatibility`).
 - **Кривые**: `line`, `arc`, `spline`, `helix`.
-- **Экспорт**: STL (бинарный), STEP (AP214, один файл, с именами и цветами частей), PNG (собственный z-буфер-растеризатор без OpenGL — headless).
+- **Экспорт**: STL (бинарный), STEP (AP214, один файл, с именами и цветами частей), PNG (собственный z-буфер-растеризатор без OpenGL — headless), JSON (отчёт-метаданные о телах).
 
 Интеграционные проверки: бутылка из туториала OCCT (`bottle.json`), метрическая резьба
 (`thread.json` — `sweep` трапеции по `helix`), «золотые» тесты по геометрическим свойствам.
@@ -427,7 +431,7 @@ processor/            # самостоятельный Cargo workspace
   crates/
     cache/   vg3-cache   — кэш: Cache/Codec, Key, Noop/Memory/Disk. Зависит только от blake3.
     model/   vg3-model   — IR: Body/Model + parse + канонические типы. Зависит только от serde.
-    engine/  vg3-engine  — Body->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/STEP/PNG.
+    engine/  vg3-engine  — Body->Part (OCCT через cxx), BrepCodec, evaluate, экспорт STL/STEP/PNG/JSON.
                            Зависит от vg3-model и vg3-cache. Здесь же native/ и build.rs.
     cli/     vg3         — бинарь: аргументы, конфиги, сборка кэша. Зависит от всех трёх.
     schema/  vg3-schema  — генератор JSON Schema из vg3-model (бинарь, не входит в конвейер).

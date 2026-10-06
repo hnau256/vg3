@@ -35,6 +35,16 @@ impl Part {
         ffi::volume(self.shape())
     }
 
+    /// Total surface area of the shells.
+    pub fn surface_area(&self) -> f64 {
+        ffi::surface_area(self.shape())
+    }
+
+    /// Total number of edges across all solids.
+    pub fn edge_count(&self) -> usize {
+        ffi::edge_count(self.shape())
+    }
+
     pub fn bounding_box(&self) -> [f64; 6] {
         let values = ffi::bounding_box(self.shape());
         let mut bounds = [0.0; 6];
