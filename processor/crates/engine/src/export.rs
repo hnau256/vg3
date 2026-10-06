@@ -76,6 +76,42 @@ fn default_elevation() -> Scalar {
     Scalar::try_from(25.0).expect("25 is finite")
 }
 
+/// The PNG DEFLATE level (`0` = stored, `9` = best), canonicalized at deserialization.
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(try_from = "u8")]
+pub struct Compression(u8);
+
+impl Compression {
+    const DEFAULT: u8 = 6;
+
+    pub fn value(self) -> u32 {
+        self.0 as u32
+    }
+}
+
+impl Default for Compression {
+    fn default() -> Self {
+        Compression(Self::DEFAULT)
+    }
+}
+
+impl TryFrom<u8> for Compression {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self> {
+        if value > 9 {
+            return Err(Error::Export(format!(
+                "png compression must be 0..=9, got {value}"
+            )));
+        }
+        Ok(Compression(value))
+    }
+}
+
+fn default_compression() -> Compression {
+    Compression::default()
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "format", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ExportConfig {
@@ -94,6 +130,8 @@ pub enum ExportConfig {
         azimuth: Scalar,
         #[serde(default = "default_elevation")]
         elevation: Scalar,
+        #[serde(default = "default_compression")]
+        compression: Compression,
     },
     /// STEP is always a single file (no `output` layout).
     Step {
@@ -124,6 +162,7 @@ impl ExportConfig {
                 size,
                 azimuth,
                 elevation,
+                compression,
             } => export_png(
                 outputs,
                 output,
@@ -132,6 +171,7 @@ impl ExportConfig {
                     size: *size,
                     azimuth: azimuth.value(),
                     elevation: elevation.value(),
+                    compression: compression.value(),
                 },
             ),
             ExportConfig::Step { filename } => export_step(outputs, filename),

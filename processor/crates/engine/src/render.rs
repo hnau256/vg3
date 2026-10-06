@@ -1,4 +1,8 @@
+use std::io::Write;
 use std::path::Path;
+
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
 
 use crate::error::Result;
 
@@ -7,6 +11,8 @@ pub struct RenderOptions {
     pub size: u32,
     pub azimuth: f64,
     pub elevation: f64,
+    /// DEFLATE level for the PNG IDAT stream (`0` = stored, `9` = best).
+    pub compression: u32,
 }
 
 impl Default for RenderOptions {
@@ -15,6 +21,7 @@ impl Default for RenderOptions {
             size: 512,
             azimuth: 35.0,
             elevation: 25.0,
+            compression: 6,
         }
     }
 }
@@ -30,7 +37,7 @@ const DEFAULT_COLOR: [f64; 3] = [0.24, 0.51, 0.82];
 pub fn render_png(items: &[Item], path: &Path, options: &RenderOptions) -> Result<()> {
     let size = options.size.clamp(1, 4096);
     let pixels = rasterize(items, size, options.azimuth, options.elevation);
-    let bytes = encode_png(size, size, &pixels);
+    let bytes = encode_png(size, size, &pixels, options.compression);
     std::fs::write(path, bytes)?;
     Ok(())
 }
@@ -175,7 +182,7 @@ fn rasterize(items: &[Item], size: u32, azimuth: f64, elevation: f64) -> Vec<u8>
     pixels
 }
 
-fn encode_png(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
+fn encode_png(width: u32, height: u32, rgb: &[u8], compression: u32) -> Vec<u8> {
     let mut raw = Vec::with_capacity(((width * 3 + 1) as usize) * (height as usize));
     for y in 0..height {
         raw.push(0);
@@ -189,7 +196,7 @@ fn encode_png(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
     header.extend_from_slice(&height.to_be_bytes());
     header.extend_from_slice(&[8, 2, 0, 0, 0]);
     write_chunk(&mut output, b"IHDR", &header);
-    write_chunk(&mut output, b"IDAT", &zlib_stored(&raw));
+    write_chunk(&mut output, b"IDAT", &zlib_compress(&raw, compression));
     write_chunk(&mut output, b"IEND", &[]);
     output
 }
@@ -204,25 +211,15 @@ fn write_chunk(output: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
     output.extend_from_slice(&crc32(&crc_input).to_be_bytes());
 }
 
-fn zlib_stored(data: &[u8]) -> Vec<u8> {
-    let mut output = vec![0x78, 0x01];
-    let mut offset = 0;
-    loop {
-        let end = (offset + 65535).min(data.len());
-        let chunk = &data[offset..end];
-        let final_block = end == data.len();
-        output.push(if final_block { 0x01 } else { 0x00 });
-        let length = chunk.len() as u16;
-        output.extend_from_slice(&length.to_le_bytes());
-        output.extend_from_slice(&(!length).to_le_bytes());
-        output.extend_from_slice(chunk);
-        offset = end;
-        if final_block {
-            break;
-        }
-    }
-    output.extend_from_slice(&adler32(data).to_be_bytes());
-    output
+/// Wraps `data` in a zlib stream (DEFLATE + Adler-32) at the given level (`0..=9`).
+fn zlib_compress(data: &[u8], level: u32) -> Vec<u8> {
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(level));
+    encoder
+        .write_all(data)
+        .expect("writing to an in-memory buffer cannot fail");
+    encoder
+        .finish()
+        .expect("flushing to an in-memory buffer cannot fail")
 }
 
 fn crc32(data: &[u8]) -> u32 {
@@ -235,14 +232,4 @@ fn crc32(data: &[u8]) -> u32 {
         }
     }
     !crc
-}
-
-fn adler32(data: &[u8]) -> u32 {
-    let mut a: u32 = 1;
-    let mut b: u32 = 0;
-    for &byte in data {
-        a = (a + byte as u32) % 65521;
-        b = (b + a) % 65521;
-    }
-    (b << 16) | a
 }

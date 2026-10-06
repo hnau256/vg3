@@ -130,12 +130,18 @@ fun main() {
   булев предикат отбора рёбер с постоянным радиусом.
 - **`polyhedron(faces)`** — многогранник из граней (`NonEmptyList<List<Vec3>>`); каждая грань — список
   точек по порядку (движку нужно ≥3), общие точки (по `equals`) схлопываются в один индекс автоматически.
-- **`Part(name, solid, color?)`** — запись списка `export` модели.
+- **`Part(name, solid, color?)`** — запись списка `export` модели. Если `color` не задан, он
+  выводится детерминированно из имени по палитре elementary OS (базовые «500»), так что предпросмотр
+  (PNG/STEP) всегда разноцветный; явный `color` побеждает.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
-- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?)`** /
+- **`Vg3.model(parts)`** / **`Vg3.json(parts)`** — тот же lowering и сериализация без запуска ядра:
+  каноническая IR-модель / её JSON (для инструментов вроде генератора документации).
+- **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?, compression?)`** /
   **`Format.Step(filename)`** (STEP всегда один файл, без `output`) /
   **`Format.Json(filename)`** (отчёт-метаданные о телах: имя, цвет, bbox, объём/площадь, число
   solid/face/edge; всегда один файл).
+- Уровень сжатия PNG — параметр `compression` у `Format.Png` (`0..=9`, по умолчанию `6`; `0` — без
+  сжатия).
 - **`Output.Single(filename)`** / **`Output.Multi(path)`** — раскладка вывода для STL/PNG.
 
 ## Как это устроено

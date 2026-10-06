@@ -29,6 +29,7 @@ sealed interface Format {
         val size: Int? = null,
         val azimuth: Double? = null,
         val elevation: Double? = null,
+        val compression: Int? = null,
     ) : Format
 
     /** STEP is always a single file (no `output` layout). */

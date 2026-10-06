@@ -37,6 +37,43 @@ fn export_config_renders_a_png() {
 }
 
 #[test]
+fn png_compression_shrinks_the_file() {
+    let outputs = build_outputs("box");
+    let directory = std::env::temp_dir();
+    let stored = directory.join("vg3_png_compression_0.png");
+    let packed = directory.join("vg3_png_compression_9.png");
+
+    for (level, path) in [(0, &stored), (9, &packed)] {
+        let config = vg3_engine::export::ExportConfig::from_json(&format!(
+            r#"{{ "format": "png", "size": 256, "compression": {level},
+                  "output": {{ "type": "single", "filename": {:?} }} }}"#,
+            path.to_str().unwrap()
+        ))
+        .expect("config parses");
+        config.export(&outputs).expect("renders");
+    }
+
+    let stored_bytes = std::fs::read(&stored).expect("stored image exists");
+    let packed_bytes = std::fs::read(&packed).expect("compressed image exists");
+    assert!(
+        packed_bytes.len() < stored_bytes.len(),
+        "compression 9 ({}) must be smaller than compression 0 ({})",
+        packed_bytes.len(),
+        stored_bytes.len()
+    );
+
+    let _ = std::fs::remove_file(&stored);
+    let _ = std::fs::remove_file(&packed);
+}
+
+#[test]
+fn png_compression_out_of_range_is_rejected() {
+    let source = r#"{ "format": "png", "compression": 10,
+                      "output": { "type": "single", "filename": "out.png" } }"#;
+    assert!(vg3_engine::export::ExportConfig::from_json(source).is_err());
+}
+
+#[test]
 fn export_config_rejects_unknown_parameters() {
     let source = r#"{ "format": "stl", "nonsense": 1,
                       "output": { "type": "single", "filename": "out.stl" } }"#;

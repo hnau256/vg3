@@ -27,6 +27,16 @@ class FormatSerializationTest {
     }
 
     @Test
+    fun png_compression_is_emitted_when_set() {
+        val format = Format.Png(output = Output.Single("out.png"), compression = 9)
+        val actual = Json.parseToJsonElement(format.toJson())
+        val expected = Json.parseToJsonElement(
+            """{ "format": "png", "output": { "type": "single", "filename": "out.png" }, "compression": 9 }""",
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
     fun step_is_a_single_file_without_layout() {
         val format = Format.Step(filename = "out.step")
         val actual = Json.parseToJsonElement(format.toJson())

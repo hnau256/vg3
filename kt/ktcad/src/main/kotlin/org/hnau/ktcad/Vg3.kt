@@ -30,25 +30,35 @@ object Vg3 {
         parts: List<Part>,
         format: Format,
     ) {
+        run(json(parts), format.toJson())
+    }
+
+    /**
+     * Lowers [parts] to the flat arenas and returns the canonical IR model.
+     *
+     * A part without an explicit [Part.color] gets a deterministic palette color derived from its
+     * name, so the JSON (and every exporter: PNG, STEP, the `json` report) always carries a color.
+     */
+    fun model(parts: List<Part>): Model {
         val arena = Arena()
         val exports = parts.map { part ->
             Export(
                 index = arena.body(part.solid),
                 name = part.name,
-                color = part.color,
+                color = part.color ?: paletteColor(part.name),
             )
         }
-        val modelJson = vg3Json.encodeToString(
-            Model.serializer(),
-            Model(
-                version = VERSION,
-                sketches = arena.sketches,
-                bodies = arena.bodies,
-                export = exports,
-            ),
+        return Model(
+            version = VERSION,
+            sketches = arena.sketches,
+            bodies = arena.bodies,
+            export = exports,
         )
-        run(modelJson, format.toJson())
     }
+
+    /** The canonical IR JSON for [parts] (the same bytes [export] hands to the engine). */
+    fun json(parts: List<Part>): String =
+        vg3Json.encodeToString(Model.serializer(), model(parts))
 
     private fun run(modelJson: String, exportConfigJson: String) {
         val command = listOf(

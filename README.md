@@ -84,7 +84,7 @@ vg3 [--model-file <PATH> | --model-json <JSON>]
 ```jsonc
 { "format": "stl",  "output": { "type": "single", "filename": "out.stl" }, "tolerance": 0.1 }
 { "format": "stl",  "output": { "type": "multi", "path": "out" } }
-{ "format": "png",  "output": { "type": "single", "filename": "out.png" }, "size": 512, "azimuth": 35, "elevation": 25 }
+{ "format": "png",  "output": { "type": "single", "filename": "out.png" }, "size": 512, "azimuth": 35, "elevation": 25, "compression": 6 }
 { "format": "png",  "output": { "type": "multi", "path": "out" } }
 { "format": "step", "filename": "out.step" }
 { "format": "json", "filename": "report.json" }
@@ -95,7 +95,8 @@ vg3 [--model-file <PATH> | --model-json <JSON>]
   повторяющееся имя — ошибка).
 - `stl`: `tolerance` (по умолчанию `0.1`) — линейная деформация триангуляции.
 - `png`: `tolerance` (по умолчанию `0.1`) — деформация триангуляции; `size` (512), `azimuth` (35),
-  `elevation` (25) — вид камеры.
+  `elevation` (25) — вид камеры; `compression` (`0..=9`, по умолчанию `6`) — уровень DEFLATE для PNG
+  (`0` — без сжатия).
 - `step`: **всегда один файл** (`filename`), без раскладки `output`; схема AP214 (`AUTOMOTIVE_DESIGN`).
   Каждая часть пишется отдельным изделием с **именем** и **цветом** из `export` (XCAF), поэтому
   предпросмотрщик показывает части разноцветными.
