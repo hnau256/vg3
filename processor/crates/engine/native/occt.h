@@ -90,18 +90,24 @@ rust::String occt_version();
 
 std::unique_ptr<Shape> make_box(double width, double length, double height);
 
-std::unique_ptr<Shape> make_sphere(double radius, double angle);
+std::unique_ptr<Shape> make_sphere(double radius, bool has_angle, double angle);
 
-std::unique_ptr<Shape> make_cylinder(double radius, double height, double angle);
+std::unique_ptr<Shape> make_cylinder(double radius, double height, bool has_angle, double angle);
 
 std::unique_ptr<Shape> make_cone(
     double radius_bottom,
     double radius_top,
     double height,
+    bool has_angle,
     double angle
 );
 
-std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius, double angle);
+std::unique_ptr<Shape> make_torus(
+    double major_radius,
+    double minor_radius,
+    bool has_angle,
+    double angle
+);
 
 std::unique_ptr<Shape> make_wedge(double width, double length, double height, double top_width);
 

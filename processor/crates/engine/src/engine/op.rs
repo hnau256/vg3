@@ -11,9 +11,9 @@ use crate::engine::sketch::Region;
 use crate::error::{Error, Result};
 use crate::sys::ffi;
 
-/// A primitive's optional wedge angle as the native sentinel (`<= 0` = the full primitive).
-pub(super) fn angle_value(angle: Option<Angle>) -> f64 {
-    angle.map_or(0.0, |angle| angle.value())
+/// A primitive's optional wedge angle as `(has_angle, angle)` for the native builders.
+fn wedge(angle: Option<Angle>) -> (bool, f64) {
+    angle.map_or((false, 0.0), |angle| (true, angle.value()))
 }
 
 /// The native code of a join kind (`GeomAbs_JoinType`).
@@ -80,37 +80,45 @@ impl Evaluate for Body<Part> {
                 height.value(),
             )?),
             Body::Sphere { radius, angle } => {
-                make_part(ffi::make_sphere(radius.value(), angle_value(angle))?)
+                let (has_angle, angle) = wedge(angle);
+                make_part(ffi::make_sphere(radius.value(), has_angle, angle)?)
             }
             Body::Cylinder {
                 radius,
                 height,
                 angle,
-            } => make_part(ffi::make_cylinder(
-                radius.value(),
-                height.value(),
-                angle_value(angle),
-            )?),
+            } => {
+                let (has_angle, angle) = wedge(angle);
+                make_part(ffi::make_cylinder(radius.value(), height.value(), has_angle, angle)?)
+            }
             Body::Cone {
                 radius_bottom,
                 radius_top,
                 height,
                 angle,
-            } => make_part(ffi::make_cone(
-                radius_bottom.value(),
-                radius_top.value(),
-                height.value(),
-                angle_value(angle),
-            )?),
+            } => {
+                let (has_angle, angle) = wedge(angle);
+                make_part(ffi::make_cone(
+                    radius_bottom.value(),
+                    radius_top.value(),
+                    height.value(),
+                    has_angle,
+                    angle,
+                )?)
+            }
             Body::Torus {
                 major_radius,
                 minor_radius,
                 angle,
-            } => make_part(ffi::make_torus(
-                major_radius.value(),
-                minor_radius.value(),
-                angle_value(angle),
-            )?),
+            } => {
+                let (has_angle, angle) = wedge(angle);
+                make_part(ffi::make_torus(
+                    major_radius.value(),
+                    minor_radius.value(),
+                    has_angle,
+                    angle,
+                )?)
+            }
             Body::Wedge {
                 width,
                 length,

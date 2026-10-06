@@ -34,10 +34,10 @@ std::unique_ptr<Shape> make_box(double width, double length, double height) {
     }
 }
 
-std::unique_ptr<Shape> make_sphere(double radius, double angle) {
+std::unique_ptr<Shape> make_sphere(double radius, bool has_angle, double angle) {
     try {
         TopoDS_Shape shape;
-        if (angle > 0.0) {
+        if (has_angle) {
             BRepPrimAPI_MakeSphere maker(radius, angle);
             shape = maker.Shape();
         } else {
@@ -51,10 +51,10 @@ std::unique_ptr<Shape> make_sphere(double radius, double angle) {
     }
 }
 
-std::unique_ptr<Shape> make_cylinder(double radius, double height, double angle) {
+std::unique_ptr<Shape> make_cylinder(double radius, double height, bool has_angle, double angle) {
     try {
         TopoDS_Shape shape;
-        if (angle > 0.0) {
+        if (has_angle) {
             BRepPrimAPI_MakeCylinder maker(radius, height, angle);
             shape = maker.Shape();
         } else {
@@ -72,11 +72,12 @@ std::unique_ptr<Shape> make_cone(
     double radius_bottom,
     double radius_top,
     double height,
+    bool has_angle,
     double angle
 ) {
     try {
         TopoDS_Shape shape;
-        if (angle > 0.0) {
+        if (has_angle) {
             BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height, angle);
             shape = maker.Shape();
         } else {
@@ -90,10 +91,15 @@ std::unique_ptr<Shape> make_cone(
     }
 }
 
-std::unique_ptr<Shape> make_torus(double major_radius, double minor_radius, double angle) {
+std::unique_ptr<Shape> make_torus(
+    double major_radius,
+    double minor_radius,
+    bool has_angle,
+    double angle
+) {
     try {
         TopoDS_Shape shape;
-        if (angle > 0.0) {
+        if (has_angle) {
             BRepPrimAPI_MakeTorus maker(major_radius, minor_radius, angle);
             shape = maker.Shape();
         } else {
