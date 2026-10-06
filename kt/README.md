@@ -99,7 +99,7 @@ fun main() {
   над `translate` (у `cylinder` X/Y уже центрированы, у `rect` есть только X/Y).
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
-  `common(parts)` — sugar над единым узлом `bool`.
+  `common(parts)` — sugar над единым узлом `bool`. `cut` требует непустой `tools: NonEmptyList<Solid>`.
 - **`offset(distance)`** — утолщение (положительное) / утоньшение (отрицательное) тела.
 - **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
@@ -117,13 +117,13 @@ fun main() {
   `fillet2d(expression, radius)` (предикат отбора углов). Эскизы **не экспортируются** — только
   служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
-  `Region.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
+  `Region.sweep(path, mode?)`, `NonEmptyList<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /
   **`Solid.fillet(expression, radius, kind = FILLET)`** — скругление (или `kind = CHAMFER`): постоянным
   радиусом всем рёбрам, Rhai-выражением на ребро (число), либо булевым предикатом отбора рёбер
   с постоянным радиусом.
-- **`polyhedron(faces)`** — многогранник из граней; каждая грань — список точек по порядку, общие точки
-  (по `equals`) схлопываются в один индекс автоматически.
+- **`polyhedron(faces)`** — многогранник из граней (`NonEmptyList<List<Vec3>>`); каждая грань — список
+  точек по порядку (движку нужно ≥3), общие точки (по `equals`) схлопываются в один индекс автоматически.
 - **`Part(name, solid, color?)`** — запись списка `export` модели.
 - **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?)`** /

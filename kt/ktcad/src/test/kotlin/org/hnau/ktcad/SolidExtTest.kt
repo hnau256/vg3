@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.TransformOp
 import kotlin.test.Test
@@ -13,7 +14,7 @@ class SolidExtTest {
     @Test
     fun operators_map_to_booleans() {
         assertEquals(fuse(listOf(a, b)), a + b)
-        assertEquals(cut(base = a, tools = listOf(b)), a - b)
+        assertEquals(cut(base = a, tools = nonEmptyListOf(b)), a - b)
         assertEquals(common(listOf(a, b)), a * b)
     }
 

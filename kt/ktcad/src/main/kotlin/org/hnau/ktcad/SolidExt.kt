@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.BooleanKind
@@ -45,20 +46,17 @@ fun common(parts: List<Solid>): Solid {
 }
 
 /** `base` minus every solid in [tools]. */
-fun cut(base: Solid, tools: List<Solid>): Solid {
-    require(tools.isNotEmpty()) { "cut needs at least one tool" }
-    return bool(
-        kind = BooleanKind.CUT,
-        arguments = nonEmptyListOf(base),
-        tools = tools.toNonEmptyListOrThrow(),
-    )
-}
+fun cut(base: Solid, tools: NonEmptyList<Solid>): Solid = bool(
+    kind = BooleanKind.CUT,
+    arguments = nonEmptyListOf(base),
+    tools = tools,
+)
 
 /** `fuse`: union of two solids. */
 operator fun Solid.plus(other: Solid): Solid = fuse(listOf(this, other))
 
 /** `cut`: [other] subtracted from this solid. */
-operator fun Solid.minus(other: Solid): Solid = cut(base = this, tools = listOf(other))
+operator fun Solid.minus(other: Solid): Solid = cut(base = this, tools = nonEmptyListOf(other))
 
 /** `common`: intersection of two solids. */
 operator fun Solid.times(other: Solid): Solid = common(listOf(this, other))

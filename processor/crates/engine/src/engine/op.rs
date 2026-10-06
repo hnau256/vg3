@@ -70,8 +70,8 @@ impl Evaluate for Body<Part> {
                 let mut indices: Vec<u32> = Vec::new();
                 let mut offsets: Vec<u32> = Vec::with_capacity(faces.len() + 1);
                 offsets.push(0);
-                for face in &faces {
-                    for &point in face {
+                for face in faces.iter() {
+                    for &point in face.iter() {
                         indices.push(point as u32);
                     }
                     offsets.push(indices.len() as u32);

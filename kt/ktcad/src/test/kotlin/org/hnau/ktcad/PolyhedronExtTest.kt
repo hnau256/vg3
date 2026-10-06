@@ -23,7 +23,7 @@ class PolyhedronExtTest {
 
         assertTrue(solid is Solid.Polyhedron)
         assertEquals(4, solid.points.size)
-        assertEquals(listOf(a, b, c, d), solid.points)
+        assertEquals(listOf(a, b, c, d), solid.points.toList())
         assertTrue(solid.faces.all { face -> face.all { it in 0..3 } })
         // The first face keeps the order (a, b, c) -> (0, 1, 2).
         assertEquals(listOf(0, 1, 2), solid.faces.first())

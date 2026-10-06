@@ -71,8 +71,8 @@ pub enum Body<T> {
         distance: Scalar,
     },
     Polyhedron {
-        points: Vec<Vec3>,
-        faces: Vec<Vec<usize>>,
+        points: NonEmpty<Vec3>,
+        faces: NonEmpty<Vec<usize>>,
     },
     Fillet {
         target: T,

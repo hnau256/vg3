@@ -169,8 +169,9 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 
 Списки, которые обязаны быть непустыми, типизированы как `NonEmpty<T>`: пустой массив отвергается **при
 десериализации**, а схема несёт `minItems: 1`. Так типизированы `Sketch.Contour.edges`, `Path.edges`,
-`Sketch.Polygon.points`, `Curve2/3.Spline.points`, `Loft.sections` и обе группы `bool`
-(`arguments`/`tools`).
+`Sketch.Polygon.points`, `Curve2/3.Spline.points`, `Loft.sections`, обе группы `bool`
+(`arguments`/`tools`), а также `Polyhedron.points` и внешний список `Polyhedron.faces` (сами грани —
+списки индексов).
 
 Сахар (`mirrorXY`, `rotateX`, `circle`, …) существует **только в DSL** и разворачивается в канонические
 формы; в JSON не встречается.
@@ -237,8 +238,8 @@ halfspace                           // бесконечный solid z ≤ 0; и�
 
 ```jsonc
 { "type": "polyhedron",
-  "points": [ { "x": …, "y": …, "z": … }, … ],
-  "faces":  [ [ i, j, k, … ], … ] }   // каждая грань — индексы точек (≥ 3), по порядку
+  "points": [ { "x": …, "y": …, "z": … }, … ],   // ≥ 1 точка
+  "faces":  [ [ i, j, k, … ], … ] }              // ≥ 1 грань; каждая — индексы точек (≥ 3), по порядку
 ```
 
 - `faces` ссылаются на позиции в `points`; грани замыкаются движком. Оболочка сшивается

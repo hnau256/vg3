@@ -38,7 +38,7 @@ class BuildExtTest {
             Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0), lineTo(10.0, 10.0, 0.0)),
             Path(p(0.0, 0.0, 10.0), lineTo(10.0, 0.0, 10.0), lineTo(10.0, 10.0, 10.0)),
         )
-        assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.loft(ruled = true))
+        assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.toNonEmptyListOrThrow().loft(ruled = true))
     }
 
     @Test
