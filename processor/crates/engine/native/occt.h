@@ -136,7 +136,9 @@ public:
     explicit LoftBuilder(
         bool ruled,
         bool smoothing,
+        bool has_continuity,
         std::uint8_t continuity,
+        bool has_parametrization,
         std::uint8_t parametrization,
         std::int32_t max_degree,
         bool check_compatibility
@@ -153,7 +155,9 @@ private:
 std::unique_ptr<LoftBuilder> new_loft_builder(
     bool ruled,
     bool smoothing,
+    bool has_continuity,
     std::uint8_t continuity,
+    bool has_parametrization,
     std::uint8_t parametrization,
     std::int32_t max_degree,
     bool check_compatibility

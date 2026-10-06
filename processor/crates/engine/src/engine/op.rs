@@ -43,24 +43,22 @@ fn transition_code(transition: TransitionKind) -> u8 {
     }
 }
 
-/// The native code of an optional loft continuity (`0..3` = C0..C3; unset = `0xff`).
-fn continuity_code(continuity: Option<Continuity>) -> u8 {
+/// The native code of a loft continuity (`0..3` = C0..C3).
+fn continuity_code(continuity: Continuity) -> u8 {
     match continuity {
-        None => 0xff,
-        Some(Continuity::C0) => 0,
-        Some(Continuity::C1) => 1,
-        Some(Continuity::C2) => 2,
-        Some(Continuity::C3) => 3,
+        Continuity::C0 => 0,
+        Continuity::C1 => 1,
+        Continuity::C2 => 2,
+        Continuity::C3 => 3,
     }
 }
 
-/// The native code of an optional loft parametrization (`Approx_ParametrizationType`; unset = `0xff`).
-fn parametrization_code(parametrization: Option<Parametrization>) -> u8 {
+/// The native code of a loft parametrization (`Approx_ParametrizationType`).
+fn parametrization_code(parametrization: Parametrization) -> u8 {
     match parametrization {
-        None => 0xff,
-        Some(Parametrization::ChordLength) => 0,
-        Some(Parametrization::Centripetal) => 1,
-        Some(Parametrization::IsoParametric) => 2,
+        Parametrization::ChordLength => 0,
+        Parametrization::Centripetal => 1,
+        Parametrization::IsoParametric => 2,
     }
 }
 
@@ -197,8 +195,10 @@ impl Evaluate for Body<Part> {
                 let mut builder = ffi::new_loft_builder(
                     ruled,
                     smoothing,
-                    continuity_code(continuity),
-                    parametrization_code(parametrization),
+                    continuity.is_some(),
+                    continuity.map_or(0, continuity_code),
+                    parametrization.is_some(),
+                    parametrization.map_or(0, parametrization_code),
                     max_degree.map_or(0, |degree| degree as i32),
                     !skip_compatibility,
                 );

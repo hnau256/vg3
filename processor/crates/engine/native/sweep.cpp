@@ -172,7 +172,9 @@ std::unique_ptr<Shape> sweep(
 LoftBuilder::LoftBuilder(
     bool ruled,
     bool smoothing,
+    bool has_continuity,
     std::uint8_t continuity,
+    bool has_parametrization,
     std::uint8_t parametrization,
     std::int32_t max_degree,
     bool check_compatibility
@@ -181,10 +183,10 @@ LoftBuilder::LoftBuilder(
     if (smoothing) {
         thru_.SetSmoothing(Standard_True);
     }
-    if (continuity != detail::kUnset) {
+    if (has_continuity) {
         thru_.SetContinuity(detail::continuity_shape(continuity));
     }
-    if (parametrization != detail::kUnset) {
+    if (has_parametrization) {
         thru_.SetParType(detail::parametrization_type(parametrization));
     }
     if (max_degree > 0) {
@@ -213,7 +215,9 @@ std::unique_ptr<Shape> LoftBuilder::finish() {
 std::unique_ptr<LoftBuilder> new_loft_builder(
     bool ruled,
     bool smoothing,
+    bool has_continuity,
     std::uint8_t continuity,
+    bool has_parametrization,
     std::uint8_t parametrization,
     std::int32_t max_degree,
     bool check_compatibility
@@ -221,7 +225,9 @@ std::unique_ptr<LoftBuilder> new_loft_builder(
     return std::make_unique<LoftBuilder>(
         ruled,
         smoothing,
+        has_continuity,
         continuity,
+        has_parametrization,
         parametrization,
         max_degree,
         check_compatibility

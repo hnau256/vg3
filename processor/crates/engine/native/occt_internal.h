@@ -74,9 +74,6 @@ inline Approx_ParametrizationType parametrization_type(std::uint8_t code) {
     }
 }
 
-/// The "not set" sentinel for an optional native code.
-constexpr std::uint8_t kUnset = 0xff;
-
 /// Translates an OCCT failure into the `std::runtime_error` the cxx bridge expects.
 [[noreturn]] void rethrow_as_std_error(const Standard_Failure& failure);
 

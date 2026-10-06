@@ -92,7 +92,9 @@ pub(crate) mod ffi {
         fn new_loft_builder(
             ruled: bool,
             smoothing: bool,
+            has_continuity: bool,
             continuity: u8,
+            has_parametrization: bool,
             parametrization: u8,
             max_degree: i32,
             check_compatibility: bool,
