@@ -102,7 +102,11 @@ pub(crate) mod ffi {
 
         fn fillet(shape: &Shape, kind: u8, values: &[f64]) -> Result<UniquePtr<Shape>>;
 
-        fn fillet2d(profile: &Shape, radius: f64) -> Result<UniquePtr<Shape>>;
+        fn fillet2d(profile: &Shape, values: &[f64]) -> Result<UniquePtr<Shape>>;
+
+        fn face_corner_count(face: &Shape) -> usize;
+
+        fn face_corner_data(face: &Shape, corner: usize) -> Vec<f64>;
 
         type BooleanBuilder;
 

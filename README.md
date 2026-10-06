@@ -202,7 +202,7 @@ polygon(points)                     // замкнутая ломаная по т
 contour(start, edges)               // свободный 2D-контур (Curve2); edges непусто (≥1)
 bool(kind, arguments, tools)        // булевы над эскизами (SketchIndex); как у тел
 transform(target, op)               // планарная трансформация (TransformOp2)
-fillet2d(target, radius)            // скругление всех углов (BRepFilletAPI_MakeFillet2d)
+fillet2d(target, radius)            // скругление углов; radius — как у fillet (RadiusSpec)
 offset2d(target, distance)          // рост (>0) / усадка (<0) контура (BRepOffsetAPI_MakeOffset)
 ```
 
@@ -212,7 +212,9 @@ offset2d(target, distance)          // рост (>0) / усадка (<0) кон�
   эллипс при необходимости — так же через `gp_Elips`.
 - `TransformOp2`: `translate(Vec2)`, `rotate(center: Vec2, angle)`, `mirror(center: Vec2, normal: Vec2)`,
   `scale(value: Vec2)`. (2D-трансформации отдельны от 3D: нет оси/`z`/матрицы.)
-- `fillet2d` скругляет **все** углы (вершины, где сходятся ≥2 ребра).
+- `fillet2d` скругляет углы (вершины, где сходятся ≥2 ребра) и берёт `radius` той же формы, что и
+  `fillet`: `all` (постоянный), `selected` (булев предикат) или `expression` (радиус по углу). В
+  выражениях оцениваемый элемент — `vertex` (см. ниже); `≤ 0` → угол пропускается.
 - `offset2d` смещает **весь контур** (внешний + отверстия) в правильном направлении: у кольца
   внешний контур растёт, а отверстие сжимается (при `|distance|` меньше радиуса отверстия кольцо
   остаётся кольцом). Так же `extrude`/`revolve`/`sweep` строятся по грани целиком, поэтому дырки
@@ -324,6 +326,16 @@ loft(sections, ruled)               // sections: [Path...]; default ruled false;
 | `edge.min`, `edge.max` | bbox самого ребра |
 
 Bounding box тела: `box.min`, `box.max`, `box.center`. Оси: `X`, `Y`, `Z` (единичные векторы).
+
+**Элемент `fillet2d`.** Угол `vertex` (вместо `edge`); `profile` — bbox плоского региона:
+
+| Поле | Смысл |
+|---|---|
+| `vertex.point` | положение вершины |
+| `vertex.direction1`, `vertex.direction2` | единичные касательные двух смежных рёбер (от вершины) |
+| `vertex.angle` | угол между ними (радианы, `0..π`) |
+
+Пример — скруглить только острые углы: `vertex.angle < 1.5`.
 
 **Функции.** `dot(a, b)`, `cross(a, b)`, `length(v)`, `normalized(v)`, `distance(a, b)`, `angle(a, b)`,
 `vec(x, y, z)`, `add(a, b)`, `sub(a, b)`, `scale(v, s)`, `is_close(a, b)`, `is_close_point(a, b)`,

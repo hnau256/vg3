@@ -9,7 +9,12 @@ use crate::error::{Error, Result};
 use crate::sys::ffi;
 
 mod contour;
+mod expression;
 mod fillet;
+mod fillet2d;
+mod info;
+mod math2d;
+mod math3d;
 mod op;
 mod sketch;
 mod part;

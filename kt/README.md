@@ -112,8 +112,10 @@ fun main() {
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
   `union`/`cut`/`intersect` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
-  `mirror(normal, center?)`, `scale(x, y)`, и `fillet2d(radius)` / `offset2d(distance)`. Эскизы
-  **не экспортируются** — только служат профилем тел.
+  `mirror(normal, center?)`, `scale(x, y)`, и `offset2d(distance)`. `fillet2d` скругляет углы:
+  `fillet2d(radius)`, `fillet2d(expression)` (Rhai, переменная `vertex`) или
+  `fillet2d(expression, radius)` (предикат отбора углов). Эскизы **не экспортируются** — только
+  служат профилем тел.
 - **Построение тел из эскизов:** `Region.extrude(height)`, `Region.revolve(angle)`,
   `Region.sweep(path, mode?)`, `List<Path>.loft(ruled?)`.
 - **`Solid.fillet(radius, kind = FILLET)`** / **`Solid.fillet(expression, kind = FILLET)`** /

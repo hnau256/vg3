@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.Sketch
 import org.hnau.ktcad.ir.Vec2
 import kotlin.test.Test
@@ -60,7 +61,17 @@ class RegionExtTest {
         assertEquals(2, arena.sketches.size)
         val fillet = arena.sketches[index.value] as Sketch.Fillet2d
         assertEquals(0, fillet.target.value)
-        assertEquals(1.0, fillet.radius)
+        assertEquals(RadiusSpec.All(radius = 1.0), fillet.radius)
+    }
+
+    @Test
+    fun fillet2d_expression_and_selection_lower_to_radius_specs() {
+        assertTrue(square.fillet2d("vertex.angle > 1.5") is Region.Fillet2d)
+        val selected = square.fillet2d("vertex.angle > 1.5", 2.0) as Region.Fillet2d
+        assertEquals(
+            RadiusSpec.Selected(expression = "vertex.angle > 1.5", radius = 2.0),
+            selected.radius,
+        )
     }
 
     @Test

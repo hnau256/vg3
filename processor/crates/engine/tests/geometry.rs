@@ -338,3 +338,20 @@ fn extruding_a_boolean_region_keeps_the_hole() {
     assert_close(parts[0].volume(), std::f64::consts::PI * (100.0 - 25.0) * 3.0, 1e-3);
     assert_bounds(&parts[0], [-10.0, -10.0, 0.0, 10.0, 10.0, 3.0]);
 }
+
+#[test]
+fn fillet2d_expression_uses_the_per_corner_radius() {
+    let parts = build("fillet2d_expression.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    let expected = (100.0 - (4.0 - std::f64::consts::PI) * 1.5 * 1.5) * 5.0;
+    assert_close(parts[0].volume(), expected, 1e-3);
+}
+
+#[test]
+fn fillet2d_selected_uses_the_corner_angle() {
+    // Square corners are pi/2 > 1.5, so every corner is selected with radius 2.
+    let parts = build("fillet2d_selected.json");
+    assert_eq!(parts[0].solid_count(), 1);
+    let expected = (100.0 - (4.0 - std::f64::consts::PI) * 4.0) * 5.0;
+    assert_close(parts[0].volume(), expected, 1e-3);
+}

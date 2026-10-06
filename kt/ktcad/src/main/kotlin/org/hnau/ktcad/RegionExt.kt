@@ -4,6 +4,7 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve2
+import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
 
@@ -90,8 +91,17 @@ fun Region.scale(x: Double, y: Double): Region =
 
 // --- Fillet / offset --------------------------------------------------------
 
-/** Round every corner of the region with [radius] (`BRepFilletAPI_MakeFillet2d`). */
-fun Region.fillet2d(radius: Double): Region = Region.Fillet2d(target = this, radius = radius)
+/** Round every corner of the region with a constant [radius] (`BRepFilletAPI_MakeFillet2d`). */
+fun Region.fillet2d(radius: Double): Region =
+    Region.Fillet2d(target = this, radius = RadiusSpec.All(radius = radius))
+
+/** Round every corner with a per-corner Rhai [expression] (variable `vertex`, result: number). */
+fun Region.fillet2d(expression: String): Region =
+    Region.Fillet2d(target = this, radius = RadiusSpec.Expression(expression = expression))
+
+/** Round only the corners selected by a boolean [expression] (variable `vertex`), with [radius]. */
+fun Region.fillet2d(expression: String, radius: Double): Region =
+    Region.Fillet2d(target = this, radius = RadiusSpec.Selected(expression = expression, radius = radius))
 
 /** Grow (positive [distance]) or shrink (negative) the region's contour (`BRepOffsetAPI_MakeOffset`). */
 fun Region.offset2d(distance: Double): Region = Region.Offset2d(target = this, distance = distance)

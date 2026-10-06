@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 use crate::curve::Curve2;
-use crate::op::{BooleanKind, TransformOp2};
+use crate::op::{BooleanKind, RadiusSpec, TransformOp2};
 use crate::value::{NonEmpty, Scalar, Vec2};
 
 /// A planar node: primitives, a contour, booleans over them and planar transforms.
@@ -40,7 +40,7 @@ pub enum Sketch<T> {
     #[serde(rename = "fillet2d")]
     Fillet {
         target: T,
-        radius: Scalar,
+        radius: RadiusSpec,
     },
     /// Grow (positive) or shrink (negative) the region (`BRepOffsetAPI_MakeOffset`).
     #[serde(rename = "offset2d")]
@@ -80,7 +80,7 @@ impl<T: Clone> Sketch<T> {
             },
             Sketch::Fillet { target, radius } => Sketch::Fillet {
                 target: f(target.clone())?,
-                radius: *radius,
+                radius: radius.clone(),
             },
             Sketch::Offset { target, distance } => Sketch::Offset {
                 target: f(target.clone())?,

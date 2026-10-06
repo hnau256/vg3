@@ -5,6 +5,7 @@ use cxx::UniquePtr;
 use vg3_model::{BooleanKind, Sketch, SketchIndex, TransformOp2};
 
 use crate::engine::contour::build_contour_wire;
+use crate::engine::fillet2d::evaluate_fillet2d;
 use crate::error::Result;
 use crate::sys::ffi;
 
@@ -79,7 +80,7 @@ fn evaluate_sketch(sketch: &Sketch<SketchIndex>, regions: &[Region]) -> Result<R
             })
         }
         Sketch::Fillet { target, radius } => Ok(Region {
-            shape: ffi::fillet2d(region(regions, *target)?.shape(), radius.value())?,
+            shape: evaluate_fillet2d(region(regions, *target)?.shape(), radius)?,
         }),
         Sketch::Offset { target, distance } => Ok(Region {
             shape: ffi::offset2d(region(regions, *target)?.shape(), distance.value())?,

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <rust/cxx.h>
 
@@ -154,7 +155,11 @@ std::unique_ptr<Shape> fillet(
     rust::Slice<const double> values
 );
 
-std::unique_ptr<Shape> fillet2d(const Shape& profile, double radius);
+std::unique_ptr<Shape> fillet2d(const Shape& profile, rust::Slice<const double> values);
+
+std::size_t face_corner_count(const Shape& face);
+
+rust::Vec<double> face_corner_data(const Shape& face, std::size_t corner);
 
 class BooleanBuilder {
 public:
