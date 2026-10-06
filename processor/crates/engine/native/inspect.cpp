@@ -101,7 +101,7 @@ rust::Vec<double> face_data(const Shape& shape, std::size_t index) {
 }
 
 std::unique_ptr<Shape> unify(const Shape& shape) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         ShapeUpgrade_UnifySameDomain algorithm(
             shape.topods(),
             Standard_True,
@@ -113,10 +113,7 @@ std::unique_ptr<Shape> unify(const Shape& shape) {
         if (result.IsNull()) {
             throw std::runtime_error("unify produced a null shape");
         }
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return result;
+    }));
 }
 }  // namespace vg3

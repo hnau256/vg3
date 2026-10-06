@@ -9,7 +9,7 @@
 
 namespace vg3 {
 rust::Vec<std::uint8_t> brep_encode(const Shape& shape) {
-    try {
+    return detail::attempt([&] {
         std::ostringstream stream;
         BRepTools::Write(
             shape.topods(),
@@ -25,13 +25,11 @@ rust::Vec<std::uint8_t> brep_encode(const Shape& shape) {
             bytes.push_back(static_cast<std::uint8_t>(byte));
         }
         return bytes;
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    });
 }
 
 std::unique_ptr<Shape> brep_decode(rust::Slice<const std::uint8_t> bytes) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const std::string data(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         std::istringstream stream(data);
         TopoDS_Shape shape;
@@ -40,11 +38,8 @@ std::unique_ptr<Shape> brep_decode(rust::Slice<const std::uint8_t> bytes) {
         if (shape.IsNull()) {
             throw std::runtime_error("BREP data contains a null shape");
         }
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return shape;
+    }));
 }
 
 }  // namespace vg3

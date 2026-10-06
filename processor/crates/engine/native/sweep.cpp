@@ -27,21 +27,17 @@
 namespace vg3 {
 
 std::unique_ptr<Shape> make_face(const Shape& wire) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         BRepBuilderAPI_MakeFace make_face(TopoDS::Wire(wire.topods()));
         if (!make_face.IsDone()) {
             throw std::runtime_error("cannot build a face from the given contour");
         }
-        const TopoDS_Shape face = make_face.Face();
-        detail::ensure_valid(face);
-        return std::make_unique<Shape>(face);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return make_face.Face();
+    }));
 }
 
 std::unique_ptr<Shape> make_circle(double radius) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const gp_Circ circle(gp_Ax2(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)), radius);
         BRepBuilderAPI_MakeEdge edge(circle);
         if (!edge.IsDone()) {
@@ -55,30 +51,22 @@ std::unique_ptr<Shape> make_circle(double radius) {
         if (!face.IsDone()) {
             throw std::runtime_error("cannot build a circle face");
         }
-        const TopoDS_Shape shape = face.Face();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return face.Face();
+    }));
 }
 
 std::unique_ptr<Shape> extrude(const Shape& profile, double height) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         BRepPrimAPI_MakePrism maker(TopoDS::Face(profile.topods()), gp_Vec(0.0, 0.0, height));
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepPrimAPI_MakePrism did not complete");
         }
-        const TopoDS_Shape shape = maker.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return maker.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         BRepPrimAPI_MakeRevol maker(
             TopoDS::Face(profile.topods()),
             gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 1.0, 0.0)),
@@ -87,12 +75,8 @@ std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepPrimAPI_MakeRevol did not complete");
         }
-        const TopoDS_Shape shape = maker.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return maker.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> sweep(
@@ -101,7 +85,7 @@ std::unique_ptr<Shape> sweep(
     bool follow,
     std::uint8_t transition
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
 
         // A sketch is a planar face (possibly a compound); the pipe shell is built from its outer
@@ -161,12 +145,8 @@ std::unique_ptr<Shape> sweep(
             throw std::runtime_error("BRepOffsetAPI_MakePipeShell did not complete");
         }
         pipe.MakeSolid();
-        const TopoDS_Shape shape = pipe.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return pipe.Shape();
+    }));
 }
 
 LoftBuilder::LoftBuilder(
@@ -199,17 +179,13 @@ void LoftBuilder::add(const Shape& section) {
 }
 
 std::unique_ptr<Shape> LoftBuilder::finish() {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         thru_.Build();
         if (!thru_.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_ThruSections did not complete");
         }
-        const TopoDS_Shape shape = thru_.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return thru_.Shape();
+    }));
 }
 
 std::unique_ptr<LoftBuilder> new_loft_builder(

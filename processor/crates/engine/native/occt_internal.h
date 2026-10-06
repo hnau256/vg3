@@ -92,6 +92,30 @@ bool is_seam_edge(
     const TopTools_IndexedDataMapOfShapeListOfShape& edge_faces
 );
 
+/// Runs `build_shape`, validates the result and rethrows OCCT failures as `std::runtime_error` —
+/// the fail-loudly tail shared by every shape builder.
+template <typename F>
+TopoDS_Shape build(F&& build_shape) {
+    try {
+        const TopoDS_Shape shape = build_shape();
+        ensure_valid(shape);
+        return shape;
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
+/// Runs `action`, translating an OCCT failure into `std::runtime_error` (for operations that do not
+/// produce a shape, e.g. writers).
+template <typename F>
+auto attempt(F&& action) {
+    try {
+        return action();
+    } catch (const Standard_Failure& failure) {
+        rethrow_as_std_error(failure);
+    }
+}
+
 }  // namespace detail
 
 }  // namespace vg3

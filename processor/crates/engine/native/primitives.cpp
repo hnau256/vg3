@@ -24,48 +24,27 @@
 
 namespace vg3 {
 std::unique_ptr<Shape> make_box(double width, double length, double height) {
-    try {
-        BRepPrimAPI_MakeBox maker(width, length, height);
-        const TopoDS_Shape shape = maker.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    return std::make_unique<Shape>(detail::build([&] {
+        return BRepPrimAPI_MakeBox(width, length, height).Shape();
+    }));
 }
 
 std::unique_ptr<Shape> make_sphere(double radius, bool has_angle, double angle) {
-    try {
-        TopoDS_Shape shape;
+    return std::make_unique<Shape>(detail::build([&] {
         if (has_angle) {
-            BRepPrimAPI_MakeSphere maker(radius, angle);
-            shape = maker.Shape();
-        } else {
-            BRepPrimAPI_MakeSphere maker(radius);
-            shape = maker.Shape();
+            return BRepPrimAPI_MakeSphere(radius, angle).Shape();
         }
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return BRepPrimAPI_MakeSphere(radius).Shape();
+    }));
 }
 
 std::unique_ptr<Shape> make_cylinder(double radius, double height, bool has_angle, double angle) {
-    try {
-        TopoDS_Shape shape;
+    return std::make_unique<Shape>(detail::build([&] {
         if (has_angle) {
-            BRepPrimAPI_MakeCylinder maker(radius, height, angle);
-            shape = maker.Shape();
-        } else {
-            BRepPrimAPI_MakeCylinder maker(radius, height);
-            shape = maker.Shape();
+            return BRepPrimAPI_MakeCylinder(radius, height, angle).Shape();
         }
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return BRepPrimAPI_MakeCylinder(radius, height).Shape();
+    }));
 }
 
 std::unique_ptr<Shape> make_cone(
@@ -75,20 +54,12 @@ std::unique_ptr<Shape> make_cone(
     bool has_angle,
     double angle
 ) {
-    try {
-        TopoDS_Shape shape;
+    return std::make_unique<Shape>(detail::build([&] {
         if (has_angle) {
-            BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height, angle);
-            shape = maker.Shape();
-        } else {
-            BRepPrimAPI_MakeCone maker(radius_bottom, radius_top, height);
-            shape = maker.Shape();
+            return BRepPrimAPI_MakeCone(radius_bottom, radius_top, height, angle).Shape();
         }
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return BRepPrimAPI_MakeCone(radius_bottom, radius_top, height).Shape();
+    }));
 }
 
 std::unique_ptr<Shape> make_torus(
@@ -97,33 +68,21 @@ std::unique_ptr<Shape> make_torus(
     bool has_angle,
     double angle
 ) {
-    try {
-        TopoDS_Shape shape;
+    return std::make_unique<Shape>(detail::build([&] {
         if (has_angle) {
-            BRepPrimAPI_MakeTorus maker(major_radius, minor_radius, angle);
-            shape = maker.Shape();
-        } else {
-            BRepPrimAPI_MakeTorus maker(major_radius, minor_radius);
-            shape = maker.Shape();
+            return BRepPrimAPI_MakeTorus(major_radius, minor_radius, angle).Shape();
         }
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return BRepPrimAPI_MakeTorus(major_radius, minor_radius).Shape();
+    }));
 }
 
 std::unique_ptr<Shape> make_halfspace() {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const gp_Pln plane;
         BRepLib_MakeFace make_face(plane);
         BRepPrimAPI_MakeHalfSpace make_half_space(make_face.Face(), gp_Pnt(0.0, 0.0, -1.0));
-        const TopoDS_Shape shape = make_half_space.Solid();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return make_half_space.Solid();
+    }));
 }
 
 std::unique_ptr<Shape> make_polyhedron(
@@ -131,7 +90,7 @@ std::unique_ptr<Shape> make_polyhedron(
     rust::Slice<const std::uint32_t> face_indices,
     rust::Slice<const std::uint32_t> face_offsets
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         if (points.size() % 3 != 0) {
             throw std::runtime_error("polyhedron points must be xyz triples");
         }
@@ -193,22 +152,13 @@ std::unique_ptr<Shape> make_polyhedron(
         if (!make_solid.IsDone()) {
             throw std::runtime_error("polyhedron shell is not a closed solid");
         }
-        const TopoDS_Shape shape = make_solid.Solid();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return make_solid.Solid();
+    }));
 }
 
 std::unique_ptr<Shape> make_wedge(double width, double length, double height, double top_width) {
-    try {
-        BRepPrimAPI_MakeWedge maker(width, length, height, top_width);
-        const TopoDS_Shape shape = maker.Shape();
-        detail::ensure_valid(shape);
-        return std::make_unique<Shape>(shape);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    return std::make_unique<Shape>(detail::build([&] {
+        return BRepPrimAPI_MakeWedge(width, length, height, top_width).Shape();
+    }));
 }
 }  // namespace vg3

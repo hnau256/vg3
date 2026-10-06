@@ -20,7 +20,7 @@
 
 namespace vg3 {
 rust::Vec<double> triangulation(const Shape& shape, double tolerance) {
-    try {
+    return detail::attempt([&] {
         const TopoDS_Shape& topods = shape.topods();
         const Standard_Real deflection = tolerance > 0.0 ? tolerance : 0.1;
         BRepMesh_IncrementalMesh mesher(topods, deflection, Standard_False, 0.1, Standard_True);
@@ -52,9 +52,7 @@ rust::Vec<double> triangulation(const Shape& shape, double tolerance) {
             }
         }
         return data;
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    });
 }
 
 rust::Vec<double> bounding_box(const Shape& shape) {

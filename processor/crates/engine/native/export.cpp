@@ -35,7 +35,7 @@ void StepBuilder::add_part(
     double g,
     double b
 ) {
-    try {
+    detail::attempt([&] {
         const TDF_Label label = shapes_->AddShape(shape.topods(), false);
         shapes_->SetShape(label, shape.topods());
         const std::string name_string(name.data(), name.size());
@@ -50,13 +50,11 @@ void StepBuilder::add_part(
                 XCAFDoc_ColorGen
             );
         }
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    });
 }
 
 bool StepBuilder::write(rust::Str path) {
-    try {
+    return detail::attempt([&] {
         const std::string path_string(path.data(), path.size());
         STEPCAFControl_Writer writer;
         writer.SetColorMode(Standard_True);
@@ -65,9 +63,7 @@ bool StepBuilder::write(rust::Str path) {
             throw std::runtime_error("STEPCAFControl_Writer::Transfer did not complete");
         }
         return writer.Write(path_string.c_str()) == IFSelect_RetDone;
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    });
 }
 
 std::unique_ptr<StepBuilder> new_step_builder() {
@@ -75,7 +71,7 @@ std::unique_ptr<StepBuilder> new_step_builder() {
 }
 
 bool write_stl(const Shape& shape, rust::Str path, double tolerance) {
-    try {
+    return detail::attempt([&] {
         const TopoDS_Shape& topods = shape.topods();
         const Standard_Real deflection = tolerance > 0.0 ? tolerance : 0.1;
         BRepMesh_IncrementalMesh mesher(topods, deflection, Standard_False, 0.1, Standard_True);
@@ -83,9 +79,7 @@ bool write_stl(const Shape& shape, rust::Str path, double tolerance) {
         writer.ASCIIMode() = Standard_False;
         const std::string path_string(path.data(), path.size());
         return writer.Write(topods, path_string.c_str());
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    });
 }
 
 }  // namespace vg3

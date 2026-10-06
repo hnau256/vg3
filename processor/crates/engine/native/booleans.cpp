@@ -39,26 +39,18 @@ void BooleanBuilder::add_tool(const Shape& shape) {
 }
 
 std::unique_ptr<Shape> BooleanBuilder::finish() {
-    try {
-        TopoDS_Shape result;
+    return std::make_unique<Shape>(detail::build([&] {
         switch (kind_) {
             case 0:
-                result = run_boolean<BRepAlgoAPI_Fuse>(arguments_, tools_);
-                break;
+                return run_boolean<BRepAlgoAPI_Fuse>(arguments_, tools_);
             case 1:
-                result = run_boolean<BRepAlgoAPI_Cut>(arguments_, tools_);
-                break;
+                return run_boolean<BRepAlgoAPI_Cut>(arguments_, tools_);
             case 2:
-                result = run_boolean<BRepAlgoAPI_Common>(arguments_, tools_);
-                break;
+                return run_boolean<BRepAlgoAPI_Common>(arguments_, tools_);
             default:
                 throw std::runtime_error("unknown boolean kind");
         }
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+    }));
 }
 
 std::unique_ptr<BooleanBuilder> new_boolean_builder(std::uint8_t kind) {

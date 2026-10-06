@@ -73,7 +73,7 @@ std::unique_ptr<Shape> fillet(
     std::uint8_t kind,
     rust::Slice<const double> values
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         std::size_t global = 0;
         std::size_t added_total = 0;
         TopoDS_Compound compound;
@@ -96,13 +96,10 @@ std::unique_ptr<Shape> fillet(
         }
 
         if (added_total == 0) {
-            return std::make_unique<Shape>(shape.topods());
+            return shape.topods();
         }
-        detail::ensure_valid(compound);
-        return std::make_unique<Shape>(compound);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return TopoDS_Shape(compound);
+    }));
 }
 
 namespace {
@@ -175,7 +172,7 @@ rust::Vec<double> face_corner_data(const Shape& face, std::size_t corner) {
 }
 
 std::unique_ptr<Shape> fillet2d(const Shape& profile, rust::Slice<const double> values) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const TopoDS_Face face = TopoDS::Face(profile.topods());
         const auto vertex_edges = face_corner_map(face);
 
@@ -197,18 +194,14 @@ std::unique_ptr<Shape> fillet2d(const Shape& profile, rust::Slice<const double> 
             }
         }
         if (added == 0) {
-            return std::make_unique<Shape>(face);
+            return TopoDS_Shape(face);
         }
         maker.Build();
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepFilletAPI_MakeFillet2d did not complete");
         }
-        const TopoDS_Shape result = maker.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return maker.Shape();
+    }));
 }
 
 }  // namespace vg3

@@ -28,20 +28,16 @@
 
 namespace vg3 {
 std::unique_ptr<Shape> translate(const Shape& shape, double x, double y, double z) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         gp_Trsf transformation;
         transformation.SetTranslation(gp_Vec(x, y, z));
         BRepBuilderAPI_Transform builder(shape.topods(), transformation, true);
-        const TopoDS_Shape result = builder.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return builder.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> offset(const Shape& shape, double distance, std::uint8_t join) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         BRepOffsetAPI_MakeOffsetShape maker;
         maker.PerformByJoin(
             shape.topods(),
@@ -56,16 +52,12 @@ std::unique_ptr<Shape> offset(const Shape& shape, double distance, std::uint8_t 
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakeOffsetShape did not complete");
         }
-        const TopoDS_Shape result = maker.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return maker.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> offset2d(const Shape& profile, double distance, std::uint8_t join) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const TopoDS_Face face = TopoDS::Face(profile.topods());
 
         // Offset the whole face (not just the outer wire): holes are offset in the right direction
@@ -84,12 +76,8 @@ std::unique_ptr<Shape> offset2d(const Shape& profile, double distance, std::uint
         if (!make_face.IsDone()) {
             throw std::runtime_error("cannot build a face from the offset contour");
         }
-        const TopoDS_Shape result = make_face.Face();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return make_face.Face();
+    }));
 }
 
 std::unique_ptr<Shape> thick_solid(
@@ -98,7 +86,7 @@ std::unique_ptr<Shape> thick_solid(
     double offset,
     std::uint8_t join
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         const std::set<std::size_t> selected(faces.begin(), faces.end());
         TopTools_ListOfShape closing;
         std::size_t index = 0;
@@ -125,12 +113,8 @@ std::unique_ptr<Shape> thick_solid(
         if (!maker.IsDone()) {
             throw std::runtime_error("BRepOffsetAPI_MakeThickSolid did not complete");
         }
-        const TopoDS_Shape result = maker.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return maker.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> rotate(
@@ -143,19 +127,15 @@ std::unique_ptr<Shape> rotate(
     double axis_z,
     double angle
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         gp_Trsf transformation;
         transformation.SetRotation(
             gp_Ax1(gp_Pnt(center_x, center_y, center_z), gp_Dir(axis_x, axis_y, axis_z)),
             angle
         );
         BRepBuilderAPI_Transform builder(shape.topods(), transformation, true);
-        const TopoDS_Shape result = builder.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return builder.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> mirror(
@@ -167,37 +147,29 @@ std::unique_ptr<Shape> mirror(
     double normal_y,
     double normal_z
 ) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         gp_Trsf transformation;
         transformation.SetMirror(
             gp_Ax2(gp_Pnt(center_x, center_y, center_z), gp_Dir(normal_x, normal_y, normal_z))
         );
         BRepBuilderAPI_Transform builder(shape.topods(), transformation, true);
-        const TopoDS_Shape result = builder.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return builder.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> scale(const Shape& shape, double x, double y, double z) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         gp_GTrsf transformation;
         transformation.SetValue(1, 1, x);
         transformation.SetValue(2, 2, y);
         transformation.SetValue(3, 3, z);
         BRepBuilderAPI_GTransform builder(shape.topods(), transformation, true);
-        const TopoDS_Shape result = builder.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return builder.Shape();
+    }));
 }
 
 std::unique_ptr<Shape> apply_matrix(const Shape& shape, rust::Slice<const double> matrix) {
-    try {
+    return std::make_unique<Shape>(detail::build([&] {
         if (matrix.size() != 16) {
             throw std::runtime_error("matrix must contain exactly 16 elements");
         }
@@ -208,11 +180,7 @@ std::unique_ptr<Shape> apply_matrix(const Shape& shape, rust::Slice<const double
             }
         }
         BRepBuilderAPI_GTransform builder(shape.topods(), transformation, true);
-        const TopoDS_Shape result = builder.Shape();
-        detail::ensure_valid(result);
-        return std::make_unique<Shape>(result);
-    } catch (const Standard_Failure& failure) {
-        detail::rethrow_as_std_error(failure);
-    }
+        return builder.Shape();
+    }));
 }
 }  // namespace vg3
