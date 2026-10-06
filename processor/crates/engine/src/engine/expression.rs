@@ -4,7 +4,7 @@
 //! whatever functions the caller registered). This module knows nothing about the domain — not the
 //! object, not its element.
 
-use rhai::{Dynamic, Engine, Map, Scope};
+use rhai::{AST, Dynamic, Engine, Map, Scope};
 
 use crate::error::{Error, Result};
 
@@ -49,6 +49,12 @@ impl Data {
     }
 }
 
+/// A compiled expression, evaluated once per element without re-parsing.
+pub(super) struct Compiled {
+    ast: AST,
+    source: String,
+}
+
 /// A reusable evaluation context: a Rhai engine plus the data blocks visible to every expression.
 pub(super) struct Context {
     engine: Engine,
@@ -68,8 +74,20 @@ impl Context {
         self
     }
 
-    /// Evaluates `source`, with `element` bound on top of the context's own blocks.
-    pub fn evaluate<T: ExpressionResult>(&self, source: &str, element: Data) -> Result<T> {
+    /// Parses and compiles `source` once; the result is evaluated many times (per element).
+    pub fn compile(&self, source: &str) -> Result<Compiled> {
+        let ast = self
+            .engine
+            .compile_expression(source)
+            .map_err(|error| Error::Expression(format!("{source}: {error}")))?;
+        Ok(Compiled {
+            ast,
+            source: source.to_string(),
+        })
+    }
+
+    /// Evaluates a compiled expression, with `element` bound on top of the context's own blocks.
+    pub fn evaluate<T: ExpressionResult>(&self, compiled: &Compiled, element: Data) -> Result<T> {
         let mut scope = Scope::new();
         for data in &self.data {
             scope.push_constant(data.name, data.value.clone());
@@ -77,8 +95,8 @@ impl Context {
         scope.push_constant(element.name, element.value);
         let value = self
             .engine
-            .eval_expression_with_scope::<Dynamic>(&mut scope, source)
-            .map_err(|error| Error::Expression(format!("{source}: {error}")))?;
-        T::from_dynamic(value, source)
+            .eval_ast_with_scope::<Dynamic>(&mut scope, &compiled.ast)
+            .map_err(|error| Error::Expression(format!("{}: {error}", compiled.source)))?;
+        T::from_dynamic(value, &compiled.source)
     }
 }

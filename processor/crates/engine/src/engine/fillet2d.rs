@@ -3,6 +3,7 @@ use vg3_model::RadiusSpec;
 
 use crate::engine::info;
 use crate::engine::math2d;
+use crate::engine::radius::Radius;
 use crate::error::Result;
 use crate::sys::ffi;
 
@@ -12,24 +13,12 @@ pub(super) fn evaluate_fillet2d(
     radius: &RadiusSpec,
 ) -> Result<UniquePtr<ffi::Shape>> {
     let context = math2d::context().with_data(info::profile(face));
+    let radius = Radius::compile(&context, radius)?;
     let count = ffi::face_corner_count(face);
     let mut values = Vec::with_capacity(count);
     for corner in 0..count {
         let data = ffi::face_corner_data(face, corner);
-        let value = match radius {
-            RadiusSpec::All { radius } => radius.value(),
-            RadiusSpec::Expression { expression } => {
-                context.evaluate(expression, info::vertex(&data))?
-            }
-            RadiusSpec::Selected { expression, radius } => {
-                if context.evaluate::<bool>(expression, info::vertex(&data))? {
-                    radius.value()
-                } else {
-                    0.0
-                }
-            }
-        };
-        values.push(value);
+        values.push(radius.value(&context, info::vertex(&data))?);
     }
     Ok(ffi::fillet2d(face, &values)?)
 }

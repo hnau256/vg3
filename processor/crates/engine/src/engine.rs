@@ -16,6 +16,7 @@ mod info;
 mod math2d;
 mod math3d;
 mod op;
+mod radius;
 mod sketch;
 mod part;
 
