@@ -336,6 +336,20 @@ class SolidProcessor(
         return CodeBlock.of(format, *parameters.map(render).toTypedArray())
     }
 
-    private fun defaultSource(type: KSType): String =
-        if (type.isMarkedNullable) "null" else "false"
+    /**
+     * The Kotlin default for a parameter that has one in the IR. KSP does not expose the actual
+     * value, so only the two cases the generator can reproduce are supported; anything else fails
+     * the build loudly instead of silently emitting a wrong default.
+     */
+    private fun defaultSource(type: KSType): String {
+        if (type.isMarkedNullable) {
+            return "null"
+        }
+        val name = type.declaration.qualifiedName?.asString()
+        check(name == "kotlin.Boolean") {
+            "SolidProcessor: unsupported non-null default for $name " +
+                "(only Boolean → false and nullable → null are supported)"
+        }
+        return "false"
+    }
 }
