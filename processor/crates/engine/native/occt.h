@@ -261,7 +261,7 @@ rust::Vec<double> face_data(const Shape& shape, std::size_t index);
 
 std::unique_ptr<Shape> unify(const Shape& shape);
 
-bool write_stl(const Shape& shape, rust::Str path, double tolerance);
+void write_stl(const Shape& shape, rust::Str path, double tolerance);
 
 class StepBuilder {
 public:
@@ -276,7 +276,7 @@ public:
         double b
     );
 
-    bool write(rust::Str path);
+    void write(rust::Str path);
 
 private:
     Handle(TDocStd_Document) document_;

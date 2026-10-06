@@ -53,8 +53,8 @@ void StepBuilder::add_part(
     });
 }
 
-bool StepBuilder::write(rust::Str path) {
-    return detail::attempt([&] {
+void StepBuilder::write(rust::Str path) {
+    detail::attempt([&] {
         const std::string path_string(path.data(), path.size());
         STEPCAFControl_Writer writer;
         writer.SetColorMode(Standard_True);
@@ -62,7 +62,9 @@ bool StepBuilder::write(rust::Str path) {
         if (!writer.Transfer(document_, STEPControl_AsIs)) {
             throw std::runtime_error("STEPCAFControl_Writer::Transfer did not complete");
         }
-        return writer.Write(path_string.c_str()) == IFSelect_RetDone;
+        if (writer.Write(path_string.c_str()) != IFSelect_RetDone) {
+            throw std::runtime_error("STEPCAFControl_Writer::Write did not complete");
+        }
     });
 }
 
@@ -70,15 +72,17 @@ std::unique_ptr<StepBuilder> new_step_builder() {
     return std::make_unique<StepBuilder>();
 }
 
-bool write_stl(const Shape& shape, rust::Str path, double tolerance) {
-    return detail::attempt([&] {
+void write_stl(const Shape& shape, rust::Str path, double tolerance) {
+    detail::attempt([&] {
         const TopoDS_Shape& topods = shape.topods();
         const Standard_Real deflection = tolerance > 0.0 ? tolerance : 0.1;
         BRepMesh_IncrementalMesh mesher(topods, deflection, Standard_False, 0.1, Standard_True);
         StlAPI_Writer writer;
         writer.ASCIIMode() = Standard_False;
         const std::string path_string(path.data(), path.size());
-        return writer.Write(topods, path_string.c_str());
+        if (!writer.Write(topods, path_string.c_str())) {
+            throw std::runtime_error("StlAPI_Writer::Write did not complete");
+        }
     });
 }
 

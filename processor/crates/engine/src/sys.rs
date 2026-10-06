@@ -186,7 +186,7 @@ pub(crate) mod ffi {
 
         fn unify(shape: &Shape) -> Result<UniquePtr<Shape>>;
 
-        fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<bool>;
+        fn write_stl(shape: &Shape, path: &str, tolerance: f64) -> Result<()>;
 
         type StepBuilder;
 
@@ -202,7 +202,7 @@ pub(crate) mod ffi {
             b: f64,
         ) -> Result<()>;
 
-        fn write(self: Pin<&mut StepBuilder>, path: &str) -> Result<bool>;
+        fn write(self: Pin<&mut StepBuilder>, path: &str) -> Result<()>;
 
         fn brep_encode(shape: &Shape) -> Result<Vec<u8>>;
 

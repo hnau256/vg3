@@ -102,8 +102,8 @@ pub enum ExportConfig {
 }
 
 impl ExportConfig {
-    pub fn from_json(source: &str) -> Result<Self> {
-        Ok(serde_json::from_str(source)?)
+    pub fn from_json(source: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(source)
     }
 
     pub fn export(&self, outputs: &[Output]) -> Result<()> {
@@ -141,9 +141,7 @@ fn export_stl(outputs: &[Output], layout: &ExportLayout, tolerance: f64) -> Resu
         let path = path
             .to_str()
             .ok_or_else(|| Error::Export("output path is not valid utf-8".to_string()))?;
-        if !ffi::write_stl(&compound, path, tolerance)? {
-            return Err(Error::Export("StlAPI_Writer reported failure".to_string()));
-        }
+        ffi::write_stl(&compound, path, tolerance)?;
     }
     Ok(())
 }
@@ -165,9 +163,7 @@ fn export_step(outputs: &[Output], filename: &std::path::Path) -> Result<()> {
             .pin_mut()
             .add_part(output.part.shape(), &output.name, has_color, r, g, b)?;
     }
-    if !builder.pin_mut().write(path)? {
-        return Err(Error::Export("STEPCAFControl_Writer reported failure".to_string()));
-    }
+    builder.pin_mut().write(path)?;
     Ok(())
 }
 
