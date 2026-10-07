@@ -71,32 +71,6 @@ fn rasterize(items: &[Item], size: u32, azimuth: f64, elevation: f64) -> Vec<u8>
     let pixel_count = (size as usize) * (size as usize);
     let mut pixels = vec![245u8; pixel_count * 3];
 
-    // Bounding box of the whole scene.
-    let mut low = [f64::INFINITY; 3];
-    let mut high = [f64::NEG_INFINITY; 3];
-    for item in items {
-        for point in item.triangles.chunks_exact(3) {
-            for axis in 0..3 {
-                low[axis] = low[axis].min(point[axis]);
-                high[axis] = high[axis].max(point[axis]);
-            }
-        }
-    }
-    if !low[0].is_finite() {
-        return pixels;
-    }
-
-    let center = [
-        (low[0] + high[0]) / 2.0,
-        (low[1] + high[1]) / 2.0,
-        (low[2] + high[2]) / 2.0,
-    ];
-    let extent = (0..3)
-        .map(|axis| high[axis] - low[axis])
-        .fold(0.0_f64, f64::max)
-        .max(1e-9);
-    let scale = 0.9 * size as f64 / extent;
-
     let azimuth = azimuth.to_radians();
     let elevation = elevation.to_radians();
     let camera = [
@@ -110,12 +84,33 @@ fn rasterize(items: &[Item], size: u32, azimuth: f64, elevation: f64) -> Vec<u8>
     }
     let up = cross(right, camera);
 
+    // Fit the scene by its silhouette on the image plane, not by its 3D bounding box: a rotated
+    // object projects wider than any single axis extent, so the 3D box would let it overflow.
+    let mut low = [f64::INFINITY; 2];
+    let mut high = [f64::NEG_INFINITY; 2];
+    for item in items {
+        for point in item.triangles.chunks_exact(3) {
+            let point = [point[0], point[1], point[2]];
+            let projected = [dot(point, right), dot(point, up)];
+            for axis in 0..2 {
+                low[axis] = low[axis].min(projected[axis]);
+                high[axis] = high[axis].max(projected[axis]);
+            }
+        }
+    }
+    if !low[0].is_finite() {
+        return pixels;
+    }
+
+    let center = [(low[0] + high[0]) / 2.0, (low[1] + high[1]) / 2.0];
+    let extent = (high[0] - low[0]).max(high[1] - low[1]).max(1e-9);
+    let scale = 0.9 * size as f64 / extent;
+
     let project = |point: [f64; 3]| -> [f64; 3] {
-        let local = sub(point, center);
         [
-            dot(local, right) * scale + size as f64 / 2.0,
-            -dot(local, up) * scale + size as f64 / 2.0,
-            dot(local, camera),
+            (dot(point, right) - center[0]) * scale + size as f64 / 2.0,
+            -(dot(point, up) - center[1]) * scale + size as f64 / 2.0,
+            dot(point, camera),
         ]
     };
 
@@ -232,4 +227,49 @@ fn crc32(data: &[u8]) -> u32 {
         }
     }
     !crc
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const BACKGROUND: u8 = 245;
+
+    /// A right triangle whose silhouette at 45°/45° is `√2` wider than any 3D axis extent.
+    fn triangle_item() -> Item {
+        Item {
+            color: Some([1.0, 0.0, 0.0]),
+            triangles: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+        }
+    }
+
+    #[test]
+    fn rotated_scene_fits_the_frame() {
+        let size = 64usize;
+        let pixels = rasterize(&[triangle_item()], size as u32, 45.0, 45.0);
+        let at = |x: usize, y: usize| pixels[(y * size + x) * 3];
+
+        for x in 0..size {
+            assert_eq!(at(x, 0), BACKGROUND, "top row must stay clear at x={x}");
+            assert_eq!(
+                at(x, size - 1),
+                BACKGROUND,
+                "bottom row must stay clear at x={x}"
+            );
+        }
+        for y in 0..size {
+            assert_eq!(at(0, y), BACKGROUND, "left column must stay clear at y={y}");
+            assert_eq!(
+                at(size - 1, y),
+                BACKGROUND,
+                "right column must stay clear at y={y}"
+            );
+        }
+    }
+
+    #[test]
+    fn empty_scene_is_background() {
+        let pixels = rasterize(&[], 8, 35.0, 25.0);
+        assert!(pixels.iter().all(|&byte| byte == BACKGROUND));
+    }
 }
