@@ -78,6 +78,9 @@ where
 /// The whole `Body -> Part` transformation. The cache key is a purely internal detail: computed
 /// here, right before use, and never leaving this function. The cache is whatever the caller
 /// passed in — memory, disk, a layering of both, or nothing.
+///
+/// Only operations are cached ([`Body::is_cacheable`]); primitives are built directly, so a cheap
+/// leaf never costs a hash lookup or a disk round-trip.
 fn get_or_evaluate<P: Cache<Key, Part> + ?Sized>(
     body: &Body<BodyIndex>,
     bodies: &[Body<BodyIndex>],
@@ -85,8 +88,7 @@ fn get_or_evaluate<P: Cache<Key, Part> + ?Sized>(
     regions: &[Region],
     cache: &mut P,
 ) -> Result<Part> {
-    let key = key_of(body, bodies, sketch_keys)?;
-    get_or_put(cache, &key, |cache| {
+    let build = |cache: &mut P| -> Result<Part> {
         let ready: Body<Part> = body.try_map(|operand| {
             get_or_evaluate(
                 &bodies[operand.value()],
@@ -97,7 +99,12 @@ fn get_or_evaluate<P: Cache<Key, Part> + ?Sized>(
             )
         })?;
         ready.evaluate(regions)
-    })
+    };
+    if body.is_cacheable() {
+        get_or_put(cache, &key_of(body, bodies, sketch_keys)?, build)
+    } else {
+        build(cache)
+    }
 }
 
 /// The body's Merkle key `H(body ‖ operand_keys… ‖ sketch_keys…)`, computed on demand (keys are not
@@ -159,7 +166,7 @@ fn validate_index(index: usize, current: usize) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vg3_model::{Export, Scalar};
+    use vg3_model::{Export, Scalar, TransformOp, Vec3};
 
     fn scalar(value: f64) -> Scalar {
         Scalar::try_from(value).expect("finite")
@@ -170,6 +177,19 @@ mod tests {
             width: scalar(size),
             length: scalar(size),
             height: scalar(size),
+        }
+    }
+
+    fn transform_node(target: usize, value: f64) -> Body<BodyIndex> {
+        Body::Transform {
+            target: BodyIndex::new(target),
+            op: TransformOp::Translate {
+                value: Vec3 {
+                    x: scalar(value),
+                    y: scalar(0.0),
+                    z: scalar(0.0),
+                },
+            },
         }
     }
 
@@ -204,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn identical_subtrees_are_built_once() {
+    fn primitives_are_not_cached() {
         let outputs = evaluate(
             &model(vec![box_node(2.0), box_node(2.0)]),
             &mut vg3_cache::Memory::default(),
@@ -213,8 +233,32 @@ mod tests {
         .expect("builds");
         assert_eq!(outputs.len(), 2);
         assert!(
+            !outputs[0].part.shares_storage(&outputs[1].part),
+            "a primitive must not be cached"
+        );
+    }
+
+    #[test]
+    fn identical_operations_are_built_once() {
+        let outputs = evaluate(
+            &Model {
+                version: 1,
+                sketches: Vec::new(),
+                bodies: vec![
+                    box_node(2.0),
+                    transform_node(0, 1.0),
+                    transform_node(0, 1.0),
+                ],
+                export: vec![export(1), export(2)],
+            },
+            &mut vg3_cache::Memory::default(),
+            &mut vg3_cache::Memory::default(),
+        )
+        .expect("builds");
+        assert_eq!(outputs.len(), 2);
+        assert!(
             outputs[0].part.shares_storage(&outputs[1].part),
-            "the cache must reuse an identical body"
+            "the cache must reuse an identical operation"
         );
     }
 
@@ -223,10 +267,15 @@ mod tests {
         let directory = std::env::temp_dir().join("vg3-engine-disk-test");
         let _ = std::fs::remove_dir_all(&directory);
 
-        // Poison the key of a 2x2x2 box with a 1x1x1 box: if the engine consults the disk layer,
-        // the result must be the small box.
-        let model = model(vec![box_node(2.0)]);
-        let key = key_of(&model.bodies[0], &model.bodies, &[]).expect("key");
+        // Poison the key of a translated 2x2x2 box with a 1x1x1 box: if the engine consults the
+        // disk layer, the result must be the small box. The root is an operation, which is cached.
+        let model = Model {
+            version: 1,
+            sketches: Vec::new(),
+            bodies: vec![box_node(2.0), transform_node(0, 5.0)],
+            export: vec![export(1)],
+        };
+        let key = key_of(&model.bodies[1], &model.bodies, &[]).expect("key");
         let mut disk = vg3_cache::Disk::new(directory.clone(), BrepPartCodec);
         disk.put(&key, &box_part(1.0));
 
@@ -244,24 +293,31 @@ mod tests {
         let _ = std::fs::remove_dir_all(&directory);
     }
 
-    /// A model with one circle sketch and one extrude body referencing it.
-    fn circle_extrude(radius: f64) -> Model {
-        let source = format!(
-            r#"{{ "version": 1,
-                  "sketches": [ {{ "type": "circle", "radius": {radius} }} ],
-                  "bodies": [ {{ "type": "extrude", "profile": 0, "height": 1 }} ],
-                  "export": [ {{ "index": 0, "name": "p" }} ] }}"#
-        );
-        vg3_model::parse(&source).expect("parses")
+    /// A model with a circle, a translated copy of it and an extrude body over the copy.
+    fn transformed_circle() -> Model {
+        vg3_model::parse(
+            r#"{ "version": 1,
+                 "sketches": [
+                     { "type": "circle", "radius": 2 },
+                     { "type": "transform", "target": 0,
+                       "op": { "type": "translate", "value": { "x": 1, "y": 0 } } }
+                 ],
+                 "bodies": [ { "type": "extrude", "profile": 1, "height": 1 } ],
+                 "export": [ { "index": 0, "name": "p" } ] }"#,
+        )
+        .expect("parses")
     }
 
     #[test]
-    fn identical_sketches_are_built_once() {
+    fn identical_sketch_operations_are_built_once() {
         let model = vg3_model::parse(
             r#"{ "version": 1,
                  "sketches": [
                      { "type": "circle", "radius": 2 },
-                     { "type": "circle", "radius": 2 }
+                     { "type": "transform", "target": 0,
+                       "op": { "type": "translate", "value": { "x": 1, "y": 0 } } },
+                     { "type": "transform", "target": 0,
+                       "op": { "type": "translate", "value": { "x": 1, "y": 0 } } }
                  ], "bodies": [], "export": [] }"#,
         )
         .expect("parses");
@@ -269,8 +325,8 @@ mod tests {
         let regions = build_regions(&model.sketches, &keys, &mut vg3_cache::Memory::default())
             .expect("builds");
         assert!(
-            regions[0].shares_storage(&regions[1]),
-            "the cache must reuse an identical sketch"
+            regions[1].shares_storage(&regions[2]),
+            "the cache must reuse an identical sketch operation"
         );
     }
 
@@ -279,13 +335,13 @@ mod tests {
         let directory = std::env::temp_dir().join("vg3-engine-sketch-disk-test");
         let _ = std::fs::remove_dir_all(&directory);
 
-        // Poison the key of the r=2 circle with an r=1 region: the extruded body must come out as
-        // the poisoned (smaller) region, volume pi rather than 4*pi.
-        let model = circle_extrude(2.0);
+        // Poison the key of the translated r=2 circle with an r=1 region: the extruded body must
+        // come out as the poisoned (smaller) region, volume pi rather than 4*pi.
+        let model = transformed_circle();
         let keys = sketch_keys(&model.sketches).expect("keys");
         let mut disk = vg3_cache::Disk::new(directory.clone(), BrepRegionCodec);
         disk.put(
-            &keys[0],
+            &keys[1],
             &Region::from_shape(ffi::make_circle(1.0).expect("circle")),
         );
 

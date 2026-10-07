@@ -119,6 +119,32 @@ pub enum Body<T> {
     },
 }
 
+impl<T> Body<T> {
+    /// Whether this node's result is worth caching. Operations are; primitives are not — building
+    /// a primitive is cheap, so caching it only adds work (hashing, disk I/O).
+    pub fn is_cacheable(&self) -> bool {
+        match self {
+            Body::Box { .. }
+            | Body::Sphere { .. }
+            | Body::Cylinder { .. }
+            | Body::Cone { .. }
+            | Body::Torus { .. }
+            | Body::Wedge { .. }
+            | Body::Halfspace
+            | Body::Polyhedron { .. } => false,
+            Body::Extrude { .. }
+            | Body::Revolve { .. }
+            | Body::Sweep { .. }
+            | Body::Loft { .. }
+            | Body::Bool { .. }
+            | Body::Transform { .. }
+            | Body::Offset { .. }
+            | Body::ThickSolid { .. }
+            | Body::Fillet { .. } => true,
+        }
+    }
+}
+
 impl<T: Clone> Body<T> {
     /// Maps every sketch this body references, in order, returning the results (the `SketchIndex`
     /// counterpart of `try_map`: sketches live in a separate arena and are never operands of

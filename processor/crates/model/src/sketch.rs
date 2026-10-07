@@ -52,6 +52,20 @@ pub enum Sketch<T> {
     },
 }
 
+impl<T> Sketch<T> {
+    /// Whether this node's result is worth caching. Operations are; primitives are not — building
+    /// a primitive is cheap, so caching it only adds work (hashing, disk I/O).
+    pub fn is_cacheable(&self) -> bool {
+        match self {
+            Sketch::Circle { .. } | Sketch::Polygon { .. } | Sketch::Contour { .. } => false,
+            Sketch::Bool { .. }
+            | Sketch::Transform { .. }
+            | Sketch::Fillet { .. }
+            | Sketch::Offset { .. } => true,
+        }
+    }
+}
+
 impl<T: Clone> Sketch<T> {
     /// Functor over operands (the planar counterpart of [`crate::Body::try_map`]).
     pub fn try_map<U, E>(

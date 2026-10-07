@@ -41,6 +41,8 @@ impl Region {
 
 /// Builds every sketch in the arena, in order (references are `index < current`), through the region
 /// cache. `keys[i]` is the Merkle key of `sketches[i]`.
+///
+/// Only operations are cached ([`Sketch::is_cacheable`]); primitives are built directly.
 pub(super) fn build_regions<S: Cache<Key, Region> + ?Sized>(
     sketches: &[Sketch<SketchIndex>],
     keys: &[Key],
@@ -48,7 +50,11 @@ pub(super) fn build_regions<S: Cache<Key, Region> + ?Sized>(
 ) -> Result<Vec<Region>> {
     let mut regions: Vec<Region> = Vec::with_capacity(sketches.len());
     for (sketch, key) in sketches.iter().zip(keys) {
-        let region = get_or_put(cache, key, |_| evaluate_sketch(sketch, &regions))?;
+        let region = if sketch.is_cacheable() {
+            get_or_put(cache, key, |_| evaluate_sketch(sketch, &regions))?
+        } else {
+            evaluate_sketch(sketch, &regions)?
+        };
         regions.push(region);
     }
     Ok(regions)
