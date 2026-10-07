@@ -71,6 +71,10 @@ macro_rules! index_type {
             pub fn value(self) -> usize {
                 self.0
             }
+
+            pub fn new(index: usize) -> Self {
+                $name(index)
+            }
         }
     };
 }
@@ -84,12 +88,6 @@ index_type!(
     /// A back-reference to an earlier sketch in the arena (`index < current`).
     SketchIndex
 );
-
-impl BodyIndex {
-    pub fn new(index: usize) -> Self {
-        BodyIndex(index)
-    }
-}
 
 /// A finite scalar, canonicalized at deserialization (`−0.0 → +0.0`).
 macro_rules! canonical_scalar {

@@ -108,10 +108,12 @@ fn get_or_evaluate<P: Cache<Key, Part> + ?Sized>(
 }
 
 /// The body's Merkle key `H(body ‖ operand_keys… ‖ sketch_keys…)`, computed on demand (keys are not
-/// stored). References are `index < current` (checked in [`evaluate`]), so indexing is in range.
+/// stored). Operands are replaced by their keys, and sketch references by a canonical slot — their
+/// *content* keys are carried separately, so the key does not depend on arena indices. References
+/// are `index < current` (checked in [`evaluate`]), so indexing is in range.
 fn key_of(body: &Body<BodyIndex>, bodies: &[Body<BodyIndex>], sketch_keys: &[Key]) -> Result<Key> {
     let mapped: Body<Key> =
-        body.try_map(|operand| key_of(&bodies[operand.value()], bodies, sketch_keys))?;
+        body.try_map_canonical(|operand| key_of(&bodies[operand.value()], bodies, sketch_keys))?;
     let sketches = body
         .map_sketches(|sketch| sketch_keys[sketch.value()])
         .into_iter()
@@ -134,8 +136,9 @@ fn sketch_keys(sketches: &[Sketch<SketchIndex>]) -> Result<Vec<Key>> {
     Ok(keys)
 }
 
-/// The hashable input of a body's key: the body (with operand keys in place) plus the keys of the
-/// sketches it references, so a body's key depends on sketch content, not just the arena index.
+/// The hashable input of a body's key: the body (operand keys in place, sketch slots canonicalized)
+/// plus the keys of the sketches it references, so a body's key depends on sketch content, not on
+/// the arena indices of either.
 #[derive(Hash)]
 struct BodyKeyInput<'a> {
     body: &'a Body<Key>,
@@ -259,6 +262,32 @@ mod tests {
         assert!(
             outputs[0].part.shares_storage(&outputs[1].part),
             "the cache must reuse an identical operation"
+        );
+    }
+
+    #[test]
+    fn body_key_uses_sketch_content_not_index() {
+        // Two identical circles sit at different indices; the two extrudes reference one each.
+        // Identical geometry must yield the same key, whatever the arena positions.
+        let model = vg3_model::parse(
+            r#"{ "version": 1,
+                 "sketches": [
+                     { "type": "circle", "radius": 2 },
+                     { "type": "circle", "radius": 2 }
+                 ],
+                 "bodies": [
+                     { "type": "extrude", "profile": 0, "height": 1 },
+                     { "type": "extrude", "profile": 1, "height": 1 }
+                 ],
+                 "export": [] }"#,
+        )
+        .expect("parses");
+        let keys = sketch_keys(&model.sketches).expect("keys");
+        assert_eq!(keys[0], keys[1], "identical sketches share a key");
+        assert_eq!(
+            key_of(&model.bodies[0], &model.bodies, &keys).expect("key"),
+            key_of(&model.bodies[1], &model.bodies, &keys).expect("key"),
+            "the body key must use the sketch content, not its arena index"
         );
     }
 

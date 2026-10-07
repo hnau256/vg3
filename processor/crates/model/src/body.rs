@@ -174,14 +174,16 @@ impl<T: Clone> Body<T> {
         }
     }
 
-    /// Functor over operands: rebuilds the body, applying `f` to every operand, in order.
+    /// Functor over operands and sketch slots: rebuilds the body, applying `operand` to every
+    /// operand and `sketch` to every sketch reference (which replaces the slot), in order.
     ///
-    /// This is the single source of truth for "where are a body's operands". BodyIndex-level
+    /// This is the single source of truth for "where are a body's references". BodyIndex-level
     /// concerns — validation, reachability, evaluation (`Body<usize>` → `Body<Part>`) and the
-    /// cache key — are all expressed as a `try_map` over the arena.
-    pub fn try_map<U, E>(
+    /// cache key — are all expressed as a map over the arena.
+    fn rebuild<U, E>(
         &self,
-        mut f: impl FnMut(T) -> std::result::Result<U, E>,
+        mut operand: impl FnMut(T) -> std::result::Result<U, E>,
+        mut sketch: impl FnMut(SketchIndex) -> SketchIndex,
     ) -> std::result::Result<Body<U>, E> {
         Ok(match self {
             Body::Box {
@@ -239,11 +241,11 @@ impl<T: Clone> Body<T> {
             },
             Body::Halfspace => Body::Halfspace,
             Body::Extrude { profile, height } => Body::Extrude {
-                profile: profile.clone(),
+                profile: sketch(*profile),
                 height: *height,
             },
             Body::Revolve { profile, angle } => Body::Revolve {
-                profile: profile.clone(),
+                profile: sketch(*profile),
                 angle: *angle,
             },
             Body::Sweep {
@@ -252,7 +254,7 @@ impl<T: Clone> Body<T> {
                 mode,
                 transition,
             } => Body::Sweep {
-                profile: profile.clone(),
+                profile: sketch(*profile),
                 path: path.clone(),
                 mode: *mode,
                 transition: *transition,
@@ -280,11 +282,11 @@ impl<T: Clone> Body<T> {
                 tools,
             } => Body::Bool {
                 kind: *kind,
-                arguments: arguments.try_map(&mut f)?,
-                tools: tools.try_map(&mut f)?,
+                arguments: arguments.try_map(&mut operand)?,
+                tools: tools.try_map(&mut operand)?,
             },
             Body::Transform { target, op } => Body::Transform {
-                target: f(target.clone())?,
+                target: operand(target.clone())?,
                 op: op.clone(),
             },
             Body::Offset {
@@ -292,7 +294,7 @@ impl<T: Clone> Body<T> {
                 distance,
                 join,
             } => Body::Offset {
-                target: f(target.clone())?,
+                target: operand(target.clone())?,
                 distance: *distance,
                 join: *join,
             },
@@ -302,7 +304,7 @@ impl<T: Clone> Body<T> {
                 faces,
                 join,
             } => Body::ThickSolid {
-                target: f(target.clone())?,
+                target: operand(target.clone())?,
                 offset: *offset,
                 faces: faces.clone(),
                 join: *join,
@@ -316,10 +318,29 @@ impl<T: Clone> Body<T> {
                 kind,
                 radius,
             } => Body::Fillet {
-                target: f(target.clone())?,
+                target: operand(target.clone())?,
                 kind: *kind,
                 radius: radius.clone(),
             },
         })
+    }
+
+    /// Functor over operands: rebuilds the body, applying `f` to every operand, in order, keeping
+    /// sketch references as they are.
+    pub fn try_map<U, E>(
+        &self,
+        f: impl FnMut(T) -> std::result::Result<U, E>,
+    ) -> std::result::Result<Body<U>, E> {
+        self.rebuild(f, |sketch| sketch)
+    }
+
+    /// Rebuilds the body like [`Body::try_map`], but replaces every sketch reference with a
+    /// canonical slot: a body's cache key must depend on the *content* of the sketches it uses,
+    /// not on their arena indices (the sketch keys are carried alongside by [`Body::map_sketches`]).
+    pub fn try_map_canonical<U, E>(
+        &self,
+        f: impl FnMut(T) -> std::result::Result<U, E>,
+    ) -> std::result::Result<Body<U>, E> {
+        self.rebuild(f, |_| SketchIndex::new(0))
     }
 }
