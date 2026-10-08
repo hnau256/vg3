@@ -145,15 +145,32 @@ struct BodyKeyInput<'a> {
     sketches: Vec<Key>,
 }
 
-/// Version seed mixed into every key: the tool version plus the OpenCASCADE version, so cached
-/// entries are not reused after a semantics change.
+/// The running binary's fingerprint. Mixed into every key so a change to the geometry semantics
+/// (engine or native bridge) changes the binary and invalidates the cache — with no hand-maintained
+/// version to forget. Falls back to the crate version if the executable cannot be read.
+fn binary_fingerprint() -> String {
+    let Ok(bytes) = std::env::current_exe().and_then(|path| std::fs::read(path)) else {
+        return env!("CARGO_PKG_VERSION").to_string();
+    };
+    let key = Fingerprinter::new("vg3-binary").of(&bytes);
+    let mut hex = String::with_capacity(key.as_ref().len() * 2);
+    for byte in key.as_ref() {
+        use std::fmt::Write;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
+/// Version seed mixed into every key: the running binary plus the OpenCASCADE version (a dynamic
+/// library, so not part of the binary). The IR contract version is deliberately **not** mixed in —
+/// what matters is the code that built the entry, not the schema it happened to be written under.
 fn fingerprinter() -> &'static Fingerprinter {
     static FINGERPRINTER: OnceLock<Fingerprinter> = OnceLock::new();
     FINGERPRINTER.get_or_init(|| {
         Fingerprinter::new(format!(
-            "vg3-ir1; vg3 {}; occt {}",
-            env!("CARGO_PKG_VERSION"),
-            ffi::occt_version()
+            "occt {}; binary {}",
+            ffi::occt_version(),
+            binary_fingerprint()
         ))
     })
 }

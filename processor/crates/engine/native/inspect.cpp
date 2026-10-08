@@ -4,10 +4,8 @@
 #include <stdexcept>
 
 #include <BRepAdaptor_Surface.hxx>
-#include <BRepBndLib.hxx>
 #include <BRepGProp.hxx>
 #include <BRepLProp_SLProps.hxx>
-#include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <TopExp.hxx>
@@ -81,15 +79,7 @@ rust::Vec<double> face_data(const Shape& shape, std::size_t index) {
         normal = gp_Vec(direction);
     }
 
-    Bnd_Box bounds;
-    BRepBndLib::Add(face, bounds);
-    double x_min = 0.0;
-    double y_min = 0.0;
-    double z_min = 0.0;
-    double x_max = 0.0;
-    double y_max = 0.0;
-    double z_max = 0.0;
-    bounds.Get(x_min, y_min, z_min, x_max, y_max, z_max);
+    const detail::Bounds bounds = detail::bounds(face);
 
     rust::Vec<double> data;
     data.push_back(normal.X());
@@ -99,12 +89,12 @@ rust::Vec<double> face_data(const Shape& shape, std::size_t index) {
     data.push_back(center.Y());
     data.push_back(center.Z());
     data.push_back(properties.Mass());
-    data.push_back(x_min);
-    data.push_back(y_min);
-    data.push_back(z_min);
-    data.push_back(x_max);
-    data.push_back(y_max);
-    data.push_back(z_max);
+    data.push_back(bounds.min.X());
+    data.push_back(bounds.min.Y());
+    data.push_back(bounds.min.Z());
+    data.push_back(bounds.max.X());
+    data.push_back(bounds.max.Y());
+    data.push_back(bounds.max.Z());
     return data;
 }
 

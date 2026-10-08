@@ -4,7 +4,6 @@
 #include <stdexcept>
 
 #include <BRepAdaptor_Curve.hxx>
-#include <BRepBndLib.hxx>
 #include <BRepGProp.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <GProp_GProps.hxx>
@@ -12,7 +11,6 @@
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS.hxx>
-#include <Bnd_Box.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
@@ -60,15 +58,7 @@ rust::Vec<double> edge_data(const TopoDS_Edge& edge) {
     const gp_Pnt start = curve.Value(first);
     const gp_Pnt end = curve.Value(last);
 
-    Bnd_Box bounds;
-    BRepBndLib::Add(edge, bounds);
-    double xmin = 0.0;
-    double ymin = 0.0;
-    double zmin = 0.0;
-    double xmax = 0.0;
-    double ymax = 0.0;
-    double zmax = 0.0;
-    bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+    const detail::Bounds bounds = detail::bounds(edge);
 
     rust::Vec<double> data;
     data.push_back(properties.Mass());          // 0: length
@@ -86,12 +76,12 @@ rust::Vec<double> edge_data(const TopoDS_Edge& edge) {
     data.push_back(middle.X());                 // 12,13,14: center (mid parameter)
     data.push_back(middle.Y());
     data.push_back(middle.Z());
-    data.push_back(xmin);                       // 15,16,17: bbox min
-    data.push_back(ymin);
-    data.push_back(zmin);
-    data.push_back(xmax);                       // 18,19,20: bbox max
-    data.push_back(ymax);
-    data.push_back(zmax);
+    data.push_back(bounds.min.X());             // 15,16,17: bbox min
+    data.push_back(bounds.min.Y());
+    data.push_back(bounds.min.Z());
+    data.push_back(bounds.max.X());             // 18,19,20: bbox max
+    data.push_back(bounds.max.Y());
+    data.push_back(bounds.max.Z());
     return data;
 }
 

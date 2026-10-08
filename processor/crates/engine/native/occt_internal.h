@@ -6,12 +6,15 @@
 
 #include <Standard_Failure.hxx>
 #include <Approx_ParametrizationType.hxx>
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_TransitionMode.hxx>
 #include <GeomAbs_JoinType.hxx>
 #include <GeomAbs_Shape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
+#include <gp_Pnt.hxx>
 
 namespace vg3 {
 
@@ -21,6 +24,21 @@ namespace detail {
 
 constexpr double kPointTolerance = 1e-7;
 constexpr double kOffsetTolerance = 1e-3;
+
+/// A shape's bounds as two corner points, computed from geometry without inflating by sub-shape
+/// tolerances (`BRepBndLib::Add` would). So a sub-shape on the boundary shares the body's bounds,
+/// which makes predicates like `is_close(edge.min.z, box.max.z)` meaningful.
+struct Bounds {
+    gp_Pnt min;
+    gp_Pnt max;
+};
+
+inline Bounds bounds(const TopoDS_Shape& shape) {
+    Bnd_Box box;
+    BRepBndLib::AddOptimal(shape, box, Standard_False, Standard_False);
+    box.SetGap(0.0);
+    return Bounds{box.CornerMin(), box.CornerMax()};
+}
 
 /// Maps the IR join kind (`0` = arc, `1` = tangent, `2` = intersection) to `GeomAbs_JoinType`.
 inline GeomAbs_JoinType join_type(std::uint8_t code) {

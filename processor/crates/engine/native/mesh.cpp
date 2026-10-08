@@ -3,11 +3,9 @@
 
 #include <stdexcept>
 
-#include <BRepBndLib.hxx>
 #include <BRepGProp.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Tool.hxx>
-#include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
 #include <Poly_Triangulation.hxx>
 #include <TopAbs.hxx>
@@ -56,22 +54,14 @@ rust::Vec<double> triangulation(const Shape& shape, double tolerance) {
 }
 
 rust::Vec<double> bounding_box(const Shape& shape) {
-    Bnd_Box box;
-    BRepBndLib::Add(shape.topods(), box);
-    Standard_Real min_x = 0.0;
-    Standard_Real min_y = 0.0;
-    Standard_Real min_z = 0.0;
-    Standard_Real max_x = 0.0;
-    Standard_Real max_y = 0.0;
-    Standard_Real max_z = 0.0;
-    box.Get(min_x, min_y, min_z, max_x, max_y, max_z);
+    const detail::Bounds bounds = detail::bounds(shape.topods());
     rust::Vec<double> result;
-    result.push_back(min_x);
-    result.push_back(min_y);
-    result.push_back(min_z);
-    result.push_back(max_x);
-    result.push_back(max_y);
-    result.push_back(max_z);
+    result.reserve(6);
+    for (const gp_Pnt& corner : {bounds.min, bounds.max}) {
+        result.push_back(corner.X());
+        result.push_back(corner.Y());
+        result.push_back(corner.Z());
+    }
     return result;
 }
 
