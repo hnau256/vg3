@@ -1,0 +1,37 @@
+# Keep the base URL at the root and use relative URLs: the same build then works both when opened
+# from disk (file://…/html/index.html) and when served by GitHub Pages under the /vg3/ subpath.
+baseURL = "/"
+locale = "en"
+title = "vg3"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+publishDir = "html"
+enableRobotsTXT = true
+relativeURLs = true
+
+[languages]
+  [languages.en]
+    label = "English"
+    contentDir = "content/en"
+    weight = 1
+
+[params]
+  description = "vg3 documentation"
+
+  # The public URL, used only to make the sitemap absolute (see layouts/sitemap.xml); `baseURL`
+  # stays "/" so the same build works from disk and under the Pages subpath.
+  siteURL = "https://hnau256.github.io/vg3/"
+
+  # Hide Hextra's default hexagon logo; vg3 has no logo yet. Set a `logo.path` to bring one back.
+  [params.navbar]
+    displayLogo = false
+
+[menu]
+  [[menu.main]]
+    name = "Documentation"
+    pageRef = "/docs"
+    weight = 1
+
+[module]
+  [[module.imports]]
+    path = "github.com/imfing/hextra"

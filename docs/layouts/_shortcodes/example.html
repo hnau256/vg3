@@ -1,0 +1,31 @@
+{{- $id := .Get "id" -}}
+{{- if not $id -}}{{- errorf "the example shortcode requires an id" -}}{{- end -}}
+
+{{- $source := readFile (printf "examples/%s.kt" $id) -}}
+{{- $body := slice -}}
+{{- range split $source "\n" -}}
+  {{- if not (hasPrefix (trim . " \t") "// vg3:") -}}
+    {{- $body = $body | append . -}}
+  {{- end -}}
+{{- end -}}
+{{- $code := strings.TrimSpace (delimit $body "\n") -}}
+
+{{- $json := resources.Get (printf "examples/%s.json" $id) -}}
+{{- if not $json -}}{{- errorf "missing examples/%s.json (run docs/build.sh)" $id -}}{{- end -}}
+{{- $png := resources.Get (printf "examples/%s.png" $id) -}}
+{{- if not $png -}}{{- errorf "missing examples/%s.png (run docs/build.sh)" $id -}}{{- end -}}
+
+<div class="vg3-example">
+  <div class="vg3-example__panel">
+    <div class="vg3-example__title">{{ i18n "example_code" }}</div>
+    {{ transform.Highlight $code "kotlin" }}
+  </div>
+  <div class="vg3-example__panel">
+    <div class="vg3-example__title">{{ i18n "example_model" }}</div>
+    {{ transform.Highlight $json.Content "json" }}
+  </div>
+  <div class="vg3-example__panel">
+    <div class="vg3-example__title">{{ i18n "example_preview" }}</div>
+    <img src="{{ $png.RelPermalink }}" alt="{{ $id }}" loading="lazy">
+  </div>
+</div>

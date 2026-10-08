@@ -1,0 +1,5 @@
+# UI strings for the example panels. Keep them here (not hardcoded) so translations can be added
+# as sibling files (e.g. `ru.toml`) without touching the generator or the shortcode.
+example_code = "Kotlin"
+example_model = "IR JSON"
+example_preview = "Preview"
