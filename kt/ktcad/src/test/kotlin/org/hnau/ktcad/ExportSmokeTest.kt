@@ -3,6 +3,7 @@ package org.hnau.ktcad
 import org.hnau.ktcad.ir.Vec2
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -94,5 +95,31 @@ class ExportSmokeTest {
 
         assertTrue(output.exists() && output.length() > 0, "report must be written: ${output.absolutePath}")
         assertTrue(output.readText().contains("\"name\": \"box\""), "report names the body")
+    }
+
+    @Test
+    fun step_preview_lists_every_part_and_stl_only_the_printable_ones() {
+        val step = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-preview.step")
+        val printDir = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-print")
+        step.delete()
+        printDir.deleteRecursively()
+
+        listOf(
+            PrintPart(
+                part = Part(name = "hook", solid = box(1.0, 1.0, 1.0)),
+                stlTransformation = { rotateX(Math.PI) },
+            ),
+            PrintPart(part = Part(name = "cabinet", solid = box(3.0, 3.0, 3.0))),
+        ).stepPreviewAndStlExport(
+            step = Format.Step(filename = step.absolutePath),
+            stl = Format.Stl(output = Output.Multi(printDir.absolutePath)),
+        )
+
+        assertTrue(step.exists() && step.length() > 0, "STEP preview must be written: ${step.absolutePath}")
+        assertTrue(File(printDir, "hook.stl").exists(), "printable part must have an STL")
+        assertFalse(
+            File(printDir, "cabinet.stl").exists(),
+            "a preview-only part must not be exported to STL",
+        )
     }
 }

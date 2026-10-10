@@ -90,6 +90,19 @@ fun main() {
 экспорта и запускает `vg3` (`VG3_BIN` или `PATH`). При ненулевом коде возврата бросается исключение
 с выводом процесса.
 
+Для работы «предпросмотр + печать» есть `stepPreviewAndStlExport` (ниже): каждая сущность показана
+в STEP-предпросмотре, а в STL попадают только печатаемые (у которых задана `stlTransformation`).
+
+```kotlin
+listOf(
+    PrintPart(Part("cabinet", cabinet)),                                  // только предпросмотр
+    PrintPart(Part("hook", hook), stlTransformation = { rotateX(Math.PI) }), // ещё и в STL
+).stepPreviewAndStlExport(
+    step = Format.Step(filename = "preview.step"),
+    stl = Format.Stl(output = Output.Multi("print")),
+)
+```
+
 ### API
 
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
@@ -140,6 +153,12 @@ fun main() {
 - **`Model.json()`** — канонический IR-JSON той же модели (для инструментов вроде генератора
   документации); ядро не запускается.
 - **`Model.export(format)`** — сериализация модели и конфига экспорта, запуск ядра.
+- **`PrintPart(part, stlTransformation?)`** — сущность для печати/предпросмотра: `part: Part`
+  всегда попадает в STEP-предпросмотр; в STL — только если задан `stlTransformation: (Solid.() -> Solid)?`
+  (применяется лишь к STL, напр. разворот против нависаний; для печати без поворота — `{ this }`).
+- **`List<PrintPart>.stepPreviewAndStlExport(step, stl)`** — гоняет ядро дважды: STEP-модель со
+  **всеми** частями (в исходной ориентации) и STL-модель только из печатаемых (каждая — со своей
+  `stlTransformation`). Пустой набор печатаемых частей — ошибка.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?, compression?)`** /
   **`Format.Step(filename)`** (STEP всегда один файл, без `output`) /
   **`Format.Json(filename)`** (отчёт-метаданные о телах: имя, цвет, bbox, объём/площадь, число
