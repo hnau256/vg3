@@ -1,10 +1,6 @@
 package org.hnau.ktcad.docs
 
-import org.hnau.ktcad.Format
-import org.hnau.ktcad.Output
-import org.hnau.ktcad.Part
-import org.hnau.ktcad.Solid
-import org.hnau.ktcad.Vg3
+import org.hnau.ktcad.*
 import org.hnau.ktcad.docs.generated.examples
 import java.io.File
 
@@ -24,11 +20,10 @@ fun main(args: Array<String>) {
 
     for (example in examples) {
         val camera = parseCamera(example.id, example.camera)
-        val parts = toParts(example.build(), example.id)
-        File(outputDir, "${example.id}.json").writeText(Vg3.json(parts))
-        Vg3.export(
-            parts = parts,
-            format = Format.Png(
+        val model = toParts(example.build(), example.id).model()
+        File(outputDir, "${example.id}.json").writeText(model.json())
+        model.export(
+            Format.Png(
                 output = Output.Single(File(outputDir, "${example.id}.png").absolutePath),
                 azimuth = camera.azimuth,
                 elevation = camera.elevation,

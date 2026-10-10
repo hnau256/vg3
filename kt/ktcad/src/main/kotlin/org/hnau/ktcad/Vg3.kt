@@ -14,71 +14,11 @@ import java.util.concurrent.TimeUnit
  * The vg3 frontend: builds the IR (two flat arenas — planar `Sketch`es and `ir.Body`s) from the
  * [Solid] domain graph and hands it to the `vg3` binary.
  *
- * Mirrors the CLI: a model (`version`/`sketches`/`bodies`/`export`) plus an `export` configuration.
+ * A model is built by lowering a list of [Part]s (`parts.model()`); the result is serialized with
+ * [Model.json] and run through the engine with [Model.export].
  */
-object Vg3 {
 
-    private const val VERSION = 1
-
-    /**
-     * Lowers [parts] to the flat arenas, serializes the model and export config, and
-     * runs `vg3`.
-     *
-     * `vg3` must be on `PATH` (override with the `VG3_BIN` environment variable).
-     */
-    fun export(
-        parts: List<Part>,
-        format: Format,
-    ) {
-        run(json(parts), format.toJson())
-    }
-
-    /**
-     * Lowers [parts] to the flat arenas and returns the canonical IR model.
-     *
-     * A part without an explicit [Part.color] gets a deterministic palette color derived from its
-     * name, so the JSON (and every exporter: PNG, STEP, the `json` report) always carries a color.
-     */
-    fun model(parts: List<Part>): Model {
-        val arena = Arena()
-        val exports = parts.map { part ->
-            Export(
-                index = arena.body(part.solid),
-                name = part.name,
-                color = part.color ?: paletteColor(part.name),
-            )
-        }
-        return Model(
-            version = VERSION,
-            sketches = arena.sketches,
-            bodies = arena.bodies,
-            export = exports,
-        )
-    }
-
-    /** The canonical IR JSON for [parts] (the same bytes [export] hands to the engine). */
-    fun json(parts: List<Part>): String =
-        vg3Json.encodeToString(Model.serializer(), model(parts))
-
-    private fun run(modelJson: String, exportConfigJson: String) {
-        val command = listOf(
-            System.getenv("VG3_BIN") ?: "vg3",
-            "--model-json", modelJson,
-            "--export-config-json", exportConfigJson,
-        )
-        val process = ProcessBuilder(command)
-            .redirectErrorStream(true)
-            .start()
-        val output = process.inputStream.bufferedReader().readText()
-        if (!process.waitFor(10, TimeUnit.MINUTES)) {
-            process.destroyForcibly()
-            error("vg3 did not finish within 10 minutes")
-        }
-        check(process.exitValue() == 0) {
-            "vg3 failed (exit ${process.exitValue()}):\n$output"
-        }
-    }
-}
+private const val VERSION = 1
 
 /** A named, optionally colored solid to place in the model's `export` list. */
 data class Part(
@@ -86,6 +26,60 @@ data class Part(
     val solid: Solid,
     val color: Color? = null,
 )
+
+/**
+ * Lowers [this] to the flat arenas and returns the canonical IR model.
+ *
+ * A part without an explicit [Part.color] gets a deterministic palette color derived from its
+ * name, so the JSON (and every exporter: PNG, STEP, the `json` report) always carries a color.
+ */
+fun List<Part>.model(): Model {
+    val arena = Arena()
+    val exports = map { part ->
+        Export(
+            index = arena.body(part.solid),
+            name = part.name,
+            color = part.color ?: paletteColor(part.name),
+        )
+    }
+    return Model(
+        version = VERSION,
+        sketches = arena.sketches,
+        bodies = arena.bodies,
+        export = exports,
+    )
+}
+
+/** The canonical IR JSON (the same bytes [export] hands to the engine). */
+fun Model.json(): String = vg3Json.encodeToString(Model.serializer(), this)
+
+/**
+ * Serializes [this] and the [format] config, then runs `vg3`.
+ *
+ * `vg3` must be on `PATH` (override with the `VG3_BIN` environment variable).
+ */
+fun Model.export(format: Format) {
+    run(json(), format.toJson())
+}
+
+private fun run(modelJson: String, exportConfigJson: String) {
+    val command = listOf(
+        System.getenv("VG3_BIN") ?: "vg3",
+        "--model-json", modelJson,
+        "--export-config-json", exportConfigJson,
+    )
+    val process = ProcessBuilder(command)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    if (!process.waitFor(10, TimeUnit.MINUTES)) {
+        process.destroyForcibly()
+        error("vg3 did not finish within 10 minutes")
+    }
+    check(process.exitValue() == 0) {
+        "vg3 failed (exit ${process.exitValue()}):\n$output"
+    }
+}
 
 /**
  * Lowers the reference DAGs to the flat arenas:

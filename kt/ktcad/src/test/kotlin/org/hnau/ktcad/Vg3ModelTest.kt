@@ -23,7 +23,7 @@ class Vg3ModelTest {
     @Test
     fun json_assigns_a_palette_color_when_none_is_given() {
         val model = Json.parseToJsonElement(
-            Vg3.json(listOf(Part(name = "box", solid = box(1.0, 1.0, 1.0)))),
+            listOf(Part(name = "box", solid = box(1.0, 1.0, 1.0))).model().json(),
         )
         val color = model.jsonObject["export"]!!.jsonArray[0].jsonObject["color"]
         assertNotNull(color, "an absent color must be filled from the palette")
@@ -33,9 +33,9 @@ class Vg3ModelTest {
     fun json_keeps_an_explicit_color() {
         val explicit = Color(r = 0.1, g = 0.2, b = 0.3)
         val model = Json.parseToJsonElement(
-            Vg3.json(
-                listOf(Part(name = "box", solid = box(1.0, 1.0, 1.0), color = explicit)),
-            ),
+            listOf(Part(name = "box", solid = box(1.0, 1.0, 1.0), color = explicit))
+                .model()
+                .json(),
         )
         val color = model.jsonObject["export"]!!.jsonArray[0].jsonObject["color"]!!.jsonObject
         assertEquals(0.1, color["r"]!!.jsonPrimitive.double)

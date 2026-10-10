@@ -9,7 +9,7 @@
 
 ```
 kt/
-  ktcad/        runtime-библиотека: сгенерированный ir, доменный Solid, Vg3, Format
+  ktcad/        runtime-библиотека: сгенерированный ir, доменный Solid/Region, экспорт, Format
   gen-schema/   кодогенератор: JSON Schema -> Kotlin ir-классы (универсальный)
   gen-solid/    кодогенератор: KSP-процессор, ir.Body -> Solid, ir.Sketch -> Region (+ мапперы, фабрики)
 ```
@@ -80,15 +80,15 @@ fun main() {
     val boss = cylinder(radius = 5.0, height = 10.0)
     val model = fuse(listOf(body, boss))
 
-    Vg3.export(
-        parts = listOf(Part(name = "model", solid = model)),
-        format = Format.Stl(output = Output.Single("model.stl")),
-    )
+    listOf(Part(name = "model", solid = model))
+        .model()
+        .export(Format.Stl(output = Output.Single("model.stl")))
 }
 ```
 
-`Vg3.export` сериализует модель и конфиг экспорта и запускает `vg3` (`VG3_BIN` или `PATH`).
-При ненулевом коде возврата бросается исключение с выводом процесса.
+`List<Part>.model()` делает lowering в арену; `Model.export(format)` сериализует модель и конфиг
+экспорта и запускает `vg3` (`VG3_BIN` или `PATH`). При ненулевом коде возврата бросается исключение
+с выводом процесса.
 
 ### API
 
@@ -136,9 +136,10 @@ fun main() {
 - **`Part(name, solid, color?)`** — запись списка `export` модели. Если `color` не задан, он
   выводится детерминированно из имени по палитре elementary OS (базовые «500»), так что предпросмотр
   (PNG/STEP) всегда разноцветный; явный `color` побеждает.
-- **`Vg3.export(parts, format)`** — lowering в арену, сериализация, запуск ядра.
-- **`Vg3.model(parts)`** / **`Vg3.json(parts)`** — тот же lowering и сериализация без запуска ядра:
-  каноническая IR-модель / её JSON (для инструментов вроде генератора документации).
+- **`List<Part>.model()`** — lowering списка частей в арену; каноническая IR-модель.
+- **`Model.json()`** — канонический IR-JSON той же модели (для инструментов вроде генератора
+  документации); ядро не запускается.
+- **`Model.export(format)`** — сериализация модели и конфига экспорта, запуск ядра.
 - **`Format.Stl(output, tolerance?)`** / **`Format.Png(output, tolerance?, size?, azimuth?, elevation?, compression?)`** /
   **`Format.Step(filename)`** (STEP всегда один файл, без `output`) /
   **`Format.Json(filename)`** (отчёт-метаданные о телах: имя, цвет, bbox, объём/площадь, число
@@ -171,7 +172,7 @@ DSL:  box(...) :: Solid              Фабрики (генерируются и
 - **Кодогенерация.** `ir` (структура IR) генерируется из JSON Schema, а `Solid`/`Region` + мапперы +
   фабрики — KSP из `ir.Body`/`ir.Sketch`. Обе таски выведены из одного источника (Rust-типы
   `vg3-model`), поэтому не расходятся.
-- **Arena.** `Vg3` складывает `Solid` и `Region` в две арены с дедупликацией по `equals`: один и тот же
+- **Arena.** `model()` складывает `Solid` и `Region` в две арены с дедупликацией по `equals`: один и тот же
   узел занимает одну позицию (переиспользование → один узел, несколько ссылок). Lowering идёт bottom-up,
   так что операнды всегда получают индекс раньше родителя (`index < current`); тело ссылается на эскиз,
   эскиз на тело — никогда.

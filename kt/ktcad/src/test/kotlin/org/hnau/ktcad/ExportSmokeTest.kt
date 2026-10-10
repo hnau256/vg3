@@ -17,10 +17,9 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-box.stl")
         output.delete()
 
-        Vg3.export(
-            parts = listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0))),
-            format = Format.Stl(output = Output.Single(output.absolutePath)),
-        )
+        listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0)))
+            .model()
+            .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
@@ -36,10 +35,9 @@ class ExportSmokeTest {
             Vec2(10.0, 10.0),
             Vec2(0.0, 10.0),
         )
-        Vg3.export(
-            parts = listOf(Part(name = "prism", solid = square.extrude(5.0))),
-            format = Format.Stl(output = Output.Single(output.absolutePath)),
-        )
+        listOf(Part(name = "prism", solid = square.extrude(5.0)))
+            .model()
+            .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
@@ -49,10 +47,9 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-fillet2d.stl")
         output.delete()
 
-        Vg3.export(
-            parts = listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2dAll(2.0).extrude(5.0))),
-            format = Format.Stl(output = Output.Single(output.absolutePath)),
-        )
+        listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2dAll(2.0).extrude(5.0)))
+            .model()
+            .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
@@ -63,10 +60,9 @@ class ExportSmokeTest {
         output.delete()
 
         val donut = circle(10.0).cut(circle(5.0)).offset2d(2.0).extrude(3.0)
-        Vg3.export(
-            parts = listOf(Part(name = "donut", solid = donut)),
-            format = Format.Stl(output = Output.Single(output.absolutePath)),
-        )
+        listOf(Part(name = "donut", solid = donut))
+            .model()
+            .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
@@ -80,10 +76,9 @@ class ExportSmokeTest {
             offset = -1.0,
             expression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
         )
-        Vg3.export(
-            parts = listOf(Part(name = "hollow", solid = hollow)),
-            format = Format.Stl(output = Output.Single(output.absolutePath)),
-        )
+        listOf(Part(name = "hollow", solid = hollow))
+            .model()
+            .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
         assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
     }
@@ -93,10 +88,9 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-report.json")
         output.delete()
 
-        Vg3.export(
-            parts = listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0))),
-            format = Format.Json(filename = output.absolutePath),
-        )
+        listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0)))
+            .model()
+            .export(Format.Json(filename = output.absolutePath))
 
         assertTrue(output.exists() && output.length() > 0, "report must be written: ${output.absolutePath}")
         assertTrue(output.readText().contains("\"name\": \"box\""), "report names the body")
