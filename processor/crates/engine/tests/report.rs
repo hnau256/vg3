@@ -29,7 +29,7 @@ const REQUIRED_TYPES: &[&str] = &[
     // Sketch
     "circle", "polygon", "contour", "fillet2d", "offset2d",
     // Curve
-    "line", "arc", "spline", "helix",
+    "line", "arc", "spline", "bezier", "helix",
     // TransformOp / TransformOp2
     "translate", "rotate", "mirror", "scale", "matrix",
     // RadiusSpec

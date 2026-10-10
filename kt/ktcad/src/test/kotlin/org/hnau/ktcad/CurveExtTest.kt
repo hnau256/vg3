@@ -91,4 +91,44 @@ class CurveExtTest {
             Path(p(0.0, 0.0, 0.0), helix(pitch = 1.0, height = 4.0), lineRel(0.0, 0.0, 1.0))
         }
     }
+
+    @Test
+    fun bezier_builds_a_bezier_curve() {
+        val path = Path(
+            p(0.0, 0.0, 0.0),
+            bezierTo(p(0.0, 0.0, 5.0), p(10.0, 0.0, 5.0), p(10.0, 0.0, 10.0)),
+        )
+        assertEquals(
+            listOf(
+                Curve3.Bezier(
+                    nonEmptyListOf(
+                        Vec3(0.0, 0.0, 5.0),
+                        Vec3(10.0, 0.0, 5.0),
+                        Vec3(10.0, 0.0, 10.0),
+                    ),
+                ),
+            ),
+            path.edges.toList(),
+        )
+    }
+
+    @Test
+    fun spline_carries_end_tangents() {
+        val path = Path(
+            p(0.0, 0.0, 0.0),
+            splineTo(
+                Vec3(10.0, 0.0, 0.0),
+                tangentStart = Vec3(0.0, 0.0, 1.0),
+                tangentEnd = Vec3(1.0, 0.0, 0.0),
+            ),
+        )
+        assertEquals(
+            Curve3.Spline(
+                points = nonEmptyListOf(Vec3(10.0, 0.0, 0.0)),
+                tangent_start = Vec3(0.0, 0.0, 1.0),
+                tangent_end = Vec3(1.0, 0.0, 0.0),
+            ),
+            path.edges.head,
+        )
+    }
 }

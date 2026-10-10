@@ -28,9 +28,22 @@ fn add_curve2(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve2) -> Result<()> 
             to.y.value(),
             0.0,
         )?,
-        Curve2::Spline { points } => builder.spline(&flatten2(points.as_slice()))?,
+        Curve2::Spline {
+            points,
+            tangent_start,
+            tangent_end,
+        } => builder.spline(
+            &flatten2(points.as_slice()),
+            &tangent2(tangent_start),
+            &tangent2(tangent_end),
+        )?,
+        Curve2::Bezier { points } => builder.bezier(&flatten2(points.as_slice()))?,
     }
     Ok(())
+}
+
+fn tangent2(tangent: &Option<Vec2>) -> Vec<f64> {
+    tangent.map_or_else(Vec::new, |t| vec![t.x.value(), t.y.value(), 0.0])
 }
 
 fn flatten2(points: &[Vec2]) -> Vec<f64> {
@@ -68,7 +81,16 @@ fn add_curve3(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve3) -> Result<()> 
             to.y.value(),
             to.z.value(),
         )?,
-        Curve3::Spline { points } => builder.spline(&flatten3(points.as_slice()))?,
+        Curve3::Spline {
+            points,
+            tangent_start,
+            tangent_end,
+        } => builder.spline(
+            &flatten3(points.as_slice()),
+            &tangent3(tangent_start),
+            &tangent3(tangent_end),
+        )?,
+        Curve3::Bezier { points } => builder.bezier(&flatten3(points.as_slice()))?,
         Curve3::Helix {
             pitch,
             height,
@@ -76,6 +98,10 @@ fn add_curve3(builder: Pin<&mut ffi::WireBuilder>, edge: &Curve3) -> Result<()> 
         } => builder.helix(pitch.value(), height.value(), *right_handed)?,
     }
     Ok(())
+}
+
+fn tangent3(tangent: &Option<Vec3>) -> Vec<f64> {
+    tangent.map_or_else(Vec::new, |t| vec![t.x.value(), t.y.value(), t.z.value()])
 }
 
 fn flatten3(points: &[Vec3]) -> Vec<f64> {

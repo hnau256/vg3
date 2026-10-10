@@ -51,8 +51,22 @@ fun arcRel(viaDx: Double, viaDy: Double, toDx: Double, toDy: Double): ContourSeg
     )
 }
 
-fun splineTo(initial: Vec2, vararg additional: Vec2): ContourSegment =
-    { Curve2.Spline(points = nonEmptyListOf(initial, *additional)) }
+fun splineTo(
+    initial: Vec2,
+    vararg additional: Vec2,
+    tangentStart: Vec2? = null,
+    tangentEnd: Vec2? = null,
+): ContourSegment = {
+    Curve2.Spline(
+        points = nonEmptyListOf(initial, *additional),
+        tangent_start = tangentStart,
+        tangent_end = tangentEnd,
+    )
+}
+
+/** A 2D Bezier: [first], [second] and [additional] are the poles after the current point. */
+fun bezierTo(first: Vec2, second: Vec2, vararg additional: Vec2): ContourSegment =
+    { Curve2.Bezier(points = nonEmptyListOf(first, second, *additional)) }
 
 // --- 3D segments ------------------------------------------------------------
 
@@ -83,8 +97,22 @@ fun arcRel(
     )
 }
 
-fun splineTo(initial: Vec3, vararg additional: Vec3): PathSegment =
-    { Curve3.Spline(points = nonEmptyListOf(initial, *additional)) }
+fun splineTo(
+    initial: Vec3,
+    vararg additional: Vec3,
+    tangentStart: Vec3? = null,
+    tangentEnd: Vec3? = null,
+): PathSegment = {
+    Curve3.Spline(
+        points = nonEmptyListOf(initial, *additional),
+        tangent_start = tangentStart,
+        tangent_end = tangentEnd,
+    )
+}
+
+/** A 3D Bezier: [first], [second] and [additional] are the poles after the current point. */
+fun bezierTo(first: Vec3, second: Vec3, vararg additional: Vec3): PathSegment =
+    { Curve3.Bezier(points = nonEmptyListOf(first, second, *additional)) }
 
 /**
  * A helix around the Z axis through the origin, starting at the current point (its radius and phase
@@ -144,11 +172,13 @@ private fun Curve2.end(): Vec2 = when (this) {
     is Curve2.Line -> to
     is Curve2.Arc -> to
     is Curve2.Spline -> points.last()
+    is Curve2.Bezier -> points.last()
 }
 
 private fun Curve3.end(): Vec3 = when (this) {
     is Curve3.Line -> to
     is Curve3.Arc -> to
     is Curve3.Spline -> points.last()
+    is Curve3.Bezier -> points.last()
     is Curve3.Helix -> error("a helix cannot be followed by a relative segment")
 }

@@ -32,7 +32,14 @@ pub(crate) mod ffi {
             to_z: f64,
         ) -> Result<()>;
 
-        fn spline(self: Pin<&mut WireBuilder>, points: &[f64]) -> Result<()>;
+        fn spline(
+            self: Pin<&mut WireBuilder>,
+            points: &[f64],
+            tangent_start: &[f64],
+            tangent_end: &[f64],
+        ) -> Result<()>;
+
+        fn bezier(self: Pin<&mut WireBuilder>, poles: &[f64]) -> Result<()>;
 
         fn helix(
             self: Pin<&mut WireBuilder>,

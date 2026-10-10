@@ -13,15 +13,19 @@
 #include <Geom2d_Curve.hxx>
 #include <GeomAPI_Interpolate.hxx>
 #include <Geom_BSplineCurve.hxx>
+#include <Geom_BezierCurve.hxx>
 #include <Geom_CylindricalSurface.hxx>
 #include <Geom_TrimmedCurve.hxx>
 #include <Poly_Triangulation.hxx>
+#include <TColStd_HArray1OfBoolean.hxx>
+#include <TColgp_Array1OfVec.hxx>
 #include <TColgp_HArray1OfPnt.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Pnt2d.hxx>
+#include <gp_Vec.hxx>
 
 namespace vg3 {
 WireBuilder::WireBuilder() : started_(false), has_edges_(false) {}
@@ -87,7 +91,11 @@ void WireBuilder::arc(
     current_point_ = to;
 }
 
-void WireBuilder::spline(rust::Slice<const double> points) {
+void WireBuilder::spline(
+    rust::Slice<const double> points,
+    rust::Slice<const double> tangent_start,
+    rust::Slice<const double> tangent_end
+) {
     if (points.size() < 3 || points.size() % 3 != 0) {
         throw std::runtime_error("a spline requires at least one point after the start");
     }
@@ -102,6 +110,24 @@ void WireBuilder::spline(rust::Slice<const double> points) {
         );
     }
     GeomAPI_Interpolate interpolation(array, Standard_False, detail::kPointTolerance);
+    if (tangent_start.size() == 3 || tangent_end.size() == 3) {
+        TColgp_Array1OfVec tangents(1, static_cast<Standard_Integer>(count + 1));
+        Handle(TColStd_HArray1OfBoolean) flags =
+            new TColStd_HArray1OfBoolean(1, static_cast<Standard_Integer>(count + 1));
+        flags->Init(Standard_False);
+        if (tangent_start.size() == 3) {
+            tangents.SetValue(1, gp_Vec(tangent_start[0], tangent_start[1], tangent_start[2]));
+            flags->SetValue(1, Standard_True);
+        }
+        if (tangent_end.size() == 3) {
+            tangents.SetValue(
+                static_cast<Standard_Integer>(count + 1),
+                gp_Vec(tangent_end[0], tangent_end[1], tangent_end[2])
+            );
+            flags->SetValue(static_cast<Standard_Integer>(count + 1), Standard_True);
+        }
+        interpolation.Load(tangents, flags, Standard_False);
+    }
     interpolation.Perform();
     if (!interpolation.IsDone()) {
         throw std::runtime_error("cannot interpolate a spline through the given points");
@@ -111,6 +137,32 @@ void WireBuilder::spline(rust::Slice<const double> points) {
     BRepBuilderAPI_MakeEdge make_edge(interpolation.Curve(), current_vertex_, next);
     if (!make_edge.IsDone()) {
         throw std::runtime_error("cannot build a spline edge");
+    }
+    add_edge(make_edge.Edge());
+    current_vertex_ = next;
+    current_point_ = end;
+}
+
+void WireBuilder::bezier(rust::Slice<const double> poles) {
+    if (poles.size() < 3 || poles.size() % 3 != 0) {
+        throw std::runtime_error("a bezier requires at least one pole after the start");
+    }
+    const std::size_t count = poles.size() / 3;
+    Handle(TColgp_HArray1OfPnt) array =
+        new TColgp_HArray1OfPnt(1, static_cast<Standard_Integer>(count + 1));
+    array->SetValue(1, current_point_);
+    for (std::size_t index = 0; index < count; ++index) {
+        array->SetValue(
+            static_cast<Standard_Integer>(index + 2),
+            gp_Pnt(poles[index * 3], poles[index * 3 + 1], poles[index * 3 + 2])
+        );
+    }
+    Handle(Geom_BezierCurve) curve = new Geom_BezierCurve(array->Array1());
+    const gp_Pnt end = array->Value(static_cast<Standard_Integer>(count + 1));
+    const TopoDS_Vertex next = vertex_for(end);
+    BRepBuilderAPI_MakeEdge make_edge(curve, current_vertex_, next);
+    if (!make_edge.IsDone()) {
+        throw std::runtime_error("cannot build a bezier edge");
     }
     add_edge(make_edge.Edge());
     current_vertex_ = next;

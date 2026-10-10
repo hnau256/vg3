@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "circle",
+      "radius": 2
+    }
+  ],
+  "bodies": [
+    {
+      "type": "sweep",
+      "profile": 0,
+      "path": {
+        "start": { "x": 0, "y": 0, "z": 0 },
+        "edges": [
+          {
+            "type": "spline",
+            "points": [{ "x": 10, "y": 0, "z": 0 }],
+            "tangent_start": { "x": 0, "y": 0, "z": 1 },
+            "tangent_end": { "x": 1, "y": 0, "z": 0 }
+          }
+        ]
+      },
+      "mode": "follow"
+    }
+  ],
+  "export": [{ "index": 0, "name": "sweep_spline_tangent" }]
+}

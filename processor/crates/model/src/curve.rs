@@ -10,7 +10,17 @@ use crate::value::{NonEmpty, Scalar, Vec2, Vec3};
 pub enum Curve2 {
     Line { to: Vec2 },
     Arc { via: Vec2, to: Vec2 },
-    Spline { points: NonEmpty<Vec2> },
+    Spline {
+        points: NonEmpty<Vec2>,
+        /// Tangent at the segment start (default: interpolated).
+        #[serde(default)]
+        tangent_start: Option<Vec2>,
+        /// Tangent at the segment end (default: interpolated).
+        #[serde(default)]
+        tangent_end: Option<Vec2>,
+    },
+    /// Bezier: the poles after the start (the segment starts at the current point).
+    Bezier { points: NonEmpty<Vec2> },
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Deserialize)]
@@ -25,6 +35,16 @@ pub enum Curve3 {
         to: Vec3,
     },
     Spline {
+        points: NonEmpty<Vec3>,
+        /// Tangent at the segment start (default: interpolated).
+        #[serde(default)]
+        tangent_start: Option<Vec3>,
+        /// Tangent at the segment end (default: interpolated).
+        #[serde(default)]
+        tangent_end: Option<Vec3>,
+    },
+    /// Bezier: the poles after the start (the segment starts at the current point).
+    Bezier {
         points: NonEmpty<Vec3>,
     },
     Helix {

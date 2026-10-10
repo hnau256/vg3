@@ -62,7 +62,13 @@ public:
         double to_z
     );
 
-    void spline(rust::Slice<const double> points);
+    void spline(
+        rust::Slice<const double> points,
+        rust::Slice<const double> tangent_start,
+        rust::Slice<const double> tangent_end
+    );
+
+    void bezier(rust::Slice<const double> poles);
 
     void helix(double pitch, double height, bool right_handed);
 
