@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include <BRepAdaptor_CompCurve.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
@@ -14,6 +15,8 @@
 #include <BRepTools.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
+#include <TopAbs.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Wire.hxx>
@@ -87,10 +90,7 @@ std::unique_ptr<Shape> sweep(
 ) {
     return std::make_unique<Shape>(detail::build([&] {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
-
-        // A sketch is a planar face (possibly a compound); the pipe shell is built from its outer
-        // wire (holes are not part of a swept section — the same limitation as a bare contour).
-        const TopoDS_Shape section_wire = BRepTools::OuterWire(TopoDS::Face(profile.topods()));
+        const TopoDS_Face profile_face = TopoDS::Face(profile.topods());
 
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
         // to the tangent. Section frame (documented in README.md): local X is radial — away from
@@ -126,26 +126,49 @@ std::unique_ptr<Shape> sweep(
             gp_Ax3(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)),
             gp_Ax3(start_point, tangent.Reversed(), gp_Dir(radial))
         );
-        BRepBuilderAPI_Transform transform(section_wire, placement, true);
-        const TopoDS_Shape placed_profile = transform.Shape();
 
-        BRepOffsetAPI_MakePipeShell pipe(spine_wire);
-        if (follow) {
-            pipe.SetMode(Standard_True);
-        } else {
-            pipe.SetMode(gp_Ax2(start_point, tangent));
-        }
-        // Round-corner transitions require a section strictly orthogonal to the spine
-        // (`WithCorrection = true`); the other modes keep the section as placed.
         const bool round_corner = transition == 2;
-        pipe.SetTransitionMode(detail::transition_mode(transition));
-        pipe.Add(placed_profile, Standard_False, round_corner ? Standard_True : Standard_False);
-        pipe.Build();
-        if (!pipe.IsDone()) {
-            throw std::runtime_error("BRepOffsetAPI_MakePipeShell did not complete");
+        const auto sweep_wire = [&](const TopoDS_Wire& wire) -> TopoDS_Shape {
+            BRepBuilderAPI_Transform transform(wire, placement, true);
+            const TopoDS_Shape placed_profile = transform.Shape();
+
+            BRepOffsetAPI_MakePipeShell pipe(spine_wire);
+            if (follow) {
+                pipe.SetMode(Standard_True);
+            } else {
+                pipe.SetMode(gp_Ax2(start_point, tangent));
+            }
+            // Round-corner transitions require a section strictly orthogonal to the spine
+            // (`WithCorrection = true`); the other modes keep the section as placed.
+            pipe.SetTransitionMode(detail::transition_mode(transition));
+            pipe.Add(placed_profile, Standard_False, round_corner ? Standard_True : Standard_False);
+            pipe.Build();
+            if (!pipe.IsDone()) {
+                throw std::runtime_error("BRepOffsetAPI_MakePipeShell did not complete");
+            }
+            pipe.MakeSolid();
+            return pipe.Shape();
+        };
+
+        // Sweep the outer contour into a solid, then subtract each hole swept the same way — so a
+        // section with holes becomes a hollow tube (README: holes are preserved).
+        const TopoDS_Wire outer = BRepTools::OuterWire(profile_face);
+        TopoDS_Shape result = sweep_wire(outer);
+        for (TopExp_Explorer wires(profile_face, TopAbs_WIRE); wires.More(); wires.Next()) {
+            const TopoDS_Wire wire = TopoDS::Wire(wires.Current());
+            if (wire.IsSame(outer)) {
+                continue;
+            }
+            const TopoDS_Shape cavity = sweep_wire(wire);
+            BRepAlgoAPI_Cut cut(result, cavity);
+            cut.SetRunParallel(Standard_False);
+            cut.Build();
+            if (!cut.IsDone()) {
+                throw std::runtime_error("cannot subtract a swept hole from the swept section");
+            }
+            result = cut.Shape();
         }
-        pipe.MakeSolid();
-        return pipe.Shape();
+        return result;
     }));
 }
 

@@ -110,8 +110,9 @@ fun main() {
   `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
   Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
 - **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
-  `arcTo`/`arcRel`, `splineTo` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
-  точку). 2D-контур: `contour(start, segment…)`; готовые: `rect(width, height, centerX?, centerY?)`
+  `arcTo`/`arcRel`, `splineTo`, `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные
+  `Rel` — фабрика сама ведёт текущую точку). 2D-контур: `contour(start, segment…)`; готовые:
+  `rect(width, height, centerX?, centerY?)`
   (sugar = `polygon` из 4 точек), `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`);
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.

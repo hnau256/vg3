@@ -86,6 +86,13 @@ fun arcRel(
 fun splineTo(initial: Vec3, vararg additional: Vec3): PathSegment =
     { Curve3.Spline(points = nonEmptyListOf(initial, *additional)) }
 
+/**
+ * A helix around the Z axis through the origin, starting at the current point (its radius and phase
+ * are taken from there). [rightHanded] selects the winding; the number of turns is `height / pitch`.
+ */
+fun helix(pitch: Double, height: Double, rightHanded: Boolean = true): PathSegment =
+    { Curve3.Helix(pitch = pitch, height = height, right_handed = rightHanded) }
+
 // --- Contour factory --------------------------------------------------------
 
 /** A planar region from a start point and segments (relative segments see the current point). */

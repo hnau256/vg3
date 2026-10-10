@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "sketches": [
+    {
+      "type": "circle",
+      "radius": 3
+    },
+    {
+      "type": "circle",
+      "radius": 1.5
+    },
+    {
+      "type": "bool",
+      "kind": "cut",
+      "arguments": [
+        0
+      ],
+      "tools": [
+        1
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "type": "sweep",
+      "profile": 2,
+      "path": {
+        "start": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "edges": [
+          {
+            "type": "line",
+            "to": {
+              "x": 0,
+              "y": 0,
+              "z": 10
+            }
+          }
+        ]
+      },
+      "mode": "follow"
+    }
+  ],
+  "export": [
+    {
+      "index": 0,
+      "name": "sweep_hole"
+    }
+  ]
+}

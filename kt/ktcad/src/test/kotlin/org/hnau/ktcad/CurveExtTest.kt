@@ -70,18 +70,25 @@ class CurveExtTest {
         check(solid is Solid.Extrude)
     }
 
-    private val helix: PathSegment = { Curve3.Helix(pitch = 1.0, height = 4.0, right_handed = true) }
+    @Test
+    fun helix_builds_a_helix_curve() {
+        val path = Path(p(0.0, 0.0, 0.0), helix(pitch = 1.0, height = 4.0))
+        assertEquals(
+            listOf(Curve3.Helix(height = 4.0, pitch = 1.0, right_handed = true)),
+            path.edges.toList(),
+        )
+    }
 
     @Test
     fun helix_can_be_followed_by_an_absolute_segment() {
-        val path = Path(p(0.0, 0.0, 0.0), helix, lineTo(0.0, 0.0, 10.0))
+        val path = Path(p(0.0, 0.0, 0.0), helix(pitch = 1.0, height = 4.0), lineTo(0.0, 0.0, 10.0))
         assertEquals(2, path.edges.size)
     }
 
     @Test
     fun relative_segment_after_helix_fails() {
         assertFailsWith<IllegalStateException> {
-            Path(p(0.0, 0.0, 0.0), helix, lineRel(0.0, 0.0, 1.0))
+            Path(p(0.0, 0.0, 0.0), helix(pitch = 1.0, height = 4.0), lineRel(0.0, 0.0, 1.0))
         }
     }
 }
