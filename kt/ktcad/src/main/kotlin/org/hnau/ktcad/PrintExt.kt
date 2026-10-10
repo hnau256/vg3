@@ -14,11 +14,8 @@ package org.hnau.ktcad
  */
 data class PrintPart(
     val part: Part,
-    val stlTransformation: (Solid.() -> Solid)? = null,
-) {
-
-    companion object
-}
+    val stlTransformation: (Solid.() -> Solid)?,
+)
 
 /**
  * Renders every part as a STEP preview and exports the printable parts as STL, running the engine
@@ -28,8 +25,12 @@ data class PrintPart(
  * [PrintPart.stlTransformation], each transformed by it.
  */
 fun List<PrintPart>.stepPreviewAndStlExport(
-    step: Format.Step,
-    stl: Format.Stl,
+    step: Format.Step = Format.Step(filename = "out/preview.step"),
+    stl: Format.Stl = Format.Stl(
+        output = Output.Multi(
+            path = "out/stl",
+        )
+    ),
 ) {
     map(PrintPart::part)
         .model()

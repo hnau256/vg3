@@ -22,7 +22,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
-        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "STL must be written: ${output.absolutePath}"
+        )
     }
 
     @Test
@@ -40,7 +43,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
-        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "STL must be written: ${output.absolutePath}"
+        )
     }
 
     @Test
@@ -52,7 +58,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
-        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "STL must be written: ${output.absolutePath}"
+        )
     }
 
     @Test
@@ -65,7 +74,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
-        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "STL must be written: ${output.absolutePath}"
+        )
     }
 
     @Test
@@ -81,7 +93,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
-        assertTrue(output.exists() && output.length() > 0, "STL must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "STL must be written: ${output.absolutePath}"
+        )
     }
 
     @Test
@@ -93,7 +108,10 @@ class ExportSmokeTest {
             .model()
             .export(Format.Json(filename = output.absolutePath))
 
-        assertTrue(output.exists() && output.length() > 0, "report must be written: ${output.absolutePath}")
+        assertTrue(
+            output.exists() && output.length() > 0,
+            "report must be written: ${output.absolutePath}"
+        )
         assertTrue(output.readText().contains("\"name\": \"box\""), "report names the body")
     }
 
@@ -109,13 +127,19 @@ class ExportSmokeTest {
                 part = Part(name = "hook", solid = box(1.0, 1.0, 1.0)),
                 stlTransformation = { rotateX(Math.PI) },
             ),
-            PrintPart(part = Part(name = "cabinet", solid = box(3.0, 3.0, 3.0))),
+            PrintPart(
+                part = Part(name = "cabinet", solid = box(3.0, 3.0, 3.0)),
+                stlTransformation = null,
+            ),
         ).stepPreviewAndStlExport(
             step = Format.Step(filename = step.absolutePath),
             stl = Format.Stl(output = Output.Multi(printDir.absolutePath)),
         )
 
-        assertTrue(step.exists() && step.length() > 0, "STEP preview must be written: ${step.absolutePath}")
+        assertTrue(
+            step.exists() && step.length() > 0,
+            "STEP preview must be written: ${step.absolutePath}"
+        )
         assertTrue(File(printDir, "hook.stl").exists(), "printable part must have an STL")
         assertFalse(
             File(printDir, "cabinet.stl").exists(),
