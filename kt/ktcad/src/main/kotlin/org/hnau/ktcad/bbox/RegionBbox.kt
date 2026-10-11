@@ -1,0 +1,104 @@
+package org.hnau.ktcad.bbox
+
+import org.hnau.ktcad.Region
+import org.hnau.ktcad.end
+import org.hnau.ktcad.fold
+import org.hnau.ktcad.ir.Curve2
+import org.hnau.ktcad.ir.TransformOp2
+import org.hnau.ktcad.ir.Vec2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
+
+/**
+ * An **approximate** axis-aligned bounding box of the region, per axis, computed from the IR alone
+ * (no OCCT). It is a cheap conservative over-approximation, not the exact geometric extent:
+ * - `polygon` — exact (the points);
+ * - `circle` — exact (`[-radius, radius]` on both axes);
+ * - `contour` — every edge is bounded by its control points (`line`: endpoints; `arc`: start/via/end;
+ *   `spline`/`bezier`: start + poles), i.e. exact for a `line` and conservative otherwise;
+ * - `transform` — the box's four corners are transformed and re-bounded (exact for the box, an
+ *   over-approximation for the shape);
+ * - `bool` — the union of the operands (conservative for `cut`/`common` too);
+ * - `fillet2d` — the target's box (rounding corners only removes material);
+ * - `offset2d` — the target's box grown by a positive `distance` (a shrink stays inside it).
+ */
+val Region.bbox: Axis2Values<ClosedRange<Double>>
+    get() = fold(
+        ifBool = { arguments, _, tools ->
+            (arguments.toList() + tools).map { it.bbox }.reduce { a, b -> a.cover(b) }
+        },
+        ifCircle = { radius -> Axis2Values(x = -radius..radius, y = -radius..radius) },
+        ifContour = { edges, start ->
+            var box = pointsBox(listOf(start))
+            var current = start
+            edges.forEach { edge ->
+                box = box.cover(pointsBox(edge.controlPoints(current)))
+                current = edge.end()
+            }
+            box
+        },
+        ifFillet2d = { _, target -> target.bbox },
+        ifOffset2d = { distance, target, _ -> target.bbox.grow(distance) },
+        ifPolygon = { points -> pointsBox(points) },
+        ifTransform = { op, target -> target.bbox.transform(op) },
+    )
+
+/** A segment's control points, including its [from] point (the previous endpoint). */
+private fun Curve2.controlPoints(from: Vec2): List<Vec2> = when (this) {
+    is Curve2.Line -> listOf(from, to)
+    is Curve2.Arc -> listOf(from, via, to)
+    is Curve2.Spline -> listOf(from) + points
+    is Curve2.Bezier -> listOf(from) + points
+}
+
+private fun pointsBox(points: Iterable<Vec2>): Axis2Values<ClosedRange<Double>> =
+    Axis2Values(
+        x = points.minOf { it.x }..points.maxOf { it.x },
+        y = points.minOf { it.y }..points.maxOf { it.y },
+    )
+
+private fun Axis2Values<ClosedRange<Double>>.cover(
+    other: Axis2Values<ClosedRange<Double>>,
+): Axis2Values<ClosedRange<Double>> = combineWith(other) { a, b ->
+    minOf(a.start, b.start)..maxOf(a.endInclusive, b.endInclusive)
+}
+
+private fun Axis2Values<ClosedRange<Double>>.grow(distance: Double): Axis2Values<ClosedRange<Double>> {
+    if (distance <= 0.0) return this
+    return Axis2Values(
+        x = (x.start - distance)..(x.endInclusive + distance),
+        y = (y.start - distance)..(y.endInclusive + distance),
+    )
+}
+
+private fun Axis2Values<ClosedRange<Double>>.transform(
+    op: TransformOp2,
+): Axis2Values<ClosedRange<Double>> {
+    val corners = listOf(
+        Vec2(x = x.start, y = y.start),
+        Vec2(x = x.endInclusive, y = y.start),
+        Vec2(x = x.endInclusive, y = y.endInclusive),
+        Vec2(x = x.start, y = y.endInclusive),
+    )
+    return pointsBox(corners.map(op::transformPoint))
+}
+
+private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
+    is TransformOp2.Translate -> Vec2(x = point.x + value.x, y = point.y + value.y)
+    is TransformOp2.Rotate -> {
+        val dx = point.x - center.x
+        val dy = point.y - center.y
+        val c = cos(angle)
+        val s = sin(angle)
+        Vec2(x = center.x + dx * c - dy * s, y = center.y + dx * s + dy * c)
+    }
+    is TransformOp2.Mirror -> {
+        val length = hypot(normal.x, normal.y)
+        val nx = normal.x / length
+        val ny = normal.y / length
+        val projection = (point.x - center.x) * nx + (point.y - center.y) * ny
+        Vec2(x = point.x - 2.0 * projection * nx, y = point.y - 2.0 * projection * ny)
+    }
+    is TransformOp2.Scale -> Vec2(x = point.x * value.x, y = point.y * value.y)
+}
