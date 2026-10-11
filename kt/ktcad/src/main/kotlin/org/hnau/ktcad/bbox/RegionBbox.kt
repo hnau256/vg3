@@ -3,6 +3,7 @@ package org.hnau.ktcad.bbox
 import org.hnau.ktcad.Region
 import org.hnau.ktcad.end
 import org.hnau.ktcad.fold
+import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
@@ -19,14 +20,16 @@ import kotlin.math.sin
  *   `spline`/`bezier`: start + poles), i.e. exact for a `line` and conservative otherwise;
  * - `transform` — the box's four corners are transformed and re-bounded (exact for the box, an
  *   over-approximation for the shape);
- * - `bool` — the union of the operands (conservative for `cut`/`common` too);
+ * - `bool` — for `cut` the union of the objects (the tools only remove material, so they are
+ *   ignored); otherwise the union of objects and tools;
  * - `fillet2d` — the target's box (rounding corners only removes material);
  * - `offset2d` — the target's box grown by a positive `distance` (a shrink stays inside it).
  */
 val Region.bbox: Axis2Values<ClosedRange<Double>>
     get() = fold(
-        ifBool = { arguments, _, tools ->
-            (arguments.toList() + tools).map { it.bbox }.reduce { a, b -> a.cover(b) }
+        ifBool = { arguments, kind, tools ->
+            val operands = if (kind == BooleanKind.CUT) arguments.toList() else arguments.toList() + tools
+            operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
         ifCircle = { radius -> Axis2Values(x = -radius..radius, y = -radius..radius) },
         ifContour = { edges, start ->
@@ -60,17 +63,10 @@ private fun pointsBox(points: Iterable<Vec2>): Axis2Values<ClosedRange<Double>> 
 
 private fun Axis2Values<ClosedRange<Double>>.cover(
     other: Axis2Values<ClosedRange<Double>>,
-): Axis2Values<ClosedRange<Double>> = combineWith(other) { a, b ->
-    minOf(a.start, b.start)..maxOf(a.endInclusive, b.endInclusive)
-}
+): Axis2Values<ClosedRange<Double>> = combineWith(other) { a, b -> a.cover(b) }
 
-private fun Axis2Values<ClosedRange<Double>>.grow(distance: Double): Axis2Values<ClosedRange<Double>> {
-    if (distance <= 0.0) return this
-    return Axis2Values(
-        x = (x.start - distance)..(x.endInclusive + distance),
-        y = (y.start - distance)..(y.endInclusive + distance),
-    )
-}
+private fun Axis2Values<ClosedRange<Double>>.grow(distance: Double): Axis2Values<ClosedRange<Double>> =
+    map { it.grow(maxOf(0.0, distance)) }
 
 private fun Axis2Values<ClosedRange<Double>>.transform(
     op: TransformOp2,
