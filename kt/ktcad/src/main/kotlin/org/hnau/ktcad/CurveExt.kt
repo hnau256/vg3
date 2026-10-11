@@ -168,7 +168,7 @@ fun Path.close(): Path = copy(edges = edges + Curve3.Line(to = start))
 
 // --- Segment endpoints ------------------------------------------------------
 
-private fun Curve2.end(): Vec2 = when (this) {
+internal fun Curve2.end(): Vec2 = when (this) {
     is Curve2.Line -> to
     is Curve2.Arc -> to
     is Curve2.Spline -> points.last()

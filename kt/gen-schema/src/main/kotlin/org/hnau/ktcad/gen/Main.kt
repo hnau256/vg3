@@ -48,6 +48,8 @@ private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
 private val JVM_INLINE = ClassName("kotlin.jvm", "JvmInline")
 private val JSON_CLASS_DISCRIMINATOR = ClassName("kotlinx.serialization.json", "JsonClassDiscriminator")
 private val LIST = ClassName("kotlin.collections", "List")
+private val FOLD = ClassName("org.hnau.commons.gen.fold.annotations", "Fold")
+private val ENUM_VALUES = ClassName("org.hnau.commons.gen.enumvalues.annotations", "EnumValues")
 
 /**
  * Generates `kotlinx.serialization` classes from the vg3 IR JSON Schema.
@@ -115,6 +117,7 @@ private fun sealedType(name: String, definition: JsonObject): TypeSpec {
     val builder = TypeSpec.interfaceBuilder(name)
         .addModifiers(KModifier.SEALED)
         .addAnnotation(SERIALIZABLE)
+        .addAnnotation(FOLD)
         .addAnnotation(
             AnnotationSpec.builder(JSON_CLASS_DISCRIMINATOR)
                 .addMember("%S", DISCRIMINATOR)
@@ -184,7 +187,10 @@ private fun objectType(
 }
 
 private fun enumType(name: String, definition: JsonObject): TypeSpec {
-    val builder = TypeSpec.enumBuilder(name).addAnnotation(SERIALIZABLE)
+    val builder = TypeSpec.enumBuilder(name)
+        .addAnnotation(SERIALIZABLE)
+        .addAnnotation(FOLD)
+        .addAnnotation(ENUM_VALUES)
     definition.getValue("enum").jsonArray.forEach { value ->
         val wire = value.jsonPrimitive.content
         builder.addEnumConstant(

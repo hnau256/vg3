@@ -28,6 +28,8 @@ import com.squareup.kotlinpoet.ksp.writeTo
 private const val DOMAIN_PACKAGE = "org.hnau.ktcad"
 private const val IR_PACKAGE = "$DOMAIN_PACKAGE.ir"
 
+private val FOLD = ClassName("org.hnau.commons.gen.fold.annotations", "Fold")
+
 /**
  * Generates the reference-based domain layers from the generated `ir` sealed nodes.
  *
@@ -138,7 +140,9 @@ class SolidProcessor(
         variants: List<KSClassDeclaration>,
         domainType: ClassName,
     ): TypeSpec {
-        val builder = TypeSpec.interfaceBuilder(domain.domainName).addModifiers(KModifier.SEALED)
+        val builder = TypeSpec.interfaceBuilder(domain.domainName)
+            .addModifiers(KModifier.SEALED)
+            .addAnnotation(FOLD)
         variants.forEach { variant ->
             val name = variant.simpleName.asString()
             if (variant.classKind == ClassKind.OBJECT) {
