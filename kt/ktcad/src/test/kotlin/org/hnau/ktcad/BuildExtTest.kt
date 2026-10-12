@@ -180,7 +180,7 @@ class BuildExtTest {
                 target = solid,
             ),
             actual = solid.filletExpression(
-                expression = "1.0",
+                resolveEdgeRadiusExpression = "1.0",
                 kind = FilletKind.CHAMFER,
             ),
         )
@@ -304,7 +304,7 @@ class BuildExtTest {
                 target = solid,
             ),
             actual = solid.filletSelected(
-                expression = "true",
+                selectEdgeExpression = "true",
                 radius = 1.0,
             ),
         )

@@ -8,34 +8,34 @@ import org.hnau.ktcad.ir.RadiusSpec
 fun Solid.filletAll(
     radius: Double,
     kind: FilletKind = FilletKind.FILLET,
-): Solid =
-    fillet(
-        kind = kind,
-        radius = RadiusSpec.All(radius = radius),
-        target = this,
-    )
+): Solid = fillet(
+    kind = kind,
+    radius = RadiusSpec.All(
+        radius = radius,
+    ),
+    target = this,
+)
 
-/** Fillet every edge with a per-edge Rhai [expression] returning the radius (`RadiusSpec.Expression`). */
 fun Solid.filletExpression(
-    expression: String,
+    resolveEdgeRadiusExpression: String,
     kind: FilletKind = FilletKind.FILLET,
-): Solid =
-    fillet(
-        kind = kind,
-        radius = RadiusSpec.Expression(expression = expression),
-        target = this,
-    )
+): Solid = fillet(
+    kind = kind,
+    radius = RadiusSpec.Expression(
+        expression = resolveEdgeRadiusExpression,
+    ),
+    target = this,
+)
 
 fun Solid.filletSelected(
-    expression: String,
+    selectEdgeExpression: String,
     radius: Double,
     kind: FilletKind = FilletKind.FILLET,
-): Solid =
-    fillet(
-        kind = kind,
-        radius = RadiusSpec.Selected(
-            expression = expression,
-            radius = radius,
-        ),
-        target = this,
-    )
+): Solid = fillet(
+    kind = kind,
+    radius = RadiusSpec.Selected(
+        expression = selectEdgeExpression,
+        radius = radius,
+    ),
+    target = this,
+)

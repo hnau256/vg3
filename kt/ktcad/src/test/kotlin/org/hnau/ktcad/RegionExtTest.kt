@@ -140,7 +140,7 @@ class RegionExtTest {
     fun fillet2d_expression_and_selection_lower_to_radius_specs() {
         assertTrue(square.fillet2dExpression("vertex.angle > 1.5") is Region.Fillet2d)
         val selected = square.fillet2dSelected(
-            expression = "vertex.angle > 1.5",
+            selectEdgeExpression = "vertex.angle > 1.5",
             radius = 2.0,
         ) as Region.Fillet2d
         assertEquals(
