@@ -276,17 +276,17 @@ fun Path.close(): Path = copy(edges = edges + Curve3.Line(to = start))
 
 // --- Segment endpoints ------------------------------------------------------
 
-internal fun Curve2.end(): Vec2 = when (this) {
-    is Curve2.Line -> to
-    is Curve2.Arc -> to
-    is Curve2.Spline -> points.last()
-    is Curve2.Bezier -> points.last()
-}
+internal fun Curve2.end(): Vec2 = fold(
+    ifLine = { to -> to },
+    ifArc = { to, _ -> to },
+    ifSpline = { points, _, _ -> points.last() },
+    ifBezier = { points -> points.last() },
+)
 
-private fun Curve3.end(): Vec3 = when (this) {
-    is Curve3.Line -> to
-    is Curve3.Arc -> to
-    is Curve3.Spline -> points.last()
-    is Curve3.Bezier -> points.last()
-    is Curve3.Helix -> error("a helix cannot be followed by a relative segment")
-}
+private fun Curve3.end(): Vec3 = fold(
+    ifLine = { to -> to },
+    ifArc = { to, _ -> to },
+    ifSpline = { points, _, _ -> points.last() },
+    ifBezier = { points -> points.last() },
+    ifHelix = { _, _, _ -> error("a helix cannot be followed by a relative segment") },
+)

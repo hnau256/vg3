@@ -9,6 +9,7 @@ import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.commons.kotlin.foldBoolean
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -30,7 +31,10 @@ import kotlin.math.sqrt
 val Region.bbox: Axis2Values<ClosedRange<Double>>
     get() = fold(
         ifBool = { arguments, kind, tools ->
-            val operands = if (kind == BooleanKind.CUT) arguments.toList() else arguments.toList() + tools
+            val operands = (kind == BooleanKind.CUT).foldBoolean(
+                ifTrue = { arguments.toList() },
+                ifFalse = { arguments.toList() + tools },
+            )
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
         ifCircle = { radius -> Axis2Values.create { -radius..radius } },
@@ -52,19 +56,23 @@ val Region.bbox: Axis2Values<ClosedRange<Double>>
 /** A segment's control points, including its [from] point (the previous endpoint). */
 private fun Curve2.controlPoints(
     from: Vec2,
-): List<Vec2> = when (this) {
-    is Curve2.Line -> listOf(
-        from,
-        to,
-    )
-    is Curve2.Arc -> listOf(
-        from,
-        via,
-        to,
-    )
-    is Curve2.Spline -> listOf(from) + points
-    is Curve2.Bezier -> listOf(from) + points
-}
+): List<Vec2> = fold(
+    ifLine = { to ->
+        listOf(
+            from,
+            to,
+        )
+    },
+    ifArc = { to, via ->
+        listOf(
+            from,
+            via,
+            to,
+        )
+    },
+    ifSpline = { points, _, _ -> listOf(from) + points },
+    ifBezier = { points -> listOf(from) + points },
+)
 
 private fun pointsBox(
     points: Iterable<Vec2>,
@@ -103,25 +111,25 @@ private fun Axis2Values<ClosedRange<Double>>.corners(): List<Vec2> =
 
 private fun TransformOp2.transformPoint(
     point: Vec2,
-): Vec2 = when (this) {
-    is TransformOp2.Translate -> point + value
-    is TransformOp2.Rotate -> {
+): Vec2 = fold(
+    ifTranslate = { value -> point + value },
+    ifScale = { value -> point * value },
+    ifMirror = { center, normal ->
+        val n = normalized(normal)
+        point - n * (2.0 * (point - center).dot(n))
+    },
+    ifRotate = { angle, center ->
         val v = point - center
         val cosine = cos(angle)
         val sine = sin(angle)
         vec2 { axis ->
-            when (axis) {
-                Axis2.X -> v[Axis2.X] * cosine - v[Axis2.Y] * sine
-                Axis2.Y -> v[Axis2.X] * sine + v[Axis2.Y] * cosine
-            }
+            axis.fold(
+                ifX = { v[Axis2.X] * cosine - v[Axis2.Y] * sine },
+                ifY = { v[Axis2.X] * sine + v[Axis2.Y] * cosine },
+            )
         } + center
-    }
-    is TransformOp2.Mirror -> {
-        val n = normalized(normal)
-        point - n * (2.0 * (point - center).dot(n))
-    }
-    is TransformOp2.Scale -> point * value
-}
+    },
+)
 
 private fun Vec2.dot(
     other: Vec2,
