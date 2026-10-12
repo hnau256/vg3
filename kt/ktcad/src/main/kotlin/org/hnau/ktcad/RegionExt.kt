@@ -4,9 +4,12 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.axis.toVec2
+import org.hnau.ktcad.bbox.bbox
+import org.hnau.ktcad.bbox.interpolate
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
@@ -118,6 +121,18 @@ fun Region.translate(
         target = this,
         op = TransformOp2.Translate(value = value.toVec2()),
     )
+
+fun Region.put(
+    target: Region,
+    axis: Axis2,
+    targetFraction: Double,
+    thisFraction: Double,
+): Region {
+    val targetPosition = target.bbox[axis].interpolate(targetFraction)
+    val thisPosition = this.bbox[axis].interpolate(thisFraction)
+    val delta = targetPosition - thisPosition
+    return translate(axis.direction * delta)
+}
 
 fun Region.rotate(
     angle: Double,

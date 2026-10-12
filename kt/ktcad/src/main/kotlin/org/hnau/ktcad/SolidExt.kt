@@ -5,6 +5,8 @@ import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.direction
+import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.bbox.interpolate
 import org.hnau.ktcad.axis.toVec3
@@ -109,7 +111,7 @@ fun Solid.translate(
         target = this,
     )
 
-/*fun Solid.put(
+fun Solid.put(
     target: Solid,
     axis: Axis3,
     targetFraction: Double,
@@ -118,8 +120,8 @@ fun Solid.translate(
     val targetPosition = target.bbox[axis].interpolate(targetFraction)
     val thisPosition = this.bbox[axis].interpolate(thisFraction)
     val delta = targetPosition - thisPosition
-
-}*/
+    return translate(axis.direction * delta)
+}
 
 // --- Scale ------------------------------------------------------------------
 
