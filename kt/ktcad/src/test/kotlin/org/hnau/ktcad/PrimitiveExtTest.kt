@@ -1,9 +1,15 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.axis.A2
 import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.region.rect
+import org.hnau.ktcad.solid.box
+import org.hnau.ktcad.solid.cylinder
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,11 +43,7 @@ class PrimitiveExtTest {
                     y = 2.0,
                     z = 3.0,
                 ),
-                centered = A3Values(
-                    x = true,
-                    y = false,
-                    z = false,
-                ),
+                centered = setOf(A3.X),
             )
                 is Solid.Transform,
         )
@@ -109,10 +111,7 @@ class PrimitiveExtTest {
                     x = 2.0,
                     y = 3.0,
                 ),
-                centered = A2Values(
-                    x = true,
-                    y = false,
-                ),
+                centered = setOf(A2.X),
             )
                 is Region.Transform,
         )

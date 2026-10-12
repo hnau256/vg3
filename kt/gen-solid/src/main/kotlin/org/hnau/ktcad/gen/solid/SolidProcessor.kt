@@ -66,7 +66,6 @@ private data class Domain(
     val selfIndexFqn: String,
     val references: List<Reference>,
     val factories: Boolean,
-    val factorySkip: Set<String> = emptySet(),
 )
 
 private val DOMAINS = listOf(
@@ -82,11 +81,6 @@ private val DOMAINS = listOf(
             ),
         ),
         factories = true,
-        // Hand-written with `centerX/Y/Z` sugar (see PrimitiveExt.kt).
-        factorySkip = setOf(
-            "Box",
-            "Cylinder",
-        ),
     ),
     Domain(
         nodeFqn = "$IR_PACKAGE.Sketch",
@@ -171,17 +165,15 @@ class SolidProcessor(
                 ),
             )
         if (domain.factories) {
-            variants
-                .filterNot { it.simpleName.asString() in domain.factorySkip }
-                .forEach {
-                    builder.addFunction(
-                        factory(
-                            domain = domain,
-                            variant = it,
-                            domainType = domainType,
-                        ),
-                    )
-                }
+            variants.forEach {
+                builder.addFunction(
+                    factory(
+                        domain = domain,
+                        variant = it,
+                        domainType = domainType,
+                    ),
+                )
+            }
         }
         return builder.build()
     }
@@ -327,19 +319,23 @@ class SolidProcessor(
                 "%N",
                 name,
             )
+
             FieldKind.SELF_SINGLE -> CodeBlock.of(
                 "operand(%N)",
                 name,
             )
+
             FieldKind.SELF_LIST -> CodeBlock.of(
                 "%N.map(operand)",
                 name,
             )
+
             is FieldKind.REF_SINGLE -> CodeBlock.of(
                 "%N(%N)",
                 kind.reference.lambdaName,
                 name,
             )
+
             is FieldKind.REF_LIST -> CodeBlock.of(
                 "%N.map(%N)",
                 name,
@@ -356,13 +352,14 @@ class SolidProcessor(
         domainType: ClassName,
     ): FunSpec {
         val name = variant.simpleName.asString().replaceFirstChar(Char::lowercaseChar)
-        val builder = FunSpec.builder(name).returns(domainType)
+        val variantName = variant.simpleName.asString()
+        val builder = FunSpec.builder(name).returns(domainType.nestedClass(variantName))
         if (variant.classKind == ClassKind.OBJECT) {
             return builder
                 .addCode(
                     "return %T.%L",
                     domainType,
-                    variant.simpleName.asString(),
+                    variantName,
                 )
                 .build()
         }
@@ -396,7 +393,7 @@ class SolidProcessor(
         builder.addCode(
             "return %T.%L(%L)",
             domainType,
-            variant.simpleName.asString(),
+            variantName,
             CodeBlock.of(
                 arguments.joinToString(separator = ", ") { "%L" },
                 *arguments.toTypedArray(),
@@ -414,16 +411,18 @@ class SolidProcessor(
         domainType: ClassName,
     ): TypeName {
         if (isType(
-            type = type,
-            fqn = domain.selfIndexFqn,
-        )) {
+                type = type,
+                fqn = domain.selfIndexFqn,
+            )
+        ) {
             return domainType.nullableIf(type)
         }
         domain.references.forEach { reference ->
             if (isType(
-                type = type,
-                fqn = reference.indexFqn,
-            )) {
+                    type = type,
+                    fqn = reference.indexFqn,
+                )
+            ) {
                 return ClassName(
                     DOMAIN_PACKAGE,
                     reference.domainName,
@@ -463,6 +462,7 @@ class SolidProcessor(
         data class REF_SINGLE(
             val reference: Reference,
         ) : FieldKind
+
         data class REF_LIST(
             val reference: Reference,
         ) : FieldKind
@@ -473,23 +473,27 @@ class SolidProcessor(
         type: KSType,
     ): FieldKind {
         if (isType(
-            type = type,
-            fqn = domain.selfIndexFqn,
-        )) return FieldKind.SELF_SINGLE
+                type = type,
+                fqn = domain.selfIndexFqn,
+            )
+        ) return FieldKind.SELF_SINGLE
         val argument = type.arguments.singleOrNull()?.type?.resolve()
         if (argument != null && isType(
-            type = argument,
-            fqn = domain.selfIndexFqn,
-        )) return FieldKind.SELF_LIST
+                type = argument,
+                fqn = domain.selfIndexFqn,
+            )
+        ) return FieldKind.SELF_LIST
         domain.references.forEach { reference ->
             if (isType(
-                type = type,
-                fqn = reference.indexFqn,
-            )) return FieldKind.REF_SINGLE(reference)
+                    type = type,
+                    fqn = reference.indexFqn,
+                )
+            ) return FieldKind.REF_SINGLE(reference)
             if (argument != null && isType(
-                type = argument,
-                fqn = reference.indexFqn,
-            )) {
+                    type = argument,
+                    fqn = reference.indexFqn,
+                )
+            ) {
                 return FieldKind.REF_LIST(reference)
             }
         }

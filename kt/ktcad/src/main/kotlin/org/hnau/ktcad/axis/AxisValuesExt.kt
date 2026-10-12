@@ -42,6 +42,24 @@ operator fun A3Values<Double>.times(
 ): A3Values<Double> =
     map { value -> if (value == 0.0) 0.0 else value * factor }
 
+operator fun A2Values<Double>.unaryPlus(): A2Values<Double> = this
+
+operator fun A3Values<Double>.unaryPlus(): A3Values<Double> = this
+
+operator fun A2Values<Double>.unaryMinus(): A2Values<Double> = this * -1.0
+
+operator fun A3Values<Double>.unaryMinus(): A3Values<Double> = this * -1.0
+
+private val a2Zero: A2Values<Double> = A2Values.create { 0.0 }
+
+val A2Values.Companion.zero: A2Values<Double>
+    get() = a2Zero
+
+private val a3Zero: A3Values<Double> = A3Values.create { 0.0 }
+
+val A3Values.Companion.zero: A3Values<Double>
+    get() = a3Zero
+
 operator fun Double.times(
     vector: A2Values<Double>,
 ): A2Values<Double> = vector * this
@@ -91,3 +109,25 @@ operator fun A3Values<Double>.times(
     other = other,
     combine = Double::times,
 )
+
+operator fun A2Values<Double>.div(
+    other: A2Values<Double>,
+): A2Values<Double> = combineWith(
+    other = other,
+    combine = Double::div,
+)
+
+operator fun A3Values<Double>.div(
+    other: A3Values<Double>,
+): A3Values<Double> = combineWith(
+    other = other,
+    combine = Double::div,
+)
+
+operator fun A2Values<Double>.div(
+    other: Double,
+): A2Values<Double> = map { it / other }
+
+operator fun A3Values<Double>.div(
+    other: Double,
+): A3Values<Double> = map { it / other }

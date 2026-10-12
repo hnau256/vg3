@@ -45,13 +45,12 @@ fun lineRel(
 fun arcTo(
     via: A2Values<Double>,
     to: A2Values<Double>,
-): ContourSegment =
-    {
-        Curve2.Arc(
-            via = via.toVec2(),
-            to = to.toVec2(),
-        )
-    }
+): ContourSegment = {
+    Curve2.Arc(
+        via = via.toVec2(),
+        to = to.toVec2(),
+    )
+}
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(
@@ -86,22 +85,23 @@ fun bezierTo(
     first: A2Values<Double>,
     second: A2Values<Double>,
     vararg additional: A2Values<Double>,
-): ContourSegment =
-    {
-        Curve2.Bezier(
-            points = nonEmptyListOf(
-                first,
-                second,
-                *additional,
-            ).map { it.toVec2() },
-        )
-    }
+): ContourSegment = {
+    Curve2.Bezier(
+        points = nonEmptyListOf(
+            first,
+            second,
+            *additional,
+        ).map { it.toVec2() },
+    )
+}
 
 // --- 3D segments ------------------------------------------------------------
 
 fun lineTo(
     to: A3Values<Double>,
-): PathSegment = { Curve3.Line(to = to.toVec3()) }
+): PathSegment = {
+    Curve3.Line(to = to.toVec3())
+}
 
 /** A `line` offset from the current point by `delta`. */
 fun lineRel(
@@ -113,13 +113,12 @@ fun lineRel(
 fun arcTo(
     via: A3Values<Double>,
     to: A3Values<Double>,
-): PathSegment =
-    {
-        Curve3.Arc(
-            via = via.toVec3(),
-            to = to.toVec3(),
-        )
-    }
+): PathSegment = {
+    Curve3.Arc(
+        via = via.toVec3(),
+        to = to.toVec3(),
+    )
+}
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(
@@ -253,24 +252,22 @@ fun polyline(
     first: A3Values<Double>,
     second: A3Values<Double>,
     vararg tail: A3Values<Double>,
-): Path =
-    Path(
-        first,
-        lineTo(second),
-        *tail.map { lineTo(it) }.toTypedArray(),
-    )
+): Path = Path(
+    first,
+    lineTo(second),
+    *tail.map { lineTo(it) }.toTypedArray(),
+)
 
 /** A closed 3D polygon through the given absolute points. */
 fun polygon(
     first: A3Values<Double>,
     second: A3Values<Double>,
     vararg tail: A3Values<Double>,
-): Path =
-    polyline(
-        first,
-        second,
-        *tail,
-    ).close()
+): Path = polyline(
+    first,
+    second,
+    *tail,
+).close()
 
 /** Closes a 3D contour with a `line` back to its start. */
 fun Path.close(): Path = copy(edges = edges + Curve3.Line(to = start))

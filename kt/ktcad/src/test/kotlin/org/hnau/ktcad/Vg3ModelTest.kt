@@ -7,6 +7,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.ir.Color
+import org.hnau.ktcad.solid.box
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

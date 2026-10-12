@@ -2,6 +2,8 @@ package org.hnau.ktcad
 
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.toVec3
+import org.hnau.ktcad.solid.PolyhedronFace
+import org.hnau.ktcad.solid.polyhedron
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -33,22 +35,22 @@ class PolyhedronExtTest {
 
         // A tetrahedron: each vertex appears in three faces.
         val solid = polyhedron(
-            listOf(
+            PolyhedronFace(
                 a,
                 b,
                 c,
             ),
-            listOf(
+            PolyhedronFace(
                 a,
                 c,
                 d,
             ),
-            listOf(
+            PolyhedronFace(
                 a,
                 d,
                 b,
             ),
-            listOf(
+            PolyhedronFace(
                 b,
                 d,
                 c,
@@ -67,7 +69,7 @@ class PolyhedronExtTest {
                 c,
                 d,
             ).map { it.toVec3() },
-            actual = solid.points.toList(),
+            actual = solid.points,
         )
         assertTrue(solid.faces.all { face -> face.all { it in 0..3 } })
         // The first face keeps the order (a, b, c) -> (0, 1, 2).

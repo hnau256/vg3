@@ -8,6 +8,8 @@ import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.region.polygon
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -52,7 +54,7 @@ class CurveExtTest {
             ),
         ) as Region.Contour
         assertEquals(
-            expected = listOf(
+            expected = nonEmptyListOf(
                 Curve2.Line(
                     Vec2(
                         x = 10.0,
@@ -66,7 +68,7 @@ class CurveExtTest {
                     ),
                 ),
             ),
-            actual = region.edges.toList(),
+            actual = region.edges,
         )
         assertEquals(
             expected = Vec2(
@@ -94,7 +96,7 @@ class CurveExtTest {
             ),
         )
         assertEquals(
-            expected = listOf(
+            expected = nonEmptyListOf(
                 Curve3.Line(
                     Vec3(
                         x = 1.0,
@@ -103,7 +105,7 @@ class CurveExtTest {
                     ),
                 ),
             ),
-            actual = path.edges.toList(),
+            actual = path.edges,
         )
     }
 
@@ -274,14 +276,14 @@ class CurveExtTest {
             ),
         )
         assertEquals(
-            expected = listOf(
+            expected = nonEmptyListOf(
                 Curve3.Helix(
                     height = 4.0,
                     pitch = 1.0,
                     right_handed = true,
                 ),
             ),
-            actual = path.edges.toList(),
+            actual = path.edges,
         )
     }
 
@@ -362,7 +364,7 @@ class CurveExtTest {
             ),
         )
         assertEquals(
-            expected = listOf(
+            expected = nonEmptyListOf(
                 Curve3.Bezier(
                     nonEmptyListOf(
                         Vec3(
@@ -383,7 +385,7 @@ class CurveExtTest {
                     ),
                 ),
             ),
-            actual = path.edges.toList(),
+            actual = path.edges,
         )
     }
 

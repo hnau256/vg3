@@ -9,6 +9,20 @@ import org.hnau.ktcad.ir.FaceSelection
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.TransformOp
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.solid.box
+import org.hnau.ktcad.solid.common
+import org.hnau.ktcad.solid.cut
+import org.hnau.ktcad.solid.cylinder
+import org.hnau.ktcad.solid.fuse
+import org.hnau.ktcad.solid.minus
+import org.hnau.ktcad.solid.mirror
+import org.hnau.ktcad.solid.offset
+import org.hnau.ktcad.solid.plus
+import org.hnau.ktcad.solid.rotate
+import org.hnau.ktcad.solid.scale
+import org.hnau.ktcad.solid.thickSolid
+import org.hnau.ktcad.solid.times
+import org.hnau.ktcad.solid.translate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -26,28 +40,15 @@ class SolidExtTest {
     @Test
     fun operators_map_to_booleans() {
         assertEquals(
-            expected = fuse(
-                listOf(
-                    a,
-                    b,
-                ),
-            ),
+            expected = nonEmptyListOf(a, b).fuse(),
             actual = a + b,
         )
         assertEquals(
-            expected = cut(
-                base = a,
-                tools = nonEmptyListOf(b),
-            ),
+            expected = nonEmptyListOf(a, b).cut(),
             actual = a - b,
         )
         assertEquals(
-            expected = common(
-                listOf(
-                    a,
-                    b,
-                ),
-            ),
+            expected = nonEmptyListOf(a, b).common(),
             actual = a * b,
         )
     }

@@ -1,9 +1,17 @@
 package org.hnau.ktcad
 
 import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.region.plus
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.Sketch
-import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.region.extrude
+import org.hnau.ktcad.region.fillet2dAll
+import org.hnau.ktcad.region.fillet2dExpression
+import org.hnau.ktcad.region.fillet2dSelected
+import org.hnau.ktcad.region.offset2d
+import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.translate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -32,7 +40,7 @@ class RegionExtTest {
     @Test
     fun booleans_lower_to_a_single_sketch_bool() {
         val arena = Arena()
-        val index = arena.region(square.fuse(circle(2.0)))
+        val index = arena.region(square + circle(2.0))
 
         // square, circle, bool — bottom-up, operands before the parent.
         assertEquals(

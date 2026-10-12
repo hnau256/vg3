@@ -2,9 +2,18 @@ package org.hnau.ktcad
 
 import org.hnau.ktcad.axis.A2
 import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.region.plus
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.axis.direction
-import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.region.mirror
+import org.hnau.ktcad.region.offset2d
+import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.rect
+import org.hnau.ktcad.region.rotate
+import org.hnau.ktcad.region.scale
+import org.hnau.ktcad.region.translate
+import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -226,7 +235,7 @@ class RegionBboxTest {
                     x = 1.0,
                     y = 1.0,
                 ),
-            ).rotate(kotlin.math.PI / 2).bbox,
+            ).rotate(PI / 2).bbox,
         )
         assertBox(
             expected = box(
@@ -253,7 +262,7 @@ class RegionBboxTest {
                 y0 = -2.0,
                 y1 = 10.0,
             ),
-            actual = square.fuse(circle(2.0)).bbox,
+            actual = (square + circle(2.0)).bbox,
         )
     }
 

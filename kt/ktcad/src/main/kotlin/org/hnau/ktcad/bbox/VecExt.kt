@@ -23,6 +23,10 @@ internal operator fun Vec2.times(
 ): Vec2 =
     map { value -> if (value == 0.0) 0.0 else value * factor }
 
+internal operator fun Vec2.unaryPlus(): Vec2 = this
+
+internal operator fun Vec2.unaryMinus(): Vec2 = this * -1.0
+
 internal operator fun Double.times(
     vector: Vec2,
 ): Vec2 = vector * this
@@ -112,6 +116,10 @@ internal operator fun Vec3.times(
     factor: Double,
 ): Vec3 =
     map { value -> if (value == 0.0) 0.0 else value * factor }
+
+internal operator fun Vec3.unaryPlus(): Vec3 = this
+
+internal operator fun Vec3.unaryMinus(): Vec3 = this * -1.0
 
 internal operator fun Double.times(
     vector: Vec3,

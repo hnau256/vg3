@@ -4,7 +4,16 @@ import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.direction
-import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.region.extrude
+import org.hnau.ktcad.region.fillet2dAll
+import org.hnau.ktcad.region.minus
+import org.hnau.ktcad.region.offset2d
+import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.rect
+import org.hnau.ktcad.solid.box
+import org.hnau.ktcad.solid.rotate
+import org.hnau.ktcad.solid.thickSolid
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -123,7 +132,7 @@ class ExportSmokeTest {
         )
         output.delete()
 
-        val donut = circle(10.0).cut(circle(5.0)).offset2d(2.0).extrude(3.0)
+        val donut = (circle(10.0) - circle(5.0)).offset2d(2.0).extrude(3.0)
         listOf(
             Part(
                 name = "donut",

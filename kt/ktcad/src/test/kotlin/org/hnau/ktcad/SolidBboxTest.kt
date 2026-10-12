@@ -9,8 +9,16 @@ import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp
-import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.solid.cut
+import org.hnau.ktcad.solid.cylinder
+import org.hnau.ktcad.solid.fuse
+import org.hnau.ktcad.solid.mirror
+import org.hnau.ktcad.solid.offset
+import org.hnau.ktcad.solid.rotate
+import org.hnau.ktcad.solid.scale
+import org.hnau.ktcad.solid.translate
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -97,7 +105,7 @@ class SolidBboxTest {
                 z0 = 0.0,
                 z1 = 3.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 2.0,
@@ -388,24 +396,22 @@ class SolidBboxTest {
                 z0 = 0.0,
                 z1 = 1.0,
             ),
-            actual = fuse(
-                listOf(
-                    box(
-                        A3Values(
-                            x = 1.0,
-                            y = 1.0,
-                            z = 1.0,
-                        ),
+            actual = nonEmptyListOf(
+                org.hnau.ktcad.solid.box(
+                    A3Values(
+                        x = 1.0,
+                        y = 1.0,
+                        z = 1.0,
                     ),
-                    box(
-                        A3Values(
-                            x = 1.0,
-                            y = 1.0,
-                            z = 1.0,
-                        ),
-                    ).translate(A3.X.direction * 5.0),
                 ),
-            ).bbox,
+                org.hnau.ktcad.solid.box(
+                    A3Values(
+                        x = 1.0,
+                        y = 1.0,
+                        z = 1.0,
+                    ),
+                ).translate(A3.X.direction * 5.0),
+            ).fuse().bbox,
         )
         assertBox(
             expected = box(
@@ -416,16 +422,16 @@ class SolidBboxTest {
                 z0 = 0.0,
                 z1 = 4.0,
             ),
-            actual = cut(
-                base = box(
+            actual = nonEmptyListOf(
+                org.hnau.ktcad.solid.box(
                     A3Values(
                         x = 4.0,
                         y = 4.0,
                         z = 4.0,
                     ),
                 ),
-                tools = nonEmptyListOf(halfspace().translate(A3.Z.direction * 2.0)),
-            ).bbox,
+                halfspace().translate(A3.Z.direction * 2.0),
+            ).cut().bbox,
         )
     }
 
@@ -440,7 +446,7 @@ class SolidBboxTest {
                 z0 = 4.0,
                 z1 = 5.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -463,7 +469,7 @@ class SolidBboxTest {
                 z0 = 0.0,
                 z1 = 1.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -483,7 +489,7 @@ class SolidBboxTest {
                 z0 = 0.0,
                 z1 = 2.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -500,7 +506,7 @@ class SolidBboxTest {
                 z0 = -1.0,
                 z1 = 0.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -530,7 +536,7 @@ class SolidBboxTest {
                     1.0,
                 ),
             ),
-            target = box(
+            target = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -562,7 +568,7 @@ class SolidBboxTest {
                 z0 = -1.0,
                 z1 = 2.0,
             ),
-            actual = box(
+            actual = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,
@@ -573,7 +579,7 @@ class SolidBboxTest {
 
         val filleted = fillet(
             radius = RadiusSpec.All(0.1),
-            target = box(
+            target = org.hnau.ktcad.solid.box(
                 A3Values(
                     x = 1.0,
                     y = 1.0,

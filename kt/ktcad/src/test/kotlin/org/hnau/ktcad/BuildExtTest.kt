@@ -5,11 +5,18 @@ import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.ir.Continuity
 import org.hnau.ktcad.ir.FilletKind
-import org.hnau.ktcad.ir.Vec2
-import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
 import org.hnau.ktcad.ir.TransitionKind
+import org.hnau.ktcad.region.extrude
+import org.hnau.ktcad.solid.filletAll
+import org.hnau.ktcad.solid.filletExpression
+import org.hnau.ktcad.solid.filletSelected
+import org.hnau.ktcad.region.loft
+import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.revolve
+import org.hnau.ktcad.region.sweep
+import org.hnau.ktcad.solid.box
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

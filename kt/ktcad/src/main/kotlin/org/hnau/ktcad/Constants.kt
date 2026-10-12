@@ -1,3 +1,3 @@
 package org.hnau.ktcad
 
-val tech: Double = 0.001
+val TECH: Double = 0.001

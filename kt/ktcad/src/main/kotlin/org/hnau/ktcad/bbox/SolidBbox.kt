@@ -43,8 +43,8 @@ val Solid.bbox: A3Values<ClosedRange<Double>>
     get() = fold(
         ifBool = { arguments, kind, tools ->
             val operands = (kind == BooleanKind.CUT).foldBoolean(
-                ifTrue = { arguments.toList() },
-                ifFalse = { arguments.toList() + tools },
+                ifTrue = { arguments },
+                ifFalse = { arguments + tools },
             )
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
