@@ -2,6 +2,7 @@ package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
 
@@ -12,10 +13,10 @@ import org.hnau.ktcad.ir.Vec3
 
 internal operator fun Vec2.get(
     axis: Axis2,
-): Double = when (axis) {
-    Axis2.X -> x
-    Axis2.Y -> y
-}
+): Double = axis.fold(
+    ifX = { x },
+    ifY = { y },
+)
 
 internal operator fun Vec2.times(
     factor: Double,
@@ -92,20 +93,20 @@ internal inline fun vec2(
 internal inline fun Vec2.copy(
     axis: Axis2,
     transform: (value: Double) -> Double,
-): Vec2 = when (axis) {
-    Axis2.X -> copy(x = transform(x))
-    Axis2.Y -> copy(y = transform(y))
-}
+): Vec2 = axis.fold(
+    ifX = { copy(x = transform(x)) },
+    ifY = { copy(y = transform(y)) },
+)
 
 // --- Vec3 -------------------------------------------------------------------
 
 internal operator fun Vec3.get(
     axis: Axis3,
-): Double = when (axis) {
-    Axis3.X -> x
-    Axis3.Y -> y
-    Axis3.Z -> z
-}
+): Double = axis.fold(
+    ifX = { x },
+    ifY = { y },
+    ifZ = { z },
+)
 
 internal operator fun Vec3.times(
     factor: Double,
@@ -192,8 +193,8 @@ internal inline fun vec3(
 internal inline fun Vec3.copy(
     axis: Axis3,
     transform: (value: Double) -> Double,
-): Vec3 = when (axis) {
-    Axis3.X -> copy(x = transform(x))
-    Axis3.Y -> copy(y = transform(y))
-    Axis3.Z -> copy(z = transform(z))
-}
+): Vec3 = axis.fold(
+    ifX = { copy(x = transform(x)) },
+    ifY = { copy(y = transform(y)) },
+    ifZ = { copy(z = transform(z)) },
+)

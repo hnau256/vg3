@@ -1,5 +1,7 @@
 package org.hnau.ktcad
 
+import org.hnau.commons.kotlin.foldNullable
+
 /**
  * DSL sugar for the print/preview workflow: one call renders a STEP preview of the whole assembly
  * (design models together with preview-only helpers) and exports the printable parts as STL.
@@ -33,7 +35,10 @@ fun List<PrintPart>.stepPreviewAndStlExport(
         .export(step)
 
     mapNotNull { printPart ->
-        val stlTransform = printPart.stlTransformation ?: return@mapNotNull null
+        val stlTransform = printPart.stlTransformation.foldNullable(
+            ifNull = { return@mapNotNull null },
+            ifNotNull = { it },
+        )
         val part = printPart.part
         Part(
             name = part.name,

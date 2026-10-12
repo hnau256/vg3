@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.commons.kotlin.foldBoolean
 import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.bbox.combineWith
@@ -77,7 +78,10 @@ class VecExtTest {
                 y = 2.0,
                 z = 3.0,
             ).map { axis, value ->
-                if (axis == Axis3.Z) -value else value
+                (axis == Axis3.Z).foldBoolean(
+                    ifTrue = { -value },
+                    ifFalse = { value },
+                )
             },
         )
         assertEquals(
@@ -89,7 +93,10 @@ class VecExtTest {
                 x = 1.0,
                 y = 4.0,
             ).map { axis, value ->
-                if (axis == Axis2.Y) -value else value * 2
+                (axis == Axis2.Y).foldBoolean(
+                    ifTrue = { -value },
+                    ifFalse = { value * 2 },
+                )
             },
         )
     }
@@ -128,7 +135,10 @@ class VecExtTest {
                     y = 4.0,
                 ),
             ) { axis, a, b ->
-                if (axis == Axis2.X) a + b else a + b
+                (axis == Axis2.X).foldBoolean(
+                    ifTrue = { a + b },
+                    ifFalse = { a + b },
+                )
             },
         )
     }
@@ -141,14 +151,24 @@ class VecExtTest {
                 y = 0.0,
                 z = 0.0,
             ),
-            actual = vec3 { axis -> if (axis == Axis3.X) 1.0 else 0.0 },
+            actual = vec3 { axis ->
+                (axis == Axis3.X).foldBoolean(
+                    ifTrue = { 1.0 },
+                    ifFalse = { 0.0 },
+                )
+            },
         )
         assertEquals(
             expected = Vec2(
                 x = 0.0,
                 y = 1.0,
             ),
-            actual = vec2 { axis -> if (axis == Axis2.Y) 1.0 else 0.0 },
+            actual = vec2 { axis ->
+                (axis == Axis2.Y).foldBoolean(
+                    ifTrue = { 1.0 },
+                    ifFalse = { 0.0 },
+                )
+            },
         )
     }
 

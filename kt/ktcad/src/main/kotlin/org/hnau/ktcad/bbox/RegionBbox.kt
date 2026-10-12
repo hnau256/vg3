@@ -3,12 +3,14 @@ package org.hnau.ktcad.bbox
 import org.hnau.ktcad.Region
 import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.end
 import org.hnau.ktcad.fold
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.ir.fold
 import org.hnau.commons.kotlin.foldBoolean
 import kotlin.math.cos
 import kotlin.math.sin

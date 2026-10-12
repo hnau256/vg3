@@ -14,6 +14,7 @@ import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp2
+import org.hnau.commons.kotlin.foldBoolean
 
 /**
  * DSL sugar over [Region] (the planar sketch domain): primitives, a free contour, booleans and
@@ -40,7 +41,14 @@ fun rect(
         size * Axis2.Y.direction,
     )
     if (Axis2.entries.none { centered[it] }) return rectangle
-    return rectangle.translate(size.combineWith(other = centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
+    return rectangle.translate(
+        size.combineWith(other = centered) { value, isCentered ->
+            isCentered.foldBoolean(
+                ifTrue = { -value / 2 },
+                ifFalse = { 0.0 },
+            )
+        },
+    )
 }
 
 /** A full circle of [radius] centred at the origin. */

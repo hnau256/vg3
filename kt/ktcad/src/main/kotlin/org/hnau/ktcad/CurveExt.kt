@@ -14,6 +14,7 @@ import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Path
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.ir.fold
 
 /**
  * DSL sugar for contours.

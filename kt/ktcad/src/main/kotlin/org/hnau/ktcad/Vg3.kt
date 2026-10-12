@@ -1,6 +1,7 @@
 package org.hnau.ktcad
 
 import kotlinx.serialization.json.Json
+import org.hnau.commons.kotlin.foldNullable
 import org.hnau.ktcad.ir.Color
 import org.hnau.ktcad.ir.Export
 import org.hnau.ktcad.ir.Model
@@ -39,7 +40,10 @@ fun List<Part>.model(): Model {
         Export(
             index = arena.body(part.solid),
             name = part.name,
-            color = part.color ?: paletteColor(part.name),
+            color = part.color.foldNullable(
+                ifNull = { paletteColor(part.name) },
+                ifNotNull = { it },
+            ),
         )
     }
     return Model(
@@ -74,8 +78,12 @@ private fun run(
     modelJson: String,
     exportConfigJson: String,
 ) {
+    val vg3Bin: String? = System.getenv("VG3_BIN")
     val command = listOf(
-        System.getenv("VG3_BIN") ?: "vg3",
+        vg3Bin.foldNullable(
+            ifNull = { "vg3" },
+            ifNotNull = { it },
+        ),
         "--model-json",
         modelJson,
         "--export-config-json",

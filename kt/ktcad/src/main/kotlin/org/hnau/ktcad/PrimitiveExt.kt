@@ -4,6 +4,7 @@ import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
+import org.hnau.commons.kotlin.foldBoolean
 
 /**
  * Hand-written factories for primitives whose placement can be centred on demand.
@@ -27,7 +28,14 @@ fun box(
         height = size[Axis3.Z],
     )
     if (Axis3.entries.none { centered[it] }) return box
-    return box.translate(size.combineWith(other = centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
+    return box.translate(
+        size.combineWith(other = centered) { value, isCentered ->
+            isCentered.foldBoolean(
+                ifTrue = { -value / 2 },
+                ifFalse = { 0.0 },
+            )
+        },
+    )
 }
 
 /**

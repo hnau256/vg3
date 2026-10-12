@@ -5,12 +5,15 @@ import org.hnau.ktcad.Solid
 import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.fold
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Path
 import org.hnau.ktcad.ir.TransformOp
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.ir.fold
+import org.hnau.commons.kotlin.foldBoolean
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -39,7 +42,10 @@ import kotlin.math.sqrt
 val Solid.bbox: Axis3Values<ClosedRange<Double>>
     get() = fold(
         ifBool = { arguments, kind, tools ->
-            val operands = if (kind == BooleanKind.CUT) arguments.toList() else arguments.toList() + tools
+            val operands = (kind == BooleanKind.CUT).foldBoolean(
+                ifTrue = { arguments.toList() },
+                ifFalse = { arguments.toList() + tools },
+            )
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
         ifBox = { height, length, width ->
@@ -190,23 +196,27 @@ private fun pathBox(
 /** A segment's bounding box, from its [from] point (the previous endpoint). */
 private fun Curve3.geometryBox(
     from: Vec3,
-): Axis3Values<ClosedRange<Double>> = when (this) {
-    is Curve3.Line -> pointsBox(
-        listOf(
-            from,
-            to,
-        ),
-    )
-    is Curve3.Arc -> pointsBox(
-        listOf(
-            from,
-            via,
-            to,
-        ),
-    )
-    is Curve3.Spline -> pointsBox(listOf(from) + points)
-    is Curve3.Bezier -> pointsBox(listOf(from) + points)
-    is Curve3.Helix -> {
+): Axis3Values<ClosedRange<Double>> = fold(
+    ifLine = { to ->
+        pointsBox(
+            listOf(
+                from,
+                to,
+            ),
+        )
+    },
+    ifArc = { to, via ->
+        pointsBox(
+            listOf(
+                from,
+                via,
+                to,
+            ),
+        )
+    },
+    ifSpline = { points, _, _ -> pointsBox(listOf(from) + points) },
+    ifBezier = { points -> pointsBox(listOf(from) + points) },
+    ifHelix = { height, _, _ ->
         val radius = hypot(
             x = from.x,
             y = from.y,
@@ -223,17 +233,17 @@ private fun Curve3.geometryBox(
                 b = top,
             ),
         )
-    }
-}
+    },
+)
 
 private fun Curve3.endPoint(
     current: Vec3,
-): Vec3 = when (this) {
-    is Curve3.Line -> to
-    is Curve3.Arc -> to
-    is Curve3.Spline -> points.last()
-    is Curve3.Bezier -> points.last()
-    is Curve3.Helix -> {
+): Vec3 = fold(
+    ifLine = { to -> to },
+    ifArc = { to, _ -> to },
+    ifSpline = { points, _, _ -> points.last() },
+    ifBezier = { points -> points.last() },
+    ifHelix = { height, pitch, right_handed ->
         val radius = hypot(
             x = current.x,
             y = current.y,
@@ -242,15 +252,18 @@ private fun Curve3.endPoint(
             y = current.y,
             x = current.x,
         )
-        val direction = if (right_handed) 1.0 else -1.0
+        val direction = right_handed.foldBoolean(
+            ifTrue = { 1.0 },
+            ifFalse = { -1.0 },
+        )
         val end = phase + direction * 2.0 * PI * (height / pitch)
         Vec3(
             x = radius * cos(end),
             y = radius * sin(end),
             z = current.z + height,
         )
-    }
-}
+    },
+)
 
 // --- Transforms (3D) --------------------------------------------------------
 
@@ -270,32 +283,34 @@ private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> =
 
 private fun TransformOp.transformPoint(
     point: Vec3,
-): Vec3 = when (this) {
-    is TransformOp.Translate -> point + value
-    is TransformOp.Scale -> point * value
-    is TransformOp.Mirror -> {
+): Vec3 = fold(
+    ifTranslate = { value -> point + value },
+    ifScale = { value -> point * value },
+    ifMirror = { center, normal ->
         val n = normalized(normal)
         point - n * (2.0 * (point - center).dot(n))
-    }
-    is TransformOp.Rotate -> {
+    },
+    ifRotate = { angle, axis, center ->
         val a = normalized(axis)
         val v = point - center
         val cosine = cos(angle)
         val sine = sin(angle)
         v * cosine + a.cross(v) * sine + a * (v.dot(a) * (1.0 - cosine)) + center
-    }
-    is TransformOp.Matrix -> vec3 { axis ->
-        val row = when (axis) {
-            Axis3.X -> 0
-            Axis3.Y -> 4
-            Axis3.Z -> 8
+    },
+    ifMatrix = { m ->
+        vec3 { axis ->
+            val row = axis.fold(
+                ifX = { 0 },
+                ifY = { 4 },
+                ifZ = { 8 },
+            )
+            m[row] * point[Axis3.X] +
+                m[row + 1] * point[Axis3.Y] +
+                m[row + 2] * point[Axis3.Z] +
+                m[row + 3]
         }
-        m[row] * point[Axis3.X] +
-            m[row + 1] * point[Axis3.Y] +
-            m[row + 2] * point[Axis3.Z] +
-            m[row + 3]
-    }
-}
+    },
+)
 
 private fun Vec3.dot(
     other: Vec3,
@@ -304,11 +319,11 @@ private fun Vec3.dot(
 private fun Vec3.cross(
     other: Vec3,
 ): Vec3 = vec3 { axis ->
-    when (axis) {
-        Axis3.X -> this[Axis3.Y] * other[Axis3.Z] - this[Axis3.Z] * other[Axis3.Y]
-        Axis3.Y -> this[Axis3.Z] * other[Axis3.X] - this[Axis3.X] * other[Axis3.Z]
-        Axis3.Z -> this[Axis3.X] * other[Axis3.Y] - this[Axis3.Y] * other[Axis3.X]
-    }
+    axis.fold(
+        ifX = { this[Axis3.Y] * other[Axis3.Z] - this[Axis3.Z] * other[Axis3.Y] },
+        ifY = { this[Axis3.Z] * other[Axis3.X] - this[Axis3.X] * other[Axis3.Z] },
+        ifZ = { this[Axis3.X] * other[Axis3.Y] - this[Axis3.Y] * other[Axis3.X] },
+    )
 }
 
 private fun normalized(
