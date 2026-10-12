@@ -2,6 +2,8 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.bbox.Axis2
+import org.hnau.ktcad.bbox.direction
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
@@ -77,8 +79,8 @@ fun Region.translate(dx: Double, dy: Double): Region =
 fun Region.rotate(angle: Double, center: Vec2 = REGION_ORIGIN): Region =
     Region.Transform(target = this, op = TransformOp2.Rotate(center = center, angle = angle))
 
-fun Region.mirror(normal: Vec2, center: Vec2 = REGION_ORIGIN): Region =
-    Region.Transform(target = this, op = TransformOp2.Mirror(center = center, normal = normal))
+fun Region.mirror(axis: Axis2, center: Vec2 = REGION_ORIGIN): Region =
+    Region.Transform(target = this, op = TransformOp2.Mirror(center = center, normal = axis.direction))
 
 fun Region.scale(x: Double, y: Double): Region =
     Region.Transform(target = this, op = TransformOp2.Scale(value = Vec2(x = x, y = y)))

@@ -178,7 +178,7 @@ cd processor && cargo run -p vg3-schema   # -> scheme/vg3.schema.json
 (`arguments`/`tools`), а также `Polyhedron.points` и внешний список `Polyhedron.faces` (сами грани —
 списки индексов).
 
-Сахар (`mirrorXY`, `rotateX`, `circle`, …) существует **только в DSL** и разворачивается в канонические
+Сахар (`circle`, `rect`, `Axis3`-оси, …) существует **только в DSL** и разворачивается в канонические
 формы; в JSON не встречается.
 
 ### Кривые и контуры

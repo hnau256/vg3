@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.ktcad.bbox.Axis2
 import org.hnau.ktcad.bbox.Axis2Values
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.ir.Vec2
@@ -47,7 +48,7 @@ class RegionBboxTest {
         assertBox(box(3.0, 4.0, 4.0, 5.0), rect(1.0, 1.0).translate(3.0, 4.0).bbox)
         assertBox(box(0.0, 2.0, -1.0, 0.0), rect(1.0, 1.0).scale(2.0, -1.0).bbox)
         assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).rotate(kotlin.math.PI / 2).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).mirror(normal = p(1.0, 0.0)).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).mirror(Axis2.X).bbox)
     }
 
     @Test

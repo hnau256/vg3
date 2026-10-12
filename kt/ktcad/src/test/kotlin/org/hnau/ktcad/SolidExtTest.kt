@@ -1,6 +1,7 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.bbox.Axis3
 import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.FaceSelection
 import org.hnau.ktcad.ir.JoinKind
@@ -21,23 +22,18 @@ class SolidExtTest {
     }
 
     @Test
-    fun up_is_translate_along_z() {
-        assertEquals(a.translate(0.0, 0.0, 5.0), a.up(5.0))
-        assertEquals(a.translate(0.0, 0.0, -5.0), a.down(5.0))
+    fun translate_along_an_axis_uses_the_documented_convention() {
+        assertEquals(a.translate(3.0, 0.0, 0.0), a.translate(Axis3.X, 3.0))
+        assertEquals(a.translate(-3.0, 0.0, 0.0), a.translate(Axis3.X, -3.0))
+        assertEquals(a.translate(0.0, 3.0, 0.0), a.translate(Axis3.Y, 3.0))
+        assertEquals(a.translate(0.0, 0.0, 5.0), a.translate(Axis3.Z, 5.0))
+        assertEquals(a.translate(0.0, 0.0, -5.0), a.translate(Axis3.Z, -5.0))
     }
 
     @Test
-    fun axes_follow_the_documented_convention() {
-        assertEquals(a.translate(3.0, 0.0, 0.0), a.right(3.0))
-        assertEquals(a.translate(-3.0, 0.0, 0.0), a.left(3.0))
-        assertEquals(a.translate(0.0, 3.0, 0.0), a.forward(3.0))
-        assertEquals(a.translate(0.0, -3.0, 0.0), a.back(3.0))
-    }
-
-    @Test
-    fun rotateX_uses_the_x_axis() {
-        val expected = a.rotate(Vec3(1.0, 0.0, 0.0), 0.5)
-        assertEquals(expected, a.rotateX(0.5))
+    fun rotate_uses_the_given_axis() {
+        val op = TransformOp.Rotate(center = Vec3(0.0, 0.0, 0.0), axis = Vec3(1.0, 0.0, 0.0), angle = 0.5)
+        assertEquals(transform(op, a), a.rotate(Axis3.X, 0.5))
     }
 
     @Test
@@ -46,9 +42,9 @@ class SolidExtTest {
     }
 
     @Test
-    fun mirrorXY_is_mirror_about_z_normal() {
-        val op = TransformOp.Mirror(center = org.hnau.ktcad.ir.Vec3(0.0, 0.0, 0.0), normal = Vec3(0.0, 0.0, 1.0))
-        assertEquals(transform(op, a), a.mirrorXY())
+    fun mirror_uses_the_given_axis_as_the_plane_normal() {
+        val op = TransformOp.Mirror(center = Vec3(0.0, 0.0, 0.0), normal = Vec3(0.0, 0.0, 1.0))
+        assertEquals(transform(op, a), a.mirror(Axis3.Z))
     }
 
     @Test

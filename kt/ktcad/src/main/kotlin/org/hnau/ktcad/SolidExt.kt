@@ -17,10 +17,8 @@ import org.hnau.ktcad.ir.TransformOp
  * DSL sugar over [Solid]: booleans and transforms. Every function returns a **new** `Solid`
  * (the domain graph is immutable); nothing is mutated.
  *
- * Canonical axis convention (the engine is dimensionless, angles in radians):
- * - `up` = `+Z`, `down` = `−Z`
- * - `right` = `+X`, `left` = `−X`
- * - `forward` = `+Y`, `back` = `−Y`
+ * Canonical axis convention (the engine is dimensionless, angles in radians): `Axis3.X` = `+X`,
+ * `Axis3.Y` = `+Y`, `Axis3.Z` = `+Z`; a negative distance/angle reverses the sign.
  *
  * Transforms wrap the operand in the `transform` IR body (there is a single canonical way to place
  * a shape); the engine applies `ops` left to right.
@@ -72,17 +70,9 @@ fun Solid.translate(dx: Double, dy: Double, dz: Double): Solid =
 fun Solid.translate(value: Vec3): Solid =
     transform(op = TransformOp.Translate(value = value), target = this)
 
-fun Solid.right(distance: Double): Solid = translate(distance, 0.0, 0.0)
-
-fun Solid.left(distance: Double): Solid = translate(-distance, 0.0, 0.0)
-
-fun Solid.forward(distance: Double): Solid = translate(0.0, distance, 0.0)
-
-fun Solid.back(distance: Double): Solid = translate(0.0, -distance, 0.0)
-
-fun Solid.up(distance: Double): Solid = translate(0.0, 0.0, distance)
-
-fun Solid.down(distance: Double): Solid = translate(0.0, 0.0, -distance)
+/** Translate by `distance` along `axis` (a negative [distance] reverses the direction). */
+fun Solid.translate(axis: Axis3, distance: Double): Solid =
+    translate(value = axis.direction(distance))
 
 /*fun Solid.put(
     target: Solid,

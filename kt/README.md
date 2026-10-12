@@ -96,7 +96,7 @@ fun main() {
 ```kotlin
 listOf(
     PrintPart(Part("cabinet", cabinet)),                                  // только предпросмотр
-    PrintPart(Part("hook", hook), stlTransformation = { rotateX(Math.PI) }), // ещё и в STL
+    PrintPart(Part("hook", hook), stlTransformation = { rotate(Axis3.X, Math.PI) }), // ещё и в STL
 ).stepPreviewAndStlExport(
     step = Format.Step(filename = "preview.step"),
     stl = Format.Stl(output = Output.Multi("print")),
@@ -119,9 +119,10 @@ listOf(
 - **`thickSolid(offset, expression)`** — полая оболочка толщиной `offset` (отрицательное — внутрь,
   как в OCCT); `expression` — булев Rhai-предикат по граням (`face`, плюс `box`), выбирающий проёмы;
   есть перегрузка с `join`.
-- **Трансформации** (возвращают новый `Solid`): `translate`, `up`/`down`, `left`/`right`, `forward`/`back`,
-  `scale`/`scaleX/Y/Z`, `rotate(axis, angle, center?)`/`rotateX/Y/Z`, `mirrorXY/XZ/YZ`/`mirror(normal, center?)`.
-  Оси: `up=+Z, right=+X, forward=+Y` (и минусы). Углы — радианы (`Math.toRadians(deg)`).
+- **Трансформации** (возвращают новый `Solid`): `translate(dx, dy, dz)`, `translate(axis: Axis3, distance)`
+  (отрицательное [distance] — обратное направление), `scale`/`scaleX/Y/Z`, `rotate(axis: Axis3, angle, center?)`,
+  `mirror(axis: Axis3, center?)` (ось — нормаль плоскости). Ось вращения/нормаль/направление — `Axis3.X/Y/Z`
+  (`X=+X, Y=+Y, Z=+Z`). Углы — радианы (`Math.toRadians(deg)`).
 - **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
   `arcTo`/`arcRel`, `splineTo(…, tangentStart?, tangentEnd?)`, `bezierTo(first, second, vararg)`,
   `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
@@ -133,7 +134,7 @@ listOf(
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
   `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
-  `mirror(normal, center?)`, `scale(x, y)`, и `offset2d(distance)`. Скругление углов (имя отражает
+  `mirror(axis: Axis2, center?)`, `scale(x, y)`, и `offset2d(distance)`. Скругление углов (имя отражает
   способ выбора радиуса): `fillet2dAll(radius)` (постоянный всем), `fillet2dExpression(expression)`
   (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
   отбора углов). Эскизы **не экспортируются** — только служат профилем тел.

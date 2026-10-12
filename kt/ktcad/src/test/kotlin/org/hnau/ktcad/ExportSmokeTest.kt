@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.ktcad.bbox.Axis3
 import org.hnau.ktcad.ir.Vec2
 import java.io.File
 import kotlin.test.Test
@@ -125,7 +126,7 @@ class ExportSmokeTest {
         listOf(
             PrintPart(
                 part = Part(name = "hook", solid = box(1.0, 1.0, 1.0)),
-                stlTransformation = { rotateX(Math.PI) },
+                stlTransformation = { rotate(Axis3.X, Math.PI) },
             ),
             PrintPart(
                 part = Part(name = "cabinet", solid = box(3.0, 3.0, 3.0)),

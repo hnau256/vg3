@@ -82,7 +82,7 @@ class SolidBboxTest {
         )
         assertBox(
             box(0.0, 4.0, 0.0, 4.0, 0.0, 4.0),
-            cut(box(4.0, 4.0, 4.0), nonEmptyListOf(halfspace().up(2.0))).bbox,
+            cut(box(4.0, 4.0, 4.0), nonEmptyListOf(halfspace().translate(Axis3.Z, 2.0))).bbox,
         )
     }
 
