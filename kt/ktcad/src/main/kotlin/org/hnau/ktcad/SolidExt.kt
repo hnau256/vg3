@@ -3,6 +3,10 @@ package org.hnau.ktcad
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
+import org.hnau.ktcad.bbox.Axis3
+import org.hnau.ktcad.bbox.bbox
+import org.hnau.ktcad.bbox.direction
+import org.hnau.ktcad.bbox.interpolate
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.FaceSelection
 import org.hnau.ktcad.ir.JoinKind
@@ -80,6 +84,18 @@ fun Solid.up(distance: Double): Solid = translate(0.0, 0.0, distance)
 
 fun Solid.down(distance: Double): Solid = translate(0.0, 0.0, -distance)
 
+/*fun Solid.put(
+    target: Solid,
+    axis: Axis3,
+    targetFraction: Double,
+    thisFraction: Double,
+): Solid {
+    val targetPosition = target.bbox[axis].interpolate(targetFraction)
+    val thisPosition = this.bbox[axis].interpolate(thisFraction)
+    val delta = targetPosition - thisPosition
+
+}*/
+
 // --- Scale ------------------------------------------------------------------
 
 /** Uniform scale by `factor`. */
@@ -99,35 +115,20 @@ fun Solid.scaleZ(factor: Double): Solid = scale(1.0, 1.0, factor)
 
 /** Rotate by `angle` (radians) about `axis`, around `center` (default: origin). */
 fun Solid.rotate(
-    axis: Vec3,
+    axis: Axis3,
     angle: Double,
     center: Vec3 = ORIGIN,
 ): Solid = transform(
-    op = TransformOp.Rotate(center = center, axis = axis, angle = angle),
+    op = TransformOp.Rotate(center = center, axis = axis.direction, angle = angle),
     target = this,
 )
 
-fun Solid.rotateX(angle: Double, center: Vec3 = ORIGIN): Solid = rotate(AXIS_X, angle, center)
-
-fun Solid.rotateY(angle: Double, center: Vec3 = ORIGIN): Solid = rotate(AXIS_Y, angle, center)
-
-fun Solid.rotateZ(angle: Double, center: Vec3 = ORIGIN): Solid = rotate(AXIS_Z, angle, center)
-
 // --- Mirror -----------------------------------------------------------------
 
-/** Mirror across the XY plane (normal `+Z`). */
-fun Solid.mirrorXY(): Solid = mirror(normal = AXIS_Z)
-
-/** Mirror across the XZ plane (normal `+Y`). */
-fun Solid.mirrorXZ(): Solid = mirror(normal = AXIS_Y)
-
-/** Mirror across the YZ plane (normal `+X`). */
-fun Solid.mirrorYZ(): Solid = mirror(normal = AXIS_X)
-
-/** Mirror across a plane through `center` with the given `normal`. */
-fun Solid.mirror(normal: Vec3, center: Vec3 = ORIGIN): Solid =
+/** Mirror across the plane through `center` (default: origin) with the normal `axis`. */
+fun Solid.mirror(axis: Axis3, center: Vec3 = ORIGIN): Solid =
     transform(
-        op = TransformOp.Mirror(center = center, normal = normal),
+        op = TransformOp.Mirror(center = center, normal = axis.direction),
         target = this,
     )
 
@@ -159,6 +160,3 @@ fun Solid.thickSolid(offset: Double, expression: String, join: JoinKind): Solid 
 )
 
 private val ORIGIN = Vec3(x = 0.0, y = 0.0, z = 0.0)
-private val AXIS_X = Vec3(x = 1.0, y = 0.0, z = 0.0)
-private val AXIS_Y = Vec3(x = 0.0, y = 1.0, z = 0.0)
-private val AXIS_Z = Vec3(x = 0.0, y = 0.0, z = 1.0)

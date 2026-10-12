@@ -1,6 +1,7 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.bbox.Axis3
 import org.hnau.ktcad.bbox.Axis3Values
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.ir.RadiusSpec
@@ -88,9 +89,9 @@ class SolidBboxTest {
     @Test
     fun transforms_apply_to_the_box_corners() {
         assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), box(1.0, 1.0, 1.0).translate(2.0, 3.0, 4.0).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0), box(1.0, 1.0, 1.0).rotateZ(PI / 2).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0), box(1.0, 1.0, 1.0).rotate(Axis3.Z, PI / 2).bbox)
         assertBox(box(0.0, 2.0, 0.0, 2.0, 0.0, 2.0), box(1.0, 1.0, 1.0).scale(2.0).bbox)
-        assertBox(box(0.0, 1.0, 0.0, 1.0, -1.0, 0.0), box(1.0, 1.0, 1.0).mirrorXY().bbox)
+        assertBox(box(0.0, 1.0, 0.0, 1.0, -1.0, 0.0), box(1.0, 1.0, 1.0).mirror(Axis3.Z).bbox)
 
         val matrix = Solid.Transform(
             op = TransformOp.Matrix(m = listOf(1.0, 0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 3.0, 0.0, 0.0, 1.0, 4.0, 0.0, 0.0, 0.0, 1.0)),
