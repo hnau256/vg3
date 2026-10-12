@@ -18,11 +18,12 @@ import org.hnau.ktcad.transform
 
 fun Solid.translate(
     value: A3Values<Double>,
-): Solid =
-    transform(
-        op = TransformOp.Translate(value = value.toVec3()),
-        target = this,
-    )
+): Solid = transform(
+    op = TransformOp.Translate(
+        value = value.toVec3(),
+    ),
+    target = this,
+)
 
 fun Solid.put(
     target: Solid,
@@ -84,30 +85,15 @@ fun Solid.offset(
     target = this,
 )
 
-// --- Thick solid ------------------------------------------------------------
-
-/**
- * Hollow [this] into a shell of wall thickness [offset] (negative = inward, as in OCCT), opening
- * the faces selected by a boolean Rhai [expression] (variable `face`, plus `box` for the body's
- * bounding box).
- */
 fun Solid.thickSolid(
     offset: Double,
-    expression: String,
+    selectFaceExpression: String,
+    join: JoinKind = JoinKind.ARC,
 ): Solid = thickSolid(
     offset = offset,
-    faces = FaceSelection.Selected(expression = expression),
-    target = this,
-)
-
-/** As [thickSolid], joining the offset shells with [join]. */
-fun Solid.thickSolid(
-    offset: Double,
-    expression: String,
-    join: JoinKind,
-): Solid = thickSolid(
-    offset = offset,
-    faces = FaceSelection.Selected(expression = expression),
+    faces = FaceSelection.Selected(
+        expression = selectFaceExpression,
+    ),
     join = join,
     target = this,
 )
