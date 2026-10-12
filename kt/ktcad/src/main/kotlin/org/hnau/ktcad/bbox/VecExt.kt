@@ -13,6 +13,11 @@ operator fun Vec2.get(axis: Axis2): Double = when (axis) {
     Axis2.Y -> y
 }
 
+operator fun Vec2.times(factor: Double): Vec2 =
+    map { value -> if (value == 0.0) 0.0 else value * factor }
+
+operator fun Double.times(vector: Vec2): Vec2 = vector * this
+
 inline fun Vec2.map(transform: (axis: Axis2, value: Double) -> Double): Vec2 = Vec2(
     x = transform(Axis2.X, x),
     y = transform(Axis2.Y, y),
@@ -51,6 +56,11 @@ operator fun Vec3.get(axis: Axis3): Double = when (axis) {
     Axis3.Y -> y
     Axis3.Z -> z
 }
+
+operator fun Vec3.times(factor: Double): Vec3 =
+    map { value -> if (value == 0.0) 0.0 else value * factor }
+
+operator fun Double.times(vector: Vec3): Vec3 = vector * this
 
 inline fun Vec3.map(transform: (axis: Axis3, value: Double) -> Double): Vec3 = Vec3(
     x = transform(Axis3.X, x),

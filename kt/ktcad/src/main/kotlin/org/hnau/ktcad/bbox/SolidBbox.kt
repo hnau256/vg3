@@ -150,53 +150,60 @@ private fun Axis3Values<ClosedRange<Double>>.transform(
     op: TransformOp,
 ): Axis3Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
 
-private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> {
-    val xs = listOf(x.start, x.endInclusive)
-    val ys = listOf(y.start, y.endInclusive)
-    val zs = listOf(z.start, z.endInclusive)
-    return xs.flatMap { px -> ys.flatMap { py -> zs.map { pz -> Vec3(x = px, y = py, z = pz) } } }
-}
+private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> =
+    Axis3.entries.fold(listOf(vec3 { 0.0 })) { corners, axis ->
+        corners.flatMap { corner ->
+            listOf(this[axis].start, this[axis].endInclusive)
+                .map { value -> corner.copy(axis) { value } }
+        }
+    }
 
 private fun TransformOp.transformPoint(point: Vec3): Vec3 = when (this) {
     is TransformOp.Translate ->
-        Vec3(x = point.x + value.x, y = point.y + value.y, z = point.z + value.z)
+        point.combineWith(value) { a, b -> a + b }
     is TransformOp.Scale ->
-        Vec3(x = point.x * value.x, y = point.y * value.y, z = point.z * value.z)
+        point.combineWith(value) { a, b -> a * b }
     is TransformOp.Mirror -> {
         val n = normalized(normal)
-        val projection =
-            (point.x - center.x) * n.x + (point.y - center.y) * n.y + (point.z - center.z) * n.z
-        Vec3(
-            x = point.x - 2.0 * projection * n.x,
-            y = point.y - 2.0 * projection * n.y,
-            z = point.z - 2.0 * projection * n.z,
-        )
+        val projection = point.combineWith(center) { p, c -> p - c }.dot(n)
+        point.combineWith(n) { p, ni -> p - 2.0 * projection * ni }
     }
     is TransformOp.Rotate -> {
         val a = normalized(axis)
-        val vx = point.x - center.x
-        val vy = point.y - center.y
-        val vz = point.z - center.z
-        val c = cos(angle)
-        val s = sin(angle)
-        val dot = a.x * vx + a.y * vy + a.z * vz
-        val crossX = a.y * vz - a.z * vy
-        val crossY = a.z * vx - a.x * vz
-        val crossZ = a.x * vy - a.y * vx
-        Vec3(
-            x = center.x + vx * c + crossX * s + a.x * dot * (1.0 - c),
-            y = center.y + vy * c + crossY * s + a.y * dot * (1.0 - c),
-            z = center.z + vz * c + crossZ * s + a.z * dot * (1.0 - c),
-        )
+        val v = point.combineWith(center) { p, c -> p - c }
+        val cosine = cos(angle)
+        val sine = sin(angle)
+        val dot = v.dot(a)
+        val cross = a.cross(v)
+        v
+            .combineWith(cross) { vi, ci -> vi * cosine + ci * sine }
+            .combineWith(a) { base, ai -> base + ai * dot * (1.0 - cosine) }
+            .combineWith(center) { r, c -> r + c }
     }
-    is TransformOp.Matrix -> Vec3(
-        x = m[0] * point.x + m[1] * point.y + m[2] * point.z + m[3],
-        y = m[4] * point.x + m[5] * point.y + m[6] * point.z + m[7],
-        z = m[8] * point.x + m[9] * point.y + m[10] * point.z + m[11],
-    )
+    is TransformOp.Matrix -> vec3 { axis ->
+        val row = when (axis) {
+            Axis3.X -> 0
+            Axis3.Y -> 4
+            Axis3.Z -> 8
+        }
+        m[row] * point[Axis3.X] +
+            m[row + 1] * point[Axis3.Y] +
+            m[row + 2] * point[Axis3.Z] +
+            m[row + 3]
+    }
+}
+
+private fun Vec3.dot(other: Vec3): Double = Axis3.entries.sumOf { get(it) * other[it] }
+
+private fun Vec3.cross(other: Vec3): Vec3 = vec3 { axis ->
+    when (axis) {
+        Axis3.X -> this[Axis3.Y] * other[Axis3.Z] - this[Axis3.Z] * other[Axis3.Y]
+        Axis3.Y -> this[Axis3.Z] * other[Axis3.X] - this[Axis3.X] * other[Axis3.Z]
+        Axis3.Z -> this[Axis3.X] * other[Axis3.Y] - this[Axis3.Y] * other[Axis3.X]
+    }
 }
 
 private fun normalized(vector: Vec3): Vec3 {
-    val length = sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z)
-    return Vec3(x = vector.x / length, y = vector.y / length, z = vector.z / length)
+    val length = sqrt(vector.dot(vector))
+    return vector.map { it / length }
 }

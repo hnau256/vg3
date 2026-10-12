@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.ktcad.ir.Vec3
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -8,10 +9,10 @@ class PolyhedronExtTest {
 
     @Test
     fun shared_points_are_deduplicated_by_equals() {
-        val a = p(0.0, 0.0, 0.0)
-        val b = p(1.0, 0.0, 0.0)
-        val c = p(0.0, 1.0, 0.0)
-        val d = p(0.0, 0.0, 1.0)
+        val a = Vec3(0.0, 0.0, 0.0)
+        val b = Vec3(1.0, 0.0, 0.0)
+        val c = Vec3(0.0, 1.0, 0.0)
+        val d = Vec3(0.0, 0.0, 1.0)
 
         // A tetrahedron: each vertex appears in three faces.
         val solid = polyhedron(

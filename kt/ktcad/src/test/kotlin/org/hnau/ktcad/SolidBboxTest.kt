@@ -4,6 +4,8 @@ import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.bbox.Axis3
 import org.hnau.ktcad.bbox.Axis3Values
 import org.hnau.ktcad.bbox.bbox
+import org.hnau.ktcad.bbox.direction
+import org.hnau.ktcad.bbox.times
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp
 import org.hnau.ktcad.ir.Vec2
@@ -31,7 +33,7 @@ class SolidBboxTest {
 
     @Test
     fun primitives_are_exact() {
-        assertBox(box(0.0, 1.0, 0.0, 2.0, 0.0, 3.0), box(1.0, 2.0, 3.0).bbox)
+        assertBox(box(0.0, 1.0, 0.0, 2.0, 0.0, 3.0), box(Vec3(1.0, 2.0, 3.0)).bbox)
         assertBox(box(-3.0, 3.0, -3.0, 3.0, -3.0, 3.0), sphere(3.0).bbox)
         assertBox(box(-2.0, 2.0, -2.0, 2.0, 0.0, 5.0), cylinder(2.0, 5.0).bbox)
         assertBox(box(-3.0, 3.0, -3.0, 3.0, 0.0, 4.0), cone(4.0, 3.0, 1.0).bbox)
@@ -66,11 +68,11 @@ class SolidBboxTest {
 
     @Test
     fun loft_unions_its_sections_and_sweep_grows_the_path() {
-        val lower = Path(p(0.0, 0.0, 0.0), lineTo(4.0, 0.0, 0.0), lineTo(4.0, 4.0, 0.0))
-        val upper = Path(p(0.0, 0.0, 10.0), lineTo(2.0, 0.0, 10.0), lineTo(2.0, 2.0, 10.0))
+        val lower = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(4.0, 0.0, 0.0)), lineTo(Vec3(4.0, 4.0, 0.0)))
+        val upper = Path(Vec3(0.0, 0.0, 10.0), lineTo(Vec3(2.0, 0.0, 10.0)), lineTo(Vec3(2.0, 2.0, 10.0)))
         assertBox(box(0.0, 4.0, 0.0, 4.0, 0.0, 10.0), loft(sections = nonEmptyListOf(lower, upper)).bbox)
 
-        val path = Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0))
+        val path = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(10.0, 0.0, 0.0)))
         assertBox(box(-2.0, 12.0, -2.0, 2.0, -2.0, 2.0), sweep(path = path, profile = square).bbox)
     }
 
@@ -78,33 +80,33 @@ class SolidBboxTest {
     fun booleans_union_operands_but_cut_ignores_tools() {
         assertBox(
             box(0.0, 6.0, 0.0, 1.0, 0.0, 1.0),
-            fuse(listOf(box(1.0, 1.0, 1.0), box(1.0, 1.0, 1.0).translate(5.0, 0.0, 0.0))).bbox,
+            fuse(listOf(box(Vec3(1.0, 1.0, 1.0)), box(Vec3(1.0, 1.0, 1.0)).translate(Axis3.X.direction * 5.0))).bbox,
         )
         assertBox(
             box(0.0, 4.0, 0.0, 4.0, 0.0, 4.0),
-            cut(box(4.0, 4.0, 4.0), nonEmptyListOf(halfspace().translate(Axis3.Z, 2.0))).bbox,
+            cut(box(Vec3(4.0, 4.0, 4.0)), nonEmptyListOf(halfspace().translate(Axis3.Z.direction * 2.0))).bbox,
         )
     }
 
     @Test
     fun transforms_apply_to_the_box_corners() {
-        assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), box(1.0, 1.0, 1.0).translate(2.0, 3.0, 4.0).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0), box(1.0, 1.0, 1.0).rotate(Axis3.Z, PI / 2).bbox)
-        assertBox(box(0.0, 2.0, 0.0, 2.0, 0.0, 2.0), box(1.0, 1.0, 1.0).scale(2.0).bbox)
-        assertBox(box(0.0, 1.0, 0.0, 1.0, -1.0, 0.0), box(1.0, 1.0, 1.0).mirror(Axis3.Z).bbox)
+        assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), box(Vec3(1.0, 1.0, 1.0)).translate(Vec3(2.0, 3.0, 4.0)).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0), box(Vec3(1.0, 1.0, 1.0)).rotate(Axis3.Z.direction, PI / 2).bbox)
+        assertBox(box(0.0, 2.0, 0.0, 2.0, 0.0, 2.0), box(Vec3(1.0, 1.0, 1.0)).scale(2.0).bbox)
+        assertBox(box(0.0, 1.0, 0.0, 1.0, -1.0, 0.0), box(Vec3(1.0, 1.0, 1.0)).mirror(Axis3.Z.direction).bbox)
 
         val matrix = Solid.Transform(
             op = TransformOp.Matrix(m = listOf(1.0, 0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 3.0, 0.0, 0.0, 1.0, 4.0, 0.0, 0.0, 0.0, 1.0)),
-            target = box(1.0, 1.0, 1.0),
+            target = box(Vec3(1.0, 1.0, 1.0)),
         )
         assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), matrix.bbox)
     }
 
     @Test
     fun offset_grows_and_fillet_keeps_the_box() {
-        assertBox(box(-1.0, 2.0, -1.0, 2.0, -1.0, 2.0), box(1.0, 1.0, 1.0).offset(1.0).bbox)
+        assertBox(box(-1.0, 2.0, -1.0, 2.0, -1.0, 2.0), box(Vec3(1.0, 1.0, 1.0)).offset(1.0).bbox)
 
-        val filleted = fillet(radius = RadiusSpec.All(0.1), target = box(1.0, 1.0, 1.0))
+        val filleted = fillet(radius = RadiusSpec.All(0.1), target = box(Vec3(1.0, 1.0, 1.0)))
         assertBox(box(0.0, 1.0, 0.0, 1.0, 0.0, 1.0), filleted.bbox)
     }
 }

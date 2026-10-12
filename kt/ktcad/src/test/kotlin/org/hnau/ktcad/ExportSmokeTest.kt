@@ -1,7 +1,9 @@
 package org.hnau.ktcad
 
 import org.hnau.ktcad.bbox.Axis3
+import org.hnau.ktcad.bbox.direction
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.ir.Vec3
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -19,7 +21,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-box.stl")
         output.delete()
 
-        listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0)))
+        listOf(Part(name = "box", solid = box(Vec3(1.0, 2.0, 3.0))))
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
@@ -86,7 +88,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-thick.stl")
         output.delete()
 
-        val hollow = box(10.0, 10.0, 10.0).thickSolid(
+        val hollow = box(Vec3(10.0, 10.0, 10.0)).thickSolid(
             offset = -1.0,
             expression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
         )
@@ -105,7 +107,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-report.json")
         output.delete()
 
-        listOf(Part(name = "box", solid = box(1.0, 2.0, 3.0)))
+        listOf(Part(name = "box", solid = box(Vec3(1.0, 2.0, 3.0))))
             .model()
             .export(Format.Json(filename = output.absolutePath))
 
@@ -125,11 +127,11 @@ class ExportSmokeTest {
 
         listOf(
             PrintPart(
-                part = Part(name = "hook", solid = box(1.0, 1.0, 1.0)),
-                stlTransformation = { rotate(Axis3.X, Math.PI) },
+                part = Part(name = "hook", solid = box(Vec3(1.0, 1.0, 1.0))),
+                stlTransformation = { rotate(Axis3.X.direction, Math.PI) },
             ),
             PrintPart(
-                part = Part(name = "cabinet", solid = box(3.0, 3.0, 3.0)),
+                part = Part(name = "cabinet", solid = box(Vec3(3.0, 3.0, 3.0))),
                 stlTransformation = null,
             ),
         ).stepPreviewAndStlExport(

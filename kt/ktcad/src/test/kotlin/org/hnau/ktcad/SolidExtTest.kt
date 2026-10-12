@@ -2,16 +2,19 @@ package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.bbox.Axis3
-import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.bbox.direction
+import org.hnau.ktcad.bbox.times
+import org.hnau.ktcad.bbox.vec3
 import org.hnau.ktcad.ir.FaceSelection
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.TransformOp
+import org.hnau.ktcad.ir.Vec3
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SolidExtTest {
 
-    private val a = box(1.0, 1.0, 1.0)
+    private val a = box(Vec3(1.0, 1.0, 1.0))
     private val b = sphere(1.0)
 
     @Test
@@ -22,29 +25,34 @@ class SolidExtTest {
     }
 
     @Test
-    fun translate_along_an_axis_uses_the_documented_convention() {
-        assertEquals(a.translate(3.0, 0.0, 0.0), a.translate(Axis3.X, 3.0))
-        assertEquals(a.translate(-3.0, 0.0, 0.0), a.translate(Axis3.X, -3.0))
-        assertEquals(a.translate(0.0, 3.0, 0.0), a.translate(Axis3.Y, 3.0))
-        assertEquals(a.translate(0.0, 0.0, 5.0), a.translate(Axis3.Z, 5.0))
-        assertEquals(a.translate(0.0, 0.0, -5.0), a.translate(Axis3.Z, -5.0))
+    fun axis_direction_builds_a_translation() {
+        assertEquals(a.translate(Vec3(3.0, 0.0, 0.0)), a.translate(Axis3.X.direction * 3.0))
+        assertEquals(a.translate(Vec3(-3.0, 0.0, 0.0)), a.translate(Axis3.X.direction * -3.0))
+        assertEquals(a.translate(Vec3(0.0, 3.0, 0.0)), a.translate(Axis3.Y.direction * 3.0))
+        assertEquals(a.translate(Vec3(0.0, 0.0, 5.0)), a.translate(Axis3.Z.direction * 5.0))
+        assertEquals(a.translate(Vec3(0.0, 0.0, -5.0)), a.translate(Axis3.Z.direction * -5.0))
     }
 
     @Test
     fun rotate_uses_the_given_axis() {
         val op = TransformOp.Rotate(center = Vec3(0.0, 0.0, 0.0), axis = Vec3(1.0, 0.0, 0.0), angle = 0.5)
-        assertEquals(transform(op, a), a.rotate(Axis3.X, 0.5))
+        assertEquals(transform(op, a), a.rotate(Axis3.X.direction, 0.5))
     }
 
     @Test
     fun uniform_scale_expands_all_axes() {
-        assertEquals(a.scale(2.0, 2.0, 2.0), a.scale(2.0))
+        assertEquals(a.scale(Vec3(2.0, 2.0, 2.0)), a.scale(2.0))
     }
 
     @Test
-    fun mirror_uses_the_given_axis_as_the_plane_normal() {
+    fun non_uniform_scale_uses_a_vector() {
+        assertEquals(a.scale(Vec3(2.0, 1.0, 1.0)), a.scale(vec3 { if (it == Axis3.X) 2.0 else 1.0 }))
+    }
+
+    @Test
+    fun mirror_uses_the_given_normal() {
         val op = TransformOp.Mirror(center = Vec3(0.0, 0.0, 0.0), normal = Vec3(0.0, 0.0, 1.0))
-        assertEquals(transform(op, a), a.mirror(Axis3.Z))
+        assertEquals(transform(op, a), a.mirror(Axis3.Z.direction))
     }
 
     @Test
@@ -58,14 +66,14 @@ class SolidExtTest {
         wedge as Solid.Cylinder
         assertEquals(1.5, wedge.angle)
 
-        val grown = box(1.0, 1.0, 1.0).offset(2.0, JoinKind.INTERSECTION)
+        val grown = box(Vec3(1.0, 1.0, 1.0)).offset(2.0, JoinKind.INTERSECTION)
         grown as Solid.Offset
         assertEquals(JoinKind.INTERSECTION, grown.join)
     }
 
     @Test
     fun thickSolid_maps_to_the_thick_solid_node() {
-        val hollow = box(10.0, 10.0, 10.0).thickSolid(-1.0, "is_parallel(face.normal, Z)")
+        val hollow = box(Vec3(10.0, 10.0, 10.0)).thickSolid(-1.0, "is_parallel(face.normal, Z)")
         hollow as Solid.ThickSolid
         assertEquals(-1.0, hollow.offset)
         assertEquals(

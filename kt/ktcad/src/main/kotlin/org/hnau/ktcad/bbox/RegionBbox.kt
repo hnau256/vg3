@@ -8,8 +8,8 @@ import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.TransformOp2
 import org.hnau.ktcad.ir.Vec2
 import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * An **approximate** axis-aligned bounding box of the region, per axis, computed from the IR alone
@@ -81,20 +81,31 @@ private fun Axis2Values<ClosedRange<Double>>.transform(
 }
 
 private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
-    is TransformOp2.Translate -> Vec2(x = point.x + value.x, y = point.y + value.y)
+    is TransformOp2.Translate ->
+        point.combineWith(value) { a, b -> a + b }
     is TransformOp2.Rotate -> {
-        val dx = point.x - center.x
-        val dy = point.y - center.y
-        val c = cos(angle)
-        val s = sin(angle)
-        Vec2(x = center.x + dx * c - dy * s, y = center.y + dx * s + dy * c)
+        val v = point.combineWith(center) { p, c -> p - c }
+        val cosine = cos(angle)
+        val sine = sin(angle)
+        vec2 { axis ->
+            when (axis) {
+                Axis2.X -> v[Axis2.X] * cosine - v[Axis2.Y] * sine
+                Axis2.Y -> v[Axis2.X] * sine + v[Axis2.Y] * cosine
+            }
+        }.combineWith(center) { r, c -> r + c }
     }
     is TransformOp2.Mirror -> {
-        val length = hypot(normal.x, normal.y)
-        val nx = normal.x / length
-        val ny = normal.y / length
-        val projection = (point.x - center.x) * nx + (point.y - center.y) * ny
-        Vec2(x = point.x - 2.0 * projection * nx, y = point.y - 2.0 * projection * ny)
+        val n = normalized(normal)
+        val projection = point.combineWith(center) { p, c -> p - c }.dot(n)
+        point.combineWith(n) { p, ni -> p - 2.0 * projection * ni }
     }
-    is TransformOp2.Scale -> Vec2(x = point.x * value.x, y = point.y * value.y)
+    is TransformOp2.Scale ->
+        point.combineWith(value) { a, b -> a * b }
+}
+
+private fun Vec2.dot(other: Vec2): Double = Axis2.entries.sumOf { get(it) * other[it] }
+
+private fun normalized(vector: Vec2): Vec2 {
+    val length = sqrt(vector.dot(vector))
+    return vector.map { it / length }
 }

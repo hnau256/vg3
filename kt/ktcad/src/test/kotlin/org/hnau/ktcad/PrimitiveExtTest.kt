@@ -1,7 +1,9 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.bbox.Axis3Values
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.ir.Vec3
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -10,12 +12,15 @@ class PrimitiveExtTest {
 
     @Test
     fun box_without_centering_is_a_plain_box() {
-        assertEquals(Solid.Box(width = 1.0, length = 2.0, height = 3.0), box(1.0, 2.0, 3.0))
+        assertEquals(Solid.Box(width = 1.0, length = 2.0, height = 3.0), box(Vec3(1.0, 2.0, 3.0)))
     }
 
     @Test
     fun centering_an_axis_adds_a_transform() {
-        assertTrue(box(1.0, 2.0, 3.0, centerX = true) is Solid.Transform)
+        assertTrue(
+            box(Vec3(1.0, 2.0, 3.0), centered = Axis3Values(x = true, y = false, z = false))
+                is Solid.Transform,
+        )
         assertTrue(cylinder(1.0, 3.0, centerZ = true) is Solid.Transform)
     }
 

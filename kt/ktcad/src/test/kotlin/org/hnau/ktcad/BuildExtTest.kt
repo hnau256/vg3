@@ -4,6 +4,7 @@ import arrow.core.toNonEmptyListOrThrow
 import org.hnau.ktcad.ir.Continuity
 import org.hnau.ktcad.ir.FilletKind
 import org.hnau.ktcad.ir.Vec2
+import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.SweepMode
 import org.hnau.ktcad.ir.TransitionKind
@@ -26,7 +27,7 @@ class BuildExtTest {
 
     @Test
     fun sweep_maps_to_factory() {
-        val spine = Path(p(0.0, 0.0, 0.0), lineTo(0.0, 0.0, 20.0))
+        val spine = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(0.0, 0.0, 20.0)))
         assertEquals(sweep(path = spine, profile = square), square.sweep(spine))
         assertEquals(
             sweep(mode = SweepMode.RIGID, path = spine, profile = square),
@@ -37,15 +38,15 @@ class BuildExtTest {
     @Test
     fun loft_maps_to_factory() {
         val sections = listOf(
-            Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0), lineTo(10.0, 10.0, 0.0)),
-            Path(p(0.0, 0.0, 10.0), lineTo(10.0, 0.0, 10.0), lineTo(10.0, 10.0, 10.0)),
+            Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(10.0, 0.0, 0.0)), lineTo(Vec3(10.0, 10.0, 0.0))),
+            Path(Vec3(0.0, 0.0, 10.0), lineTo(Vec3(10.0, 0.0, 10.0)), lineTo(Vec3(10.0, 10.0, 10.0))),
         )
         assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.toNonEmptyListOrThrow().loft(ruled = true))
     }
 
     @Test
     fun fillet_all_and_expression() {
-        val solid = box(10.0, 10.0, 10.0)
+        val solid = box(Vec3(10.0, 10.0, 10.0))
         assertEquals(
             fillet(kind = FilletKind.FILLET, radius = RadiusSpec.All(2.0), target = solid),
             solid.filletAll(2.0),
@@ -62,15 +63,15 @@ class BuildExtTest {
 
     @Test
     fun sweep_and_loft_settings_map_to_the_ir() {
-        val spine = Path(p(0.0, 0.0, 0.0), lineTo(0.0, 0.0, 10.0))
+        val spine = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(0.0, 0.0, 10.0)))
         val square = polygon(Vec2(-1.0, -1.0), Vec2(1.0, -1.0), Vec2(1.0, 1.0))
         val sweep = square.sweep(spine, transition = TransitionKind.ROUND_CORNER)
         sweep as Solid.Sweep
         assertEquals(TransitionKind.ROUND_CORNER, sweep.transition)
 
         val sections = listOf(
-            Path(p(0.0, 0.0, 0.0), lineTo(10.0, 0.0, 0.0), lineTo(10.0, 10.0, 0.0)),
-            Path(p(0.0, 0.0, 10.0), lineTo(10.0, 0.0, 10.0), lineTo(10.0, 10.0, 10.0)),
+            Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(10.0, 0.0, 0.0)), lineTo(Vec3(10.0, 10.0, 0.0))),
+            Path(Vec3(0.0, 0.0, 10.0), lineTo(Vec3(10.0, 0.0, 10.0)), lineTo(Vec3(10.0, 10.0, 10.0))),
         )
         val loft = sections.toNonEmptyListOrThrow().loft(continuity = Continuity.C2, maxDegree = 8)
         loft as Solid.Loft
@@ -80,7 +81,7 @@ class BuildExtTest {
 
     @Test
     fun fillet_selected_with_radius() {
-        val solid = box(10.0, 10.0, 10.0)
+        val solid = box(Vec3(10.0, 10.0, 10.0))
         assertEquals(
             fillet(
                 kind = FilletKind.FILLET,

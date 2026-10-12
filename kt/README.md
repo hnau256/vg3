@@ -74,9 +74,10 @@ dependencies {
 
 ```kotlin
 import org.hnau.ktcad.*
+import org.hnau.ktcad.ir.Vec3
 
 fun main() {
-    val body = box(width = 20.0, length = 20.0, height = 5.0)
+    val body = box(Vec3(20.0, 20.0, 5.0))
     val boss = cylinder(radius = 5.0, height = 10.0)
     val model = fuse(listOf(body, boss))
 
@@ -96,7 +97,7 @@ fun main() {
 ```kotlin
 listOf(
     PrintPart(Part("cabinet", cabinet)),                                  // только предпросмотр
-    PrintPart(Part("hook", hook), stlTransformation = { rotate(Axis3.X, Math.PI) }), // ещё и в STL
+    PrintPart(Part("hook", hook), stlTransformation = { rotate(Axis3.X.direction, Math.PI) }), // ещё и в STL
 ).stepPreviewAndStlExport(
     step = Format.Step(filename = "preview.step"),
     stl = Format.Stl(output = Output.Multi("print")),
@@ -109,8 +110,9 @@ listOf(
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
   Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `sphere`/`cylinder`/
   `cone`/`torus` принимают необязательный `angle` (сегмент-клин). `box`/`cylinder`/`rect`
-  необязательно центрируются по осям: `box` — `centerX`/`centerY`/`centerZ`, `cylinder` — `centerZ`,
-  `rect` — `centerX`/`centerY` (`Boolean = false`) — это sugar над `translate`.
+  необязательно центрируются: `box(size: Vec3, centered: Axis3Values<Boolean>)` (по каждой оси из
+  `centered`), `cylinder` — `centerZ`, `rect` — `centerX`/`centerY` (`Boolean = false`) — это sugar над
+  `translate`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`. `cut` требует непустой `tools: NonEmptyList<Solid>`.
@@ -119,10 +121,11 @@ listOf(
 - **`thickSolid(offset, expression)`** — полая оболочка толщиной `offset` (отрицательное — внутрь,
   как в OCCT); `expression` — булев Rhai-предикат по граням (`face`, плюс `box`), выбирающий проёмы;
   есть перегрузка с `join`.
-- **Трансформации** (возвращают новый `Solid`): `translate(dx, dy, dz)`, `translate(axis: Axis3, distance)`
-  (отрицательное [distance] — обратное направление), `scale`/`scaleX/Y/Z`, `rotate(axis: Axis3, angle, center?)`,
-  `mirror(axis: Axis3, center?)` (ось — нормаль плоскости). Ось вращения/нормаль/направление — `Axis3.X/Y/Z`
-  (`X=+X, Y=+Y, Z=+Z`). Углы — радианы (`Math.toRadians(deg)`).
+- **Трансформации** (возвращают новый `Solid`): `translate(value: Vec3)`, `scale(factor)` /
+  `scale(value: Vec3)`, `rotate(axis: Vec3, angle, center?)`, `mirror(normal: Vec3, center?)`.
+  `Axis3` — инструмент, а не параметр: направление задаётся вектором, напр. `Axis3.Z.direction * 5.0`
+  или `Axis3.X.direction` (`X=+X, Y=+Y, Z=+Z`); значение — через `vec3 { axis -> … }`. Углы — радианы
+  (`Math.toRadians(deg)`).
 - **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
   `arcTo`/`arcRel`, `splineTo(…, tangentStart?, tangentEnd?)`, `bezierTo(first, second, vararg)`,
   `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
@@ -133,8 +136,9 @@ listOf(
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
-  `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(dx, dy)`, `rotate(angle, center?)`,
-  `mirror(axis: Axis2, center?)`, `scale(x, y)`, и `offset2d(distance)`. Скругление углов (имя отражает
+  `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(value: Vec2)`, `rotate(angle, center?)`,
+  `mirror(normal: Vec2, center?)`, `scale(factor)` / `scale(value: Vec2)`, и `offset2d(distance)`.
+  Скругление углов (имя отражает
   способ выбора радиуса): `fillet2dAll(radius)` (постоянный всем), `fillet2dExpression(expression)`
   (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
   отбора углов). Эскизы **не экспортируются** — только служат профилем тел.

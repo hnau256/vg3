@@ -27,7 +27,7 @@ class RegionExtTest {
     @Test
     fun transform_lowers_to_a_sketch_transform() {
         val arena = Arena()
-        val index = arena.region(square.translate(3.0, 4.0))
+        val index = arena.region(square.translate(Vec2(3.0, 4.0)))
 
         assertEquals(2, arena.sketches.size)
         val transform = arena.sketches[index.value] as Sketch.Transform

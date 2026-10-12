@@ -6,6 +6,7 @@ import org.hnau.ktcad.bbox.combineWith
 import org.hnau.ktcad.bbox.copy
 import org.hnau.ktcad.bbox.get
 import org.hnau.ktcad.bbox.map
+import org.hnau.ktcad.bbox.times
 import org.hnau.ktcad.bbox.vec2
 import org.hnau.ktcad.bbox.vec3
 import org.hnau.ktcad.ir.Vec2
@@ -73,6 +74,14 @@ class VecExtTest {
             Vec2(x = 0.0, y = 1.0),
             vec2 { axis -> if (axis == Axis2.Y) 1.0 else 0.0 },
         )
+    }
+
+    @Test
+    fun times_scales_every_component() {
+        assertEquals(Vec3(x = 2.0, y = 4.0, z = 6.0), Vec3(x = 1.0, y = 2.0, z = 3.0) * 2.0)
+        assertEquals(Vec3(x = 2.0, y = 4.0, z = 6.0), 2.0 * Vec3(x = 1.0, y = 2.0, z = 3.0))
+        assertEquals(Vec2(x = 2.0, y = 4.0), Vec2(x = 1.0, y = 2.0) * 2.0)
+        assertEquals(Vec3(x = -1.0, y = 0.0, z = 0.0), Vec3(x = 1.0, y = 0.0, z = 0.0) * -1.0)
     }
 
     @Test

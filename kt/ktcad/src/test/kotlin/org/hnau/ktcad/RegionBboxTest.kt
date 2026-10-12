@@ -3,6 +3,7 @@ package org.hnau.ktcad
 import org.hnau.ktcad.bbox.Axis2
 import org.hnau.ktcad.bbox.Axis2Values
 import org.hnau.ktcad.bbox.bbox
+import org.hnau.ktcad.bbox.direction
 import org.hnau.ktcad.ir.Vec2
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,25 +31,25 @@ class RegionBboxTest {
 
     @Test
     fun contour_bounds_lines_and_arcs_by_control_points() {
-        val lines = contour(p(0.0, 0.0), lineTo(10.0, 0.0), lineRel(0.0, 10.0))
+        val lines = contour(Vec2(0.0, 0.0), lineTo(Vec2(10.0, 0.0)), lineRel(Vec2(0.0, 10.0)))
         assertBox(box(0.0, 10.0, 0.0, 10.0), lines.bbox)
 
-        val arc = contour(p(0.0, 0.0), arcTo(via = p(5.0, 5.0), to = p(10.0, 0.0)))
+        val arc = contour(Vec2(0.0, 0.0), arcTo(via = Vec2(5.0, 5.0), to = Vec2(10.0, 0.0)))
         assertBox(box(0.0, 10.0, 0.0, 5.0), arc.bbox)
     }
 
     @Test
     fun contour_outlines_bezier_poles_from_the_start_point() {
-        val region = contour(p(0.0, 0.0), bezierTo(p(10.0, 0.0), p(10.0, 10.0)))
+        val region = contour(Vec2(0.0, 0.0), bezierTo(Vec2(10.0, 0.0), Vec2(10.0, 10.0)))
         assertBox(box(0.0, 10.0, 0.0, 10.0), region.bbox)
     }
 
     @Test
     fun transforms_apply_to_the_box_corners() {
-        assertBox(box(3.0, 4.0, 4.0, 5.0), rect(1.0, 1.0).translate(3.0, 4.0).bbox)
-        assertBox(box(0.0, 2.0, -1.0, 0.0), rect(1.0, 1.0).scale(2.0, -1.0).bbox)
+        assertBox(box(3.0, 4.0, 4.0, 5.0), rect(1.0, 1.0).translate(Vec2(3.0, 4.0)).bbox)
+        assertBox(box(0.0, 2.0, -1.0, 0.0), rect(1.0, 1.0).scale(Vec2(2.0, -1.0)).bbox)
         assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).rotate(kotlin.math.PI / 2).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).mirror(Axis2.X).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).mirror(Axis2.X.direction).bbox)
     }
 
     @Test

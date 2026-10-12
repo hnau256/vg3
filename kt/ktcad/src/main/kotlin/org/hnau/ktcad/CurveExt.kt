@@ -2,6 +2,7 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.bbox.combineWith
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Path
@@ -21,33 +22,23 @@ import org.hnau.ktcad.ir.Vec3
 typealias ContourSegment = (() -> Vec2) -> Curve2
 typealias PathSegment = (() -> Vec3) -> Curve3
 
-// --- Points -----------------------------------------------------------------
-
-fun p(x: Double, y: Double): Vec2 = Vec2(x = x, y = y)
-
-fun p(x: Double, y: Double, z: Double): Vec3 = Vec3(x = x, y = y, z = z)
-
 // --- 2D segments ------------------------------------------------------------
-
-fun lineTo(x: Double, y: Double): ContourSegment = lineTo(p(x, y))
 
 fun lineTo(to: Vec2): ContourSegment = { Curve2.Line(to = to) }
 
-fun lineRel(dx: Double, dy: Double): ContourSegment = { current ->
-    val point = current()
-    Curve2.Line(to = p(point.x + dx, point.y + dy))
+/** A `line` offset from the current point by `delta`. */
+fun lineRel(delta: Vec2): ContourSegment = { current ->
+    Curve2.Line(to = current().combineWith(delta) { a, b -> a + b })
 }
 
 fun arcTo(via: Vec2, to: Vec2): ContourSegment = { Curve2.Arc(via = via, to = to) }
 
-fun arcTo(viaX: Double, viaY: Double, toX: Double, toY: Double): ContourSegment =
-    arcTo(via = p(viaX, viaY), to = p(toX, toY))
-
-fun arcRel(viaDx: Double, viaDy: Double, toDx: Double, toDy: Double): ContourSegment = { current ->
+/** An `arc` whose `via` and `to` are offsets from the current point. */
+fun arcRel(via: Vec2, to: Vec2): ContourSegment = { current ->
     val point = current()
     Curve2.Arc(
-        via = p(point.x + viaDx, point.y + viaDy),
-        to = p(point.x + toDx, point.y + toDy),
+        via = point.combineWith(via) { a, b -> a + b },
+        to = point.combineWith(to) { a, b -> a + b },
     )
 }
 
@@ -70,30 +61,21 @@ fun bezierTo(first: Vec2, second: Vec2, vararg additional: Vec2): ContourSegment
 
 // --- 3D segments ------------------------------------------------------------
 
-fun lineTo(x: Double, y: Double, z: Double): PathSegment = lineTo(p(x, y, z))
-
 fun lineTo(to: Vec3): PathSegment = { Curve3.Line(to = to) }
 
-fun lineRel(dx: Double, dy: Double, dz: Double): PathSegment = { current ->
-    val point = current()
-    Curve3.Line(to = p(point.x + dx, point.y + dy, point.z + dz))
+/** A `line` offset from the current point by `delta`. */
+fun lineRel(delta: Vec3): PathSegment = { current ->
+    Curve3.Line(to = current().combineWith(delta) { a, b -> a + b })
 }
 
 fun arcTo(via: Vec3, to: Vec3): PathSegment = { Curve3.Arc(via = via, to = to) }
 
-fun arcTo(
-    viaX: Double, viaY: Double, viaZ: Double,
-    toX: Double, toY: Double, toZ: Double,
-): PathSegment = arcTo(via = p(viaX, viaY, viaZ), to = p(toX, toY, toZ))
-
-fun arcRel(
-    viaDx: Double, viaDy: Double, viaDz: Double,
-    toDx: Double, toDy: Double, toDz: Double,
-): PathSegment = { current ->
+/** An `arc` whose `via` and `to` are offsets from the current point. */
+fun arcRel(via: Vec3, to: Vec3): PathSegment = { current ->
     val point = current()
     Curve3.Arc(
-        via = p(point.x + viaDx, point.y + viaDy, point.z + viaDz),
-        to = p(point.x + toDx, point.y + toDy, point.z + toDz),
+        via = point.combineWith(via) { a, b -> a + b },
+        to = point.combineWith(to) { a, b -> a + b },
     )
 }
 
