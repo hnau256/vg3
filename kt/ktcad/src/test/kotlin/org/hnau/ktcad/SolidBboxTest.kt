@@ -17,97 +17,580 @@ import kotlin.test.assertEquals
 
 class SolidBboxTest {
 
-    private val square = polygon(Axis2Values(x = 0.0, y = 0.0), Axis2Values(x = 2.0, y = 0.0), Axis2Values(x = 2.0, y = 2.0), Axis2Values(x = 0.0, y = 2.0))
+    private val square = polygon(
+        Axis2Values(
+            x = 0.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 2.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 2.0,
+            y = 2.0,
+        ),
+        Axis2Values(
+            x = 0.0,
+            y = 2.0,
+        ),
+    )
 
-    private fun box(x0: Double, x1: Double, y0: Double, y1: Double, z0: Double, z1: Double) =
-        Axis3Values(x = x0..x1, y = y0..y1, z = z0..z1)
+    private fun box(
+        x0: Double,
+        x1: Double,
+        y0: Double,
+        y1: Double,
+        z0: Double,
+        z1: Double,
+    ) = Axis3Values(
+        x = x0..x1,
+        y = y0..y1,
+        z = z0..z1,
+    )
 
-    private fun assertBox(expected: Axis3Values<ClosedRange<Double>>, actual: Axis3Values<ClosedRange<Double>>) {
+    private fun assertBox(
+        expected: Axis3Values<ClosedRange<Double>>,
+        actual: Axis3Values<ClosedRange<Double>>,
+    ) {
         val eps = 1e-9
-        assertEquals(expected.x.start, actual.x.start, eps)
-        assertEquals(expected.x.endInclusive, actual.x.endInclusive, eps)
-        assertEquals(expected.y.start, actual.y.start, eps)
-        assertEquals(expected.y.endInclusive, actual.y.endInclusive, eps)
-        assertEquals(expected.z.start, actual.z.start, eps)
-        assertEquals(expected.z.endInclusive, actual.z.endInclusive, eps)
+        assertEquals(
+            expected = expected.x.start,
+            actual = actual.x.start,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.x.endInclusive,
+            actual = actual.x.endInclusive,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.y.start,
+            actual = actual.y.start,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.y.endInclusive,
+            actual = actual.y.endInclusive,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.z.start,
+            actual = actual.z.start,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.z.endInclusive,
+            actual = actual.z.endInclusive,
+            absoluteTolerance = eps,
+        )
     }
 
     @Test
     fun primitives_are_exact() {
-        assertBox(box(0.0, 1.0, 0.0, 2.0, 0.0, 3.0), box(Axis3Values(x = 1.0, y = 2.0, z = 3.0)).bbox)
-        assertBox(box(-3.0, 3.0, -3.0, 3.0, -3.0, 3.0), sphere(3.0).bbox)
-        assertBox(box(-2.0, 2.0, -2.0, 2.0, 0.0, 5.0), cylinder(2.0, 5.0).bbox)
-        assertBox(box(-3.0, 3.0, -3.0, 3.0, 0.0, 4.0), cone(4.0, 3.0, 1.0).bbox)
-        assertBox(box(-6.0, 6.0, -6.0, 6.0, -1.0, 1.0), torus(5.0, 1.0).bbox)
-        assertBox(box(0.0, 4.0, 0.0, 5.0, 0.0, 6.0), wedge(6.0, 5.0, 2.0, 4.0).bbox)
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 1.0,
+                y0 = 0.0,
+                y1 = 2.0,
+                z0 = 0.0,
+                z1 = 3.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 2.0,
+                    z = 3.0,
+                ),
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -3.0,
+                x1 = 3.0,
+                y0 = -3.0,
+                y1 = 3.0,
+                z0 = -3.0,
+                z1 = 3.0,
+            ),
+            actual = sphere(3.0).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -2.0,
+                x1 = 2.0,
+                y0 = -2.0,
+                y1 = 2.0,
+                z0 = 0.0,
+                z1 = 5.0,
+            ),
+            actual = cylinder(
+                radius = 2.0,
+                height = 5.0,
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -3.0,
+                x1 = 3.0,
+                y0 = -3.0,
+                y1 = 3.0,
+                z0 = 0.0,
+                z1 = 4.0,
+            ),
+            actual = cone(
+                height = 4.0,
+                radius_bottom = 3.0,
+                radius_top = 1.0,
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -6.0,
+                x1 = 6.0,
+                y0 = -6.0,
+                y1 = 6.0,
+                z0 = -1.0,
+                z1 = 1.0,
+            ),
+            actual = torus(
+                major_radius = 5.0,
+                minor_radius = 1.0,
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 4.0,
+                y0 = 0.0,
+                y1 = 5.0,
+                z0 = 0.0,
+                z1 = 6.0,
+            ),
+            actual = wedge(
+                height = 6.0,
+                length = 5.0,
+                top_width = 2.0,
+                width = 4.0,
+            ).bbox,
+        )
     }
 
     @Test
     fun halfspace_is_unbounded() {
         val halfspace = halfspace().bbox
-        assertEquals(Double.NEGATIVE_INFINITY, halfspace.x.start)
-        assertEquals(Double.POSITIVE_INFINITY, halfspace.y.endInclusive)
-        assertEquals(0.0, halfspace.z.endInclusive)
+        assertEquals(
+            expected = Double.NEGATIVE_INFINITY,
+            actual = halfspace.x.start,
+        )
+        assertEquals(
+            expected = Double.POSITIVE_INFINITY,
+            actual = halfspace.y.endInclusive,
+        )
+        assertEquals(
+            expected = 0.0,
+            actual = halfspace.z.endInclusive,
+        )
     }
 
     @Test
     fun polyhedron_is_exact() {
         val solid = polyhedron(
-            faces = nonEmptyListOf(listOf(0, 1, 2)),
-            points = nonEmptyListOf(Vec3(0.0, 0.0, 0.0), Vec3(1.0, 0.0, 0.0), Vec3(0.0, 1.0, 2.0)),
+            faces = nonEmptyListOf(
+                listOf(
+                    0,
+                    1,
+                    2,
+                ),
+            ),
+            points = nonEmptyListOf(
+                Vec3(
+                    x = 0.0,
+                    y = 0.0,
+                    z = 0.0,
+                ),
+                Vec3(
+                    x = 1.0,
+                    y = 0.0,
+                    z = 0.0,
+                ),
+                Vec3(
+                    x = 0.0,
+                    y = 1.0,
+                    z = 2.0,
+                ),
+            ),
         )
-        assertBox(box(0.0, 1.0, 0.0, 1.0, 0.0, 2.0), solid.bbox)
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 1.0,
+                y0 = 0.0,
+                y1 = 1.0,
+                z0 = 0.0,
+                z1 = 2.0,
+            ),
+            actual = solid.bbox,
+        )
     }
 
     @Test
     fun extrude_and_revolve_build_from_the_profile() {
-        assertBox(box(0.0, 2.0, 0.0, 2.0, 0.0, 5.0), extrude(5.0, square).bbox)
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 2.0,
+                y0 = 0.0,
+                y1 = 2.0,
+                z0 = 0.0,
+                z1 = 5.0,
+            ),
+            actual = extrude(
+                height = 5.0,
+                profile = square,
+            ).bbox,
+        )
 
-        val ring = polygon(Axis2Values(x = 2.0, y = 0.0), Axis2Values(x = 4.0, y = 0.0), Axis2Values(x = 4.0, y = 3.0), Axis2Values(x = 2.0, y = 3.0))
-        assertBox(box(-4.0, 4.0, 0.0, 3.0, -4.0, 4.0), revolve(2.0 * PI, ring).bbox)
+        val ring = polygon(
+            Axis2Values(
+                x = 2.0,
+                y = 0.0,
+            ),
+            Axis2Values(
+                x = 4.0,
+                y = 0.0,
+            ),
+            Axis2Values(
+                x = 4.0,
+                y = 3.0,
+            ),
+            Axis2Values(
+                x = 2.0,
+                y = 3.0,
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = -4.0,
+                x1 = 4.0,
+                y0 = 0.0,
+                y1 = 3.0,
+                z0 = -4.0,
+                z1 = 4.0,
+            ),
+            actual = revolve(
+                angle = 2.0 * PI,
+                profile = ring,
+            ).bbox,
+        )
     }
 
     @Test
     fun loft_unions_its_sections_and_sweep_grows_the_path() {
-        val lower = Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 4.0, y = 0.0, z = 0.0)), lineTo(Axis3Values(x = 4.0, y = 4.0, z = 0.0)))
-        val upper = Path(Axis3Values(x = 0.0, y = 0.0, z = 10.0), lineTo(Axis3Values(x = 2.0, y = 0.0, z = 10.0)), lineTo(Axis3Values(x = 2.0, y = 2.0, z = 10.0)))
-        assertBox(box(0.0, 4.0, 0.0, 4.0, 0.0, 10.0), loft(sections = nonEmptyListOf(lower, upper)).bbox)
+        val lower = Path(
+            Axis3Values(
+                x = 0.0,
+                y = 0.0,
+                z = 0.0,
+            ),
+            lineTo(
+                Axis3Values(
+                    x = 4.0,
+                    y = 0.0,
+                    z = 0.0,
+                ),
+            ),
+            lineTo(
+                Axis3Values(
+                    x = 4.0,
+                    y = 4.0,
+                    z = 0.0,
+                ),
+            ),
+        )
+        val upper = Path(
+            Axis3Values(
+                x = 0.0,
+                y = 0.0,
+                z = 10.0,
+            ),
+            lineTo(
+                Axis3Values(
+                    x = 2.0,
+                    y = 0.0,
+                    z = 10.0,
+                ),
+            ),
+            lineTo(
+                Axis3Values(
+                    x = 2.0,
+                    y = 2.0,
+                    z = 10.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 4.0,
+                y0 = 0.0,
+                y1 = 4.0,
+                z0 = 0.0,
+                z1 = 10.0,
+            ),
+            actual = loft(
+                sections = nonEmptyListOf(
+                    lower,
+                    upper,
+                ),
+            ).bbox,
+        )
 
-        val path = Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 10.0, y = 0.0, z = 0.0)))
-        assertBox(box(-2.0, 12.0, -2.0, 2.0, -2.0, 2.0), sweep(path = path, profile = square).bbox)
+        val path = Path(
+            Axis3Values(
+                x = 0.0,
+                y = 0.0,
+                z = 0.0,
+            ),
+            lineTo(
+                Axis3Values(
+                    x = 10.0,
+                    y = 0.0,
+                    z = 0.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = -2.0,
+                x1 = 12.0,
+                y0 = -2.0,
+                y1 = 2.0,
+                z0 = -2.0,
+                z1 = 2.0,
+            ),
+            actual = sweep(
+                path = path,
+                profile = square,
+            ).bbox,
+        )
     }
 
     @Test
     fun booleans_union_operands_but_cut_ignores_tools() {
         assertBox(
-            box(0.0, 6.0, 0.0, 1.0, 0.0, 1.0),
-            fuse(listOf(box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).translate(Axis3.X.direction * 5.0))).bbox,
+            expected = box(
+                x0 = 0.0,
+                x1 = 6.0,
+                y0 = 0.0,
+                y1 = 1.0,
+                z0 = 0.0,
+                z1 = 1.0,
+            ),
+            actual = fuse(
+                listOf(
+                    box(
+                        Axis3Values(
+                            x = 1.0,
+                            y = 1.0,
+                            z = 1.0,
+                        ),
+                    ),
+                    box(
+                        Axis3Values(
+                            x = 1.0,
+                            y = 1.0,
+                            z = 1.0,
+                        ),
+                    ).translate(Axis3.X.direction * 5.0),
+                ),
+            ).bbox,
         )
         assertBox(
-            box(0.0, 4.0, 0.0, 4.0, 0.0, 4.0),
-            cut(box(Axis3Values(x = 4.0, y = 4.0, z = 4.0)), nonEmptyListOf(halfspace().translate(Axis3.Z.direction * 2.0))).bbox,
+            expected = box(
+                x0 = 0.0,
+                x1 = 4.0,
+                y0 = 0.0,
+                y1 = 4.0,
+                z0 = 0.0,
+                z1 = 4.0,
+            ),
+            actual = cut(
+                base = box(
+                    Axis3Values(
+                        x = 4.0,
+                        y = 4.0,
+                        z = 4.0,
+                    ),
+                ),
+                tools = nonEmptyListOf(halfspace().translate(Axis3.Z.direction * 2.0)),
+            ).bbox,
         )
     }
 
     @Test
     fun transforms_apply_to_the_box_corners() {
-        assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).translate(Axis3Values(x = 2.0, y = 3.0, z = 4.0)).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).rotate(Axis3.Z.direction, PI / 2).bbox)
-        assertBox(box(0.0, 2.0, 0.0, 2.0, 0.0, 2.0), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).scale(2.0).bbox)
-        assertBox(box(0.0, 1.0, 0.0, 1.0, -1.0, 0.0), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).mirror(Axis3.Z.direction).bbox)
+        assertBox(
+            expected = box(
+                x0 = 2.0,
+                x1 = 3.0,
+                y0 = 3.0,
+                y1 = 4.0,
+                z0 = 4.0,
+                z1 = 5.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ).translate(
+                Axis3Values(
+                    x = 2.0,
+                    y = 3.0,
+                    z = 4.0,
+                ),
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -1.0,
+                x1 = 0.0,
+                y0 = 0.0,
+                y1 = 1.0,
+                z0 = 0.0,
+                z1 = 1.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ).rotate(
+                axis = Axis3.Z.direction,
+                angle = PI / 2,
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 2.0,
+                y0 = 0.0,
+                y1 = 2.0,
+                z0 = 0.0,
+                z1 = 2.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ).scale(2.0).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 1.0,
+                y0 = 0.0,
+                y1 = 1.0,
+                z0 = -1.0,
+                z1 = 0.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ).mirror(Axis3.Z.direction).bbox,
+        )
 
         val matrix = Solid.Transform(
-            op = TransformOp.Matrix(m = listOf(1.0, 0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 3.0, 0.0, 0.0, 1.0, 4.0, 0.0, 0.0, 0.0, 1.0)),
-            target = box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)),
+            op = TransformOp.Matrix(
+                m = listOf(
+                    1.0,
+                    0.0,
+                    0.0,
+                    2.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    3.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    4.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                ),
+            ),
+            target = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ),
         )
-        assertBox(box(2.0, 3.0, 3.0, 4.0, 4.0, 5.0), matrix.bbox)
+        assertBox(
+            expected = box(
+                x0 = 2.0,
+                x1 = 3.0,
+                y0 = 3.0,
+                y1 = 4.0,
+                z0 = 4.0,
+                z1 = 5.0,
+            ),
+            actual = matrix.bbox,
+        )
     }
 
     @Test
     fun offset_grows_and_fillet_keeps_the_box() {
-        assertBox(box(-1.0, 2.0, -1.0, 2.0, -1.0, 2.0), box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)).offset(1.0).bbox)
+        assertBox(
+            expected = box(
+                x0 = -1.0,
+                x1 = 2.0,
+                y0 = -1.0,
+                y1 = 2.0,
+                z0 = -1.0,
+                z1 = 2.0,
+            ),
+            actual = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ).offset(1.0).bbox,
+        )
 
-        val filleted = fillet(radius = RadiusSpec.All(0.1), target = box(Axis3Values(x = 1.0, y = 1.0, z = 1.0)))
-        assertBox(box(0.0, 1.0, 0.0, 1.0, 0.0, 1.0), filleted.bbox)
+        val filleted = fillet(
+            radius = RadiusSpec.All(0.1),
+            target = box(
+                Axis3Values(
+                    x = 1.0,
+                    y = 1.0,
+                    z = 1.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 1.0,
+                y0 = 0.0,
+                y1 = 1.0,
+                z0 = 0.0,
+                z1 = 1.0,
+            ),
+            actual = filleted.bbox,
+        )
     }
 }

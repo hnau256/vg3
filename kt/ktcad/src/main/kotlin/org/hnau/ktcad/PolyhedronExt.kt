@@ -15,12 +15,25 @@ import org.hnau.ktcad.ir.Vec3
  * The model body stores a flat point list plus faces as index lists; this sugar computes both,
  * reusing the same deduplicating [Lowering] arena as the IR lowering.
  */
-fun polyhedron(faces: NonEmptyList<List<Axis3Values<Double>>>): Solid {
-    val points = Lowering<Vec3, Int, Vec3>({ it }) { point, _ -> point }
+fun polyhedron(
+    faces: NonEmptyList<List<Axis3Values<Double>>>,
+): Solid {
+    val points = Lowering<Vec3, Int, Vec3>(wrap = { it }) { point, _ -> point }
     val faceIndices = faces.map { face -> face.map { points.indexOf(it.toVec3()) } }
-    return Solid.Polyhedron(points = points.nodes.toNonEmptyListOrThrow(), faces = faceIndices)
+    return Solid.Polyhedron(
+        points = points.nodes.toNonEmptyListOrThrow(),
+        faces = faceIndices,
+    )
 }
 
 /** Variadic convenience: `polyhedron(face0, face1, …)`. */
-fun polyhedron(first: List<Axis3Values<Double>>, vararg additional: List<Axis3Values<Double>>): Solid =
-    polyhedron(nonEmptyListOf(first, *additional))
+fun polyhedron(
+    first: List<Axis3Values<Double>>,
+    vararg additional: List<Axis3Values<Double>>,
+): Solid =
+    polyhedron(
+        nonEmptyListOf(
+            first,
+            *additional,
+        ),
+    )

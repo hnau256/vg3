@@ -50,36 +50,60 @@ val Region.bbox: Axis2Values<ClosedRange<Double>>
     )
 
 /** A segment's control points, including its [from] point (the previous endpoint). */
-private fun Curve2.controlPoints(from: Vec2): List<Vec2> = when (this) {
-    is Curve2.Line -> listOf(from, to)
-    is Curve2.Arc -> listOf(from, via, to)
+private fun Curve2.controlPoints(
+    from: Vec2,
+): List<Vec2> = when (this) {
+    is Curve2.Line -> listOf(
+        from,
+        to,
+    )
+    is Curve2.Arc -> listOf(
+        from,
+        via,
+        to,
+    )
     is Curve2.Spline -> listOf(from) + points
     is Curve2.Bezier -> listOf(from) + points
 }
 
-private fun pointsBox(points: Iterable<Vec2>): Axis2Values<ClosedRange<Double>> =
+private fun pointsBox(
+    points: Iterable<Vec2>,
+): Axis2Values<ClosedRange<Double>> =
     Axis2Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
 private fun Axis2Values<ClosedRange<Double>>.cover(
     other: Axis2Values<ClosedRange<Double>>,
-): Axis2Values<ClosedRange<Double>> = combineWith(other) { a, b -> a.cover(b) }
+): Axis2Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun Axis2Values<ClosedRange<Double>>.grow(distance: Double): Axis2Values<ClosedRange<Double>> =
-    map { it.grow(maxOf(0.0, distance)) }
+private fun Axis2Values<ClosedRange<Double>>.grow(
+    distance: Double,
+): Axis2Values<ClosedRange<Double>> =
+    map {
+        it.grow(
+            maxOf(
+                a = 0.0,
+                b = distance,
+            ),
+        )
+    }
 
 private fun Axis2Values<ClosedRange<Double>>.transform(
     op: TransformOp2,
 ): Axis2Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
 
 private fun Axis2Values<ClosedRange<Double>>.corners(): List<Vec2> =
-    Axis2.entries.fold(listOf(vec2 { 0.0 })) { corners, axis ->
+    Axis2.entries.fold(initial = listOf(vec2 { 0.0 })) { corners, axis ->
         corners.flatMap { corner ->
-            listOf(this[axis].start, this[axis].endInclusive)
-                .map { value -> corner.copy(axis) { value } }
+            listOf(
+                this[axis].start,
+                this[axis].endInclusive,
+            ).map { value -> corner.copy(axis = axis) { value } }
         }
     }
 
-private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
+private fun TransformOp2.transformPoint(
+    point: Vec2,
+): Vec2 = when (this) {
     is TransformOp2.Translate -> point + value
     is TransformOp2.Rotate -> {
         val v = point - center
@@ -99,9 +123,13 @@ private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
     is TransformOp2.Scale -> point * value
 }
 
-private fun Vec2.dot(other: Vec2): Double = Axis2.entries.sumOf { get(it) * other[it] }
+private fun Vec2.dot(
+    other: Vec2,
+): Double = Axis2.entries.sumOf { get(it) * other[it] }
 
-private fun normalized(vector: Vec2): Vec2 {
+private fun normalized(
+    vector: Vec2,
+): Vec2 {
     val length = sqrt(vector.dot(vector))
     return vector.map { it / length }
 }

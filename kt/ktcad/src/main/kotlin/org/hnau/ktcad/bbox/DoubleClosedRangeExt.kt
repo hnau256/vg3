@@ -11,5 +11,5 @@ fun ClosedRange<Double>.interpolate(
     .takeIf { it > 0 }
     .foldNullable(
         ifNull = { start },
-        ifNotNull = { start + fraction * it }
+        ifNotNull = { start + fraction * it },
     )

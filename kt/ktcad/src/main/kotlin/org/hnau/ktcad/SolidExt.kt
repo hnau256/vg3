@@ -30,20 +30,39 @@ import org.hnau.ktcad.ir.TransformOp
  * Union of [parts] (mirrors OCCT's two groups: the first part is the object, the rest are tools —
  * OCCT requires both groups non-empty).
  */
-fun fuse(parts: List<Solid>): Solid = solidBool(BooleanKind.FUSE, parts, "fuse")
+fun fuse(
+    parts: List<Solid>,
+): Solid = solidBool(
+    kind = BooleanKind.FUSE,
+    parts = parts,
+    name = "fuse",
+)
 
 /** Intersection of [parts] (see [fuse] for the object/tools split). */
-fun common(parts: List<Solid>): Solid = solidBool(BooleanKind.COMMON, parts, "common")
+fun common(
+    parts: List<Solid>,
+): Solid = solidBool(
+    kind = BooleanKind.COMMON,
+    parts = parts,
+    name = "common",
+)
 
 /** `base` minus every solid in [tools]. */
-fun cut(base: Solid, tools: NonEmptyList<Solid>): Solid = bool(
+fun cut(
+    base: Solid,
+    tools: NonEmptyList<Solid>,
+): Solid = bool(
     kind = BooleanKind.CUT,
     arguments = nonEmptyListOf(base),
     tools = tools,
 )
 
-private fun solidBool(kind: BooleanKind, parts: List<Solid>, name: String): Solid {
-    require(parts.size >= 2) { "$name needs at least two solids" }
+private fun solidBool(
+    kind: BooleanKind,
+    parts: List<Solid>,
+    name: String,
+): Solid {
+    require(value = parts.size >= 2) { "$name needs at least two solids" }
     return bool(
         kind = kind,
         arguments = nonEmptyListOf(parts.first()),
@@ -52,19 +71,43 @@ private fun solidBool(kind: BooleanKind, parts: List<Solid>, name: String): Soli
 }
 
 /** `fuse`: union of two solids. */
-operator fun Solid.plus(other: Solid): Solid = fuse(listOf(this, other))
+operator fun Solid.plus(
+    other: Solid,
+): Solid = fuse(
+    listOf(
+        this,
+        other,
+    ),
+)
 
 /** `cut`: [other] subtracted from this solid. */
-operator fun Solid.minus(other: Solid): Solid = cut(base = this, tools = nonEmptyListOf(other))
+operator fun Solid.minus(
+    other: Solid,
+): Solid = cut(
+    base = this,
+    tools = nonEmptyListOf(other),
+)
 
 /** `common`: intersection of two solids. */
-operator fun Solid.times(other: Solid): Solid = common(listOf(this, other))
+operator fun Solid.times(
+    other: Solid,
+): Solid = common(
+    listOf(
+        this,
+        other,
+    ),
+)
 
 // --- Translation ------------------------------------------------------------
 
 /** Translate by an axis value (e.g. `Axis3.Z.direction * 5.0`). */
-fun Solid.translate(value: Axis3Values<Double>): Solid =
-    transform(op = TransformOp.Translate(value = value.toVec3()), target = this)
+fun Solid.translate(
+    value: Axis3Values<Double>,
+): Solid =
+    transform(
+        op = TransformOp.Translate(value = value.toVec3()),
+        target = this,
+    )
 
 /*fun Solid.put(
     target: Solid,
@@ -81,11 +124,18 @@ fun Solid.translate(value: Axis3Values<Double>): Solid =
 // --- Scale ------------------------------------------------------------------
 
 /** Uniform scale by `factor`. */
-fun Solid.scale(factor: Double): Solid = scale(Axis3Values.create { factor })
+fun Solid.scale(
+    factor: Double,
+): Solid = scale(Axis3Values.create { factor })
 
 /** Non-uniform scale by an axis value (e.g. `Axis3.X.direction * 2.0`). */
-fun Solid.scale(value: Axis3Values<Double>): Solid =
-    transform(op = TransformOp.Scale(value = value.toVec3()), target = this)
+fun Solid.scale(
+    value: Axis3Values<Double>,
+): Solid =
+    transform(
+        op = TransformOp.Scale(value = value.toVec3()),
+        target = this,
+    )
 
 // --- Rotation ---------------------------------------------------------------
 
@@ -95,27 +145,49 @@ fun Solid.rotate(
     angle: Double,
     center: Axis3Values<Double> = ORIGIN,
 ): Solid = transform(
-    op = TransformOp.Rotate(center = center.toVec3(), axis = axis.toVec3(), angle = angle),
+    op = TransformOp.Rotate(
+        center = center.toVec3(),
+        axis = axis.toVec3(),
+        angle = angle,
+    ),
     target = this,
 )
 
 // --- Mirror -----------------------------------------------------------------
 
 /** Mirror across the plane through `center` (default: origin) with the given `normal`. */
-fun Solid.mirror(normal: Axis3Values<Double>, center: Axis3Values<Double> = ORIGIN): Solid =
+fun Solid.mirror(
+    normal: Axis3Values<Double>,
+    center: Axis3Values<Double> = ORIGIN,
+): Solid =
     transform(
-        op = TransformOp.Mirror(center = center.toVec3(), normal = normal.toVec3()),
+        op = TransformOp.Mirror(
+            center = center.toVec3(),
+            normal = normal.toVec3(),
+        ),
         target = this,
     )
 
 // --- Offset -----------------------------------------------------------------
 
 /** Grow (positive [distance]) or shrink (negative) the solid by offsetting its shells. */
-fun Solid.offset(distance: Double): Solid = offset(distance = distance, target = this)
+fun Solid.offset(
+    distance: Double,
+): Solid = offset(
+    distance = distance,
+    target = this,
+)
 
 /** As [offset], joining the offset shells with [join]. */
-fun Solid.offset(distance: Double, join: JoinKind): Solid =
-    offset(distance = distance, join = join, target = this)
+fun Solid.offset(
+    distance: Double,
+    join: JoinKind,
+): Solid =
+    offset(
+        distance = distance,
+        join = join,
+        target = this,
+    )
 
 // --- Thick solid ------------------------------------------------------------
 
@@ -124,11 +196,22 @@ fun Solid.offset(distance: Double, join: JoinKind): Solid =
  * the faces selected by a boolean Rhai [expression] (variable `face`, plus `box` for the body's
  * bounding box).
  */
-fun Solid.thickSolid(offset: Double, expression: String): Solid =
-    thickSolid(offset = offset, faces = FaceSelection.Selected(expression = expression), target = this)
+fun Solid.thickSolid(
+    offset: Double,
+    expression: String,
+): Solid =
+    thickSolid(
+        offset = offset,
+        faces = FaceSelection.Selected(expression = expression),
+        target = this,
+    )
 
 /** As [thickSolid], joining the offset shells with [join]. */
-fun Solid.thickSolid(offset: Double, expression: String, join: JoinKind): Solid = thickSolid(
+fun Solid.thickSolid(
+    offset: Double,
+    expression: String,
+    join: JoinKind,
+): Solid = thickSolid(
     offset = offset,
     faces = FaceSelection.Selected(expression = expression),
     join = join,

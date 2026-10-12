@@ -13,27 +13,42 @@ class FormatSerializationTest {
         val expected = Json.parseToJsonElement(
             """{ "format": "stl", "output": { "type": "single", "filename": "out.stl" } }""",
         )
-        assertEquals(expected, actual)
+        assertEquals(
+            expected = expected,
+            actual = actual,
+        )
     }
 
     @Test
     fun nullable_parameters_are_omitted() {
-        val format = Format.Png(output = Output.Multi("renders"), size = 256)
+        val format = Format.Png(
+            output = Output.Multi("renders"),
+            size = 256,
+        )
         val actual = Json.parseToJsonElement(format.toJson())
         val expected = Json.parseToJsonElement(
             """{ "format": "png", "output": { "type": "multi", "path": "renders" }, "size": 256 }""",
         )
-        assertEquals(expected, actual)
+        assertEquals(
+            expected = expected,
+            actual = actual,
+        )
     }
 
     @Test
     fun png_compression_is_emitted_when_set() {
-        val format = Format.Png(output = Output.Single("out.png"), compression = 9)
+        val format = Format.Png(
+            output = Output.Single("out.png"),
+            compression = 9,
+        )
         val actual = Json.parseToJsonElement(format.toJson())
         val expected = Json.parseToJsonElement(
             """{ "format": "png", "output": { "type": "single", "filename": "out.png" }, "compression": 9 }""",
         )
-        assertEquals(expected, actual)
+        assertEquals(
+            expected = expected,
+            actual = actual,
+        )
     }
 
     @Test
@@ -41,7 +56,10 @@ class FormatSerializationTest {
         val format = Format.Step(filename = "out.step")
         val actual = Json.parseToJsonElement(format.toJson())
         val expected = Json.parseToJsonElement("""{ "format": "step", "filename": "out.step" }""")
-        assertEquals(expected, actual)
+        assertEquals(
+            expected = expected,
+            actual = actual,
+        )
     }
 
     @Test
@@ -49,6 +67,9 @@ class FormatSerializationTest {
         val format = Format.Json(filename = "report.json")
         val actual = Json.parseToJsonElement(format.toJson())
         val expected = Json.parseToJsonElement("""{ "format": "json", "filename": "report.json" }""")
-        assertEquals(expected, actual)
+        assertEquals(
+            expected = expected,
+            actual = actual,
+        )
     }
 }

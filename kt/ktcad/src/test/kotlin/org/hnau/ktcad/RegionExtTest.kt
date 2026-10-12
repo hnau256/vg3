@@ -10,7 +10,24 @@ import kotlin.test.assertTrue
 
 class RegionExtTest {
 
-    private val square = polygon(Axis2Values(x = 0.0, y = 0.0), Axis2Values(x = 10.0, y = 0.0), Axis2Values(x = 10.0, y = 10.0), Axis2Values(x = 0.0, y = 10.0))
+    private val square = polygon(
+        Axis2Values(
+            x = 0.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 10.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 10.0,
+            y = 10.0,
+        ),
+        Axis2Values(
+            x = 0.0,
+            y = 10.0,
+        ),
+    )
 
     @Test
     fun booleans_lower_to_a_single_sketch_bool() {
@@ -18,21 +35,46 @@ class RegionExtTest {
         val index = arena.region(square.fuse(circle(2.0)))
 
         // square, circle, bool — bottom-up, operands before the parent.
-        assertEquals(3, arena.sketches.size)
-        assertEquals(2, index.value)
+        assertEquals(
+            expected = 3,
+            actual = arena.sketches.size,
+        )
+        assertEquals(
+            expected = 2,
+            actual = index.value,
+        )
         val bool = arena.sketches[index.value] as Sketch.Bool
-        assertEquals(listOf(0), bool.arguments.map { it.value })
-        assertEquals(listOf(1), bool.tools.map { it.value })
+        assertEquals(
+            expected = listOf(0),
+            actual = bool.arguments.map { it.value },
+        )
+        assertEquals(
+            expected = listOf(1),
+            actual = bool.tools.map { it.value },
+        )
     }
 
     @Test
     fun transform_lowers_to_a_sketch_transform() {
         val arena = Arena()
-        val index = arena.region(square.translate(Axis2Values(x = 3.0, y = 4.0)))
+        val index = arena.region(
+            square.translate(
+                Axis2Values(
+                    x = 3.0,
+                    y = 4.0,
+                ),
+            ),
+        )
 
-        assertEquals(2, arena.sketches.size)
+        assertEquals(
+            expected = 2,
+            actual = arena.sketches.size,
+        )
         val transform = arena.sketches[index.value] as Sketch.Transform
-        assertEquals(0, transform.target.value)
+        assertEquals(
+            expected = 0,
+            actual = transform.target.value,
+        )
     }
 
     @Test
@@ -40,8 +82,14 @@ class RegionExtTest {
         val arena = Arena()
         val first = arena.region(square)
         val second = arena.region(square)
-        assertEquals(first, second)
-        assertEquals(1, arena.sketches.size)
+        assertEquals(
+            expected = first,
+            actual = second,
+        )
+        assertEquals(
+            expected = 1,
+            actual = arena.sketches.size,
+        )
     }
 
     @Test
@@ -50,8 +98,14 @@ class RegionExtTest {
         val body = arena.body(square.extrude(5.0))
 
         assertTrue(body.value >= 0)
-        assertEquals(1, arena.sketches.size)
-        assertEquals(1, arena.bodies.size)
+        assertEquals(
+            expected = 1,
+            actual = arena.sketches.size,
+        )
+        assertEquals(
+            expected = 1,
+            actual = arena.bodies.size,
+        )
     }
 
     @Test
@@ -59,19 +113,34 @@ class RegionExtTest {
         val arena = Arena()
         val index = arena.region(square.fillet2dAll(1.0))
 
-        assertEquals(2, arena.sketches.size)
+        assertEquals(
+            expected = 2,
+            actual = arena.sketches.size,
+        )
         val fillet = arena.sketches[index.value] as Sketch.Fillet2d
-        assertEquals(0, fillet.target.value)
-        assertEquals(RadiusSpec.All(radius = 1.0), fillet.radius)
+        assertEquals(
+            expected = 0,
+            actual = fillet.target.value,
+        )
+        assertEquals(
+            expected = RadiusSpec.All(radius = 1.0),
+            actual = fillet.radius,
+        )
     }
 
     @Test
     fun fillet2d_expression_and_selection_lower_to_radius_specs() {
         assertTrue(square.fillet2dExpression("vertex.angle > 1.5") is Region.Fillet2d)
-        val selected = square.fillet2dSelected("vertex.angle > 1.5", 2.0) as Region.Fillet2d
+        val selected = square.fillet2dSelected(
+            expression = "vertex.angle > 1.5",
+            radius = 2.0,
+        ) as Region.Fillet2d
         assertEquals(
-            RadiusSpec.Selected(expression = "vertex.angle > 1.5", radius = 2.0),
-            selected.radius,
+            expected = RadiusSpec.Selected(
+                expression = "vertex.angle > 1.5",
+                radius = 2.0,
+            ),
+            actual = selected.radius,
         )
     }
 
@@ -80,9 +149,18 @@ class RegionExtTest {
         val arena = Arena()
         val index = arena.region(circle(5.0).offset2d(2.0))
 
-        assertEquals(2, arena.sketches.size)
+        assertEquals(
+            expected = 2,
+            actual = arena.sketches.size,
+        )
         val offset = arena.sketches[index.value] as Sketch.Offset2d
-        assertEquals(0, offset.target.value)
-        assertEquals(2.0, offset.distance)
+        assertEquals(
+            expected = 0,
+            actual = offset.target.value,
+        )
+        assertEquals(
+            expected = 2.0,
+            actual = offset.distance,
+        )
     }
 }

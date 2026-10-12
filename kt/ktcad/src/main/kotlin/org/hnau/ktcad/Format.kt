@@ -54,13 +54,20 @@ sealed interface Output {
     /** Everything into one file. */
     @SerialName("single")
     @Serializable
-    data class Single(val filename: String) : Output
+    data class Single(
+        val filename: String,
+    ) : Output
 
     /** One file per exported part: `<path>/<name>.<extension>`, named by the model's `export` list. */
     @SerialName("multi")
     @Serializable
-    data class Multi(val path: String) : Output
+    data class Multi(
+        val path: String,
+    ) : Output
 }
 
 /** Serializes the export configuration exactly as the CLI expects. */
-internal fun Format.toJson(): String = vg3Json.encodeToString(Format.serializer(), this)
+internal fun Format.toJson(): String = vg3Json.encodeToString(
+    serializer = Format.serializer(),
+    value = this,
+)

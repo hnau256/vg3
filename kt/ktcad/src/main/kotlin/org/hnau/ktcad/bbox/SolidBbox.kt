@@ -42,18 +42,47 @@ val Solid.bbox: Axis3Values<ClosedRange<Double>>
             val operands = if (kind == BooleanKind.CUT) arguments.toList() else arguments.toList() + tools
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
-        ifBox = { height, length, width -> box(0.0..width, 0.0..length, 0.0..height) },
-        ifCone = { height, radius_bottom, radius_top, _ ->
-            val radius = maxOf(radius_bottom, radius_top)
-            box(-radius..radius, -radius..radius, 0.0..height)
+        ifBox = { height, length, width ->
+            box(
+                x = 0.0..width,
+                y = 0.0..length,
+                z = 0.0..height,
+            )
         },
-        ifCylinder = { height, radius, _ -> box(-radius..radius, -radius..radius, 0.0..height) },
+        ifCone = { height, radius_bottom, radius_top, _ ->
+            val radius = maxOf(
+                a = radius_bottom,
+                b = radius_top,
+            )
+            box(
+                x = -radius..radius,
+                y = -radius..radius,
+                z = 0.0..height,
+            )
+        },
+        ifCylinder = { height, radius, _ ->
+            box(
+                x = -radius..radius,
+                y = -radius..radius,
+                z = 0.0..height,
+            )
+        },
         ifExtrude = { height, profile ->
             val profileBox = profile.bbox
-            box(profileBox.x, profileBox.y, 0.0..height)
+            box(
+                x = profileBox.x,
+                y = profileBox.y,
+                z = 0.0..height,
+            )
         },
         ifFillet = { _, target, _ -> target.bbox },
-        ifHalfspace = { box(UNBOUNDED, UNBOUNDED, Double.NEGATIVE_INFINITY..0.0) },
+        ifHalfspace = {
+            box(
+                x = UNBOUNDED,
+                y = UNBOUNDED,
+                z = Double.NEGATIVE_INFINITY..0.0,
+            )
+        },
         ifLoft = { sections, _, _, _, _, _, _ ->
             sections.map(::pathBox).reduce { a, b -> a.cover(b) }
         },
@@ -61,18 +90,41 @@ val Solid.bbox: Axis3Values<ClosedRange<Double>>
         ifPolyhedron = { _, points -> pointsBox(points) },
         ifRevolve = { _, profile ->
             val profileBox = profile.bbox
-            val radius = maxOf(abs(profileBox.x.start), abs(profileBox.x.endInclusive))
-            box(-radius..radius, profileBox.y, -radius..radius)
+            val radius = maxOf(
+                a = abs(profileBox.x.start),
+                b = abs(profileBox.x.endInclusive),
+            )
+            box(
+                x = -radius..radius,
+                y = profileBox.y,
+                z = -radius..radius,
+            )
         },
-        ifSphere = { radius, _ -> box(-radius..radius, -radius..radius, -radius..radius) },
+        ifSphere = { radius, _ ->
+            box(
+                x = -radius..radius,
+                y = -radius..radius,
+                z = -radius..radius,
+            )
+        },
         ifSweep = { path, profile, _, _ -> pathBox(path).grow(profileRadius(profile)) },
         ifThickSolid = { _, offset, target, _ -> target.bbox.grow(offset) },
         ifTorus = { major_radius, minor_radius, _ ->
             val radius = major_radius + minor_radius
-            box(-radius..radius, -radius..radius, -minor_radius..minor_radius)
+            box(
+                x = -radius..radius,
+                y = -radius..radius,
+                z = -minor_radius..minor_radius,
+            )
         },
         ifTransform = { op, target -> target.bbox.transform(op) },
-        ifWedge = { height, length, _, width -> box(0.0..width, 0.0..length, 0.0..height) },
+        ifWedge = { height, length, _, width ->
+            box(
+                x = 0.0..width,
+                y = 0.0..length,
+                z = 0.0..height,
+            )
+        },
     )
 
 private val UNBOUNDED = Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY
@@ -81,27 +133,51 @@ private fun box(
     x: ClosedRange<Double>,
     y: ClosedRange<Double>,
     z: ClosedRange<Double>,
-): Axis3Values<ClosedRange<Double>> = Axis3Values(x = x, y = y, z = z)
+): Axis3Values<ClosedRange<Double>> = Axis3Values(
+    x = x,
+    y = y,
+    z = z,
+)
 
-private fun pointsBox(points: Iterable<Vec3>): Axis3Values<ClosedRange<Double>> =
+private fun pointsBox(
+    points: Iterable<Vec3>,
+): Axis3Values<ClosedRange<Double>> =
     Axis3Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
 private fun Axis3Values<ClosedRange<Double>>.cover(
     other: Axis3Values<ClosedRange<Double>>,
-): Axis3Values<ClosedRange<Double>> = combineWith(other) { a, b -> a.cover(b) }
+): Axis3Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun Axis3Values<ClosedRange<Double>>.grow(distance: Double): Axis3Values<ClosedRange<Double>> =
-    map { it.grow(maxOf(0.0, distance)) }
+private fun Axis3Values<ClosedRange<Double>>.grow(
+    distance: Double,
+): Axis3Values<ClosedRange<Double>> =
+    map {
+        it.grow(
+            maxOf(
+                a = 0.0,
+                b = distance,
+            ),
+        )
+    }
 
 /** The radius of the profile about its own origin — how far a swept section can reach from the path. */
-private fun profileRadius(profile: Region): Double {
+private fun profileRadius(
+    profile: Region,
+): Double {
     val profileBox = profile.bbox
-    return Axis2.entries.maxOf { axis -> maxOf(abs(profileBox[axis].start), abs(profileBox[axis].endInclusive)) }
+    return Axis2.entries.maxOf { axis ->
+        maxOf(
+            a = abs(profileBox[axis].start),
+            b = abs(profileBox[axis].endInclusive),
+        )
+    }
 }
 
 // --- Paths (3D) -------------------------------------------------------------
 
-private fun pathBox(path: Path): Axis3Values<ClosedRange<Double>> {
+private fun pathBox(
+    path: Path,
+): Axis3Values<ClosedRange<Double>> {
     var box = pointsBox(listOf(path.start))
     var current = path.start
     path.edges.forEach { edge ->
@@ -112,29 +188,67 @@ private fun pathBox(path: Path): Axis3Values<ClosedRange<Double>> {
 }
 
 /** A segment's bounding box, from its [from] point (the previous endpoint). */
-private fun Curve3.geometryBox(from: Vec3): Axis3Values<ClosedRange<Double>> = when (this) {
-    is Curve3.Line -> pointsBox(listOf(from, to))
-    is Curve3.Arc -> pointsBox(listOf(from, via, to))
+private fun Curve3.geometryBox(
+    from: Vec3,
+): Axis3Values<ClosedRange<Double>> = when (this) {
+    is Curve3.Line -> pointsBox(
+        listOf(
+            from,
+            to,
+        ),
+    )
+    is Curve3.Arc -> pointsBox(
+        listOf(
+            from,
+            via,
+            to,
+        ),
+    )
     is Curve3.Spline -> pointsBox(listOf(from) + points)
     is Curve3.Bezier -> pointsBox(listOf(from) + points)
     is Curve3.Helix -> {
-        val radius = hypot(from.x, from.y)
+        val radius = hypot(
+            x = from.x,
+            y = from.y,
+        )
         val top = from.z + height
-        box(-radius..radius, -radius..radius, minOf(from.z, top)..maxOf(from.z, top))
+        box(
+            x = -radius..radius,
+            y = -radius..radius,
+            z = minOf(
+                a = from.z,
+                b = top,
+            )..maxOf(
+                a = from.z,
+                b = top,
+            ),
+        )
     }
 }
 
-private fun Curve3.endPoint(current: Vec3): Vec3 = when (this) {
+private fun Curve3.endPoint(
+    current: Vec3,
+): Vec3 = when (this) {
     is Curve3.Line -> to
     is Curve3.Arc -> to
     is Curve3.Spline -> points.last()
     is Curve3.Bezier -> points.last()
     is Curve3.Helix -> {
-        val radius = hypot(current.x, current.y)
-        val phase = atan2(current.y, current.x)
+        val radius = hypot(
+            x = current.x,
+            y = current.y,
+        )
+        val phase = atan2(
+            y = current.y,
+            x = current.x,
+        )
         val direction = if (right_handed) 1.0 else -1.0
         val end = phase + direction * 2.0 * PI * (height / pitch)
-        Vec3(x = radius * cos(end), y = radius * sin(end), z = current.z + height)
+        Vec3(
+            x = radius * cos(end),
+            y = radius * sin(end),
+            z = current.z + height,
+        )
     }
 }
 
@@ -145,14 +259,18 @@ private fun Axis3Values<ClosedRange<Double>>.transform(
 ): Axis3Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
 
 private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> =
-    Axis3.entries.fold(listOf(vec3 { 0.0 })) { corners, axis ->
+    Axis3.entries.fold(initial = listOf(vec3 { 0.0 })) { corners, axis ->
         corners.flatMap { corner ->
-            listOf(this[axis].start, this[axis].endInclusive)
-                .map { value -> corner.copy(axis) { value } }
+            listOf(
+                this[axis].start,
+                this[axis].endInclusive,
+            ).map { value -> corner.copy(axis = axis) { value } }
         }
     }
 
-private fun TransformOp.transformPoint(point: Vec3): Vec3 = when (this) {
+private fun TransformOp.transformPoint(
+    point: Vec3,
+): Vec3 = when (this) {
     is TransformOp.Translate -> point + value
     is TransformOp.Scale -> point * value
     is TransformOp.Mirror -> {
@@ -179,9 +297,13 @@ private fun TransformOp.transformPoint(point: Vec3): Vec3 = when (this) {
     }
 }
 
-private fun Vec3.dot(other: Vec3): Double = Axis3.entries.sumOf { get(it) * other[it] }
+private fun Vec3.dot(
+    other: Vec3,
+): Double = Axis3.entries.sumOf { get(it) * other[it] }
 
-private fun Vec3.cross(other: Vec3): Vec3 = vec3 { axis ->
+private fun Vec3.cross(
+    other: Vec3,
+): Vec3 = vec3 { axis ->
     when (axis) {
         Axis3.X -> this[Axis3.Y] * other[Axis3.Z] - this[Axis3.Z] * other[Axis3.Y]
         Axis3.Y -> this[Axis3.Z] * other[Axis3.X] - this[Axis3.X] * other[Axis3.Z]
@@ -189,7 +311,9 @@ private fun Vec3.cross(other: Vec3): Vec3 = vec3 { axis ->
     }
 }
 
-private fun normalized(vector: Vec3): Vec3 {
+private fun normalized(
+    vector: Vec3,
+): Vec3 {
     val length = sqrt(vector.dot(vector))
     return vector.map { it / length }
 }

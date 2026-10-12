@@ -51,32 +51,48 @@ fun List<Part>.model(): Model {
 }
 
 /** The canonical IR JSON (the same bytes [export] hands to the engine). */
-fun Model.json(): String = vg3Json.encodeToString(Model.serializer(), this)
+fun Model.json(): String = vg3Json.encodeToString(
+    serializer = Model.serializer(),
+    value = this,
+)
 
 /**
  * Serializes [this] and the [format] config, then runs `vg3`.
  *
  * `vg3` must be on `PATH` (override with the `VG3_BIN` environment variable).
  */
-fun Model.export(format: Format) {
-    run(json(), format.toJson())
+fun Model.export(
+    format: Format,
+) {
+    run(
+        modelJson = json(),
+        exportConfigJson = format.toJson(),
+    )
 }
 
-private fun run(modelJson: String, exportConfigJson: String) {
+private fun run(
+    modelJson: String,
+    exportConfigJson: String,
+) {
     val command = listOf(
         System.getenv("VG3_BIN") ?: "vg3",
-        "--model-json", modelJson,
-        "--export-config-json", exportConfigJson,
+        "--model-json",
+        modelJson,
+        "--export-config-json",
+        exportConfigJson,
     )
     val process = ProcessBuilder(command)
         .redirectErrorStream(true)
         .start()
     val output = process.inputStream.bufferedReader().readText()
-    if (!process.waitFor(10, TimeUnit.MINUTES)) {
+    if (!process.waitFor(
+        10,
+        TimeUnit.MINUTES,
+    )) {
         process.destroyForcibly()
         error("vg3 did not finish within 10 minutes")
     }
-    check(process.exitValue() == 0) {
+    check(value = process.exitValue() == 0) {
         "vg3 failed (exit ${process.exitValue()}):\n$output"
     }
 }
@@ -89,21 +105,28 @@ private fun run(modelJson: String, exportConfigJson: String) {
  * - operands are indices strictly less than the node's own index (back-references only).
  */
 class Arena {
-    private val regionArena = Lowering<Region, SketchIndex, Sketch>(::SketchIndex) { region, self ->
+    private val regionArena = Lowering<Region, SketchIndex, Sketch>(wrap = ::SketchIndex) { region, self ->
         region.lower(self)
     }
-    private val bodyArena = Lowering<Solid, BodyIndex, Body>(::BodyIndex) { solid, self ->
-        solid.lower(self, regionArena::indexOf)
+    private val bodyArena = Lowering<Solid, BodyIndex, Body>(wrap = ::BodyIndex) { solid, self ->
+        solid.lower(
+            operand = self,
+            sketch = regionArena::indexOf,
+        )
     }
 
     val sketches: List<Sketch> get() = regionArena.nodes
     val bodies: List<Body> get() = bodyArena.nodes
 
     /** The `SketchIndex` of [region], lowering it (and its children first) into the sketch arena. */
-    fun region(region: Region): SketchIndex = regionArena.indexOf(region)
+    fun region(
+        region: Region,
+    ): SketchIndex = regionArena.indexOf(region)
 
     /** The `BodyIndex` of [solid], lowering it (and its children first) into the body arena. */
-    fun body(solid: Solid): BodyIndex = bodyArena.indexOf(solid)
+    fun body(
+        solid: Solid,
+    ): BodyIndex = bodyArena.indexOf(solid)
 }
 
 /** A flat, deduplicating arena over a domain type `T` producing IR nodes `N` indexed by `I`. */
@@ -114,8 +137,13 @@ internal class Lowering<T, I, N>(
     private val visited = HashMap<T, I>()
     val nodes = mutableListOf<N>()
 
-    fun indexOf(value: T): I = visited.getOrPut(value) {
-        val node = lower(value, ::indexOf)
+    fun indexOf(
+        value: T,
+    ): I = visited.getOrPut(key = value) {
+        val node = lower(
+            value,
+            ::indexOf,
+        )
         nodes += node
         wrap(nodes.lastIndex)
     }

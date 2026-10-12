@@ -10,56 +10,267 @@ import kotlin.test.assertEquals
 
 class RegionBboxTest {
 
-    private val square = polygon(Axis2Values(x = 0.0, y = 0.0), Axis2Values(x = 10.0, y = 0.0), Axis2Values(x = 10.0, y = 10.0), Axis2Values(x = 0.0, y = 10.0))
+    private val square = polygon(
+        Axis2Values(
+            x = 0.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 10.0,
+            y = 0.0,
+        ),
+        Axis2Values(
+            x = 10.0,
+            y = 10.0,
+        ),
+        Axis2Values(
+            x = 0.0,
+            y = 10.0,
+        ),
+    )
 
-    private fun box(x0: Double, x1: Double, y0: Double, y1: Double) =
-        Axis2Values(x = x0..x1, y = y0..y1)
+    private fun box(
+        x0: Double,
+        x1: Double,
+        y0: Double,
+        y1: Double,
+    ) = Axis2Values(
+        x = x0..x1,
+        y = y0..y1,
+    )
 
-    private fun assertBox(expected: Axis2Values<ClosedRange<Double>>, actual: Axis2Values<ClosedRange<Double>>) {
+    private fun assertBox(
+        expected: Axis2Values<ClosedRange<Double>>,
+        actual: Axis2Values<ClosedRange<Double>>,
+    ) {
         val eps = 1e-9
-        assertEquals(expected.x.start, actual.x.start, eps)
-        assertEquals(expected.x.endInclusive, actual.x.endInclusive, eps)
-        assertEquals(expected.y.start, actual.y.start, eps)
-        assertEquals(expected.y.endInclusive, actual.y.endInclusive, eps)
+        assertEquals(
+            expected = expected.x.start,
+            actual = actual.x.start,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.x.endInclusive,
+            actual = actual.x.endInclusive,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.y.start,
+            actual = actual.y.start,
+            absoluteTolerance = eps,
+        )
+        assertEquals(
+            expected = expected.y.endInclusive,
+            actual = actual.y.endInclusive,
+            absoluteTolerance = eps,
+        )
     }
 
     @Test
     fun polygon_and_circle_are_exact() {
-        assertBox(box(0.0, 10.0, 0.0, 10.0), square.bbox)
-        assertBox(box(-5.0, 5.0, -5.0, 5.0), circle(5.0).bbox)
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 10.0,
+                y0 = 0.0,
+                y1 = 10.0,
+            ),
+            actual = square.bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -5.0,
+                x1 = 5.0,
+                y0 = -5.0,
+                y1 = 5.0,
+            ),
+            actual = circle(5.0).bbox,
+        )
     }
 
     @Test
     fun contour_bounds_lines_and_arcs_by_control_points() {
-        val lines = contour(Axis2Values(x = 0.0, y = 0.0), lineTo(Axis2Values(x = 10.0, y = 0.0)), lineRel(Axis2Values(x = 0.0, y = 10.0)))
-        assertBox(box(0.0, 10.0, 0.0, 10.0), lines.bbox)
+        val lines = contour(
+            Axis2Values(
+                x = 0.0,
+                y = 0.0,
+            ),
+            lineTo(
+                Axis2Values(
+                    x = 10.0,
+                    y = 0.0,
+                ),
+            ),
+            lineRel(
+                Axis2Values(
+                    x = 0.0,
+                    y = 10.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 10.0,
+                y0 = 0.0,
+                y1 = 10.0,
+            ),
+            actual = lines.bbox,
+        )
 
-        val arc = contour(Axis2Values(x = 0.0, y = 0.0), arcTo(via = Axis2Values(x = 5.0, y = 5.0), to = Axis2Values(x = 10.0, y = 0.0)))
-        assertBox(box(0.0, 10.0, 0.0, 5.0), arc.bbox)
+        val arc = contour(
+            Axis2Values(
+                x = 0.0,
+                y = 0.0,
+            ),
+            arcTo(
+                via = Axis2Values(
+                    x = 5.0,
+                    y = 5.0,
+                ),
+                to = Axis2Values(
+                    x = 10.0,
+                    y = 0.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 10.0,
+                y0 = 0.0,
+                y1 = 5.0,
+            ),
+            actual = arc.bbox,
+        )
     }
 
     @Test
     fun contour_outlines_bezier_poles_from_the_start_point() {
-        val region = contour(Axis2Values(x = 0.0, y = 0.0), bezierTo(Axis2Values(x = 10.0, y = 0.0), Axis2Values(x = 10.0, y = 10.0)))
-        assertBox(box(0.0, 10.0, 0.0, 10.0), region.bbox)
+        val region = contour(
+            Axis2Values(
+                x = 0.0,
+                y = 0.0,
+            ),
+            bezierTo(
+                Axis2Values(
+                    x = 10.0,
+                    y = 0.0,
+                ),
+                Axis2Values(
+                    x = 10.0,
+                    y = 10.0,
+                ),
+            ),
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 10.0,
+                y0 = 0.0,
+                y1 = 10.0,
+            ),
+            actual = region.bbox,
+        )
     }
 
     @Test
     fun transforms_apply_to_the_box_corners() {
-        assertBox(box(3.0, 4.0, 4.0, 5.0), rect(Axis2Values(x = 1.0, y = 1.0)).translate(Axis2Values(x = 3.0, y = 4.0)).bbox)
-        assertBox(box(0.0, 2.0, -1.0, 0.0), rect(Axis2Values(x = 1.0, y = 1.0)).scale(Axis2Values(x = 2.0, y = -1.0)).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(Axis2Values(x = 1.0, y = 1.0)).rotate(kotlin.math.PI / 2).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(Axis2Values(x = 1.0, y = 1.0)).mirror(Axis2.X.direction).bbox)
+        assertBox(
+            expected = box(
+                x0 = 3.0,
+                x1 = 4.0,
+                y0 = 4.0,
+                y1 = 5.0,
+            ),
+            actual = rect(
+                Axis2Values(
+                    x = 1.0,
+                    y = 1.0,
+                ),
+            ).translate(
+                Axis2Values(
+                    x = 3.0,
+                    y = 4.0,
+                ),
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = 0.0,
+                x1 = 2.0,
+                y0 = -1.0,
+                y1 = 0.0,
+            ),
+            actual = rect(
+                Axis2Values(
+                    x = 1.0,
+                    y = 1.0,
+                ),
+            ).scale(
+                Axis2Values(
+                    x = 2.0,
+                    y = -1.0,
+                ),
+            ).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -1.0,
+                x1 = 0.0,
+                y0 = 0.0,
+                y1 = 1.0,
+            ),
+            actual = rect(
+                Axis2Values(
+                    x = 1.0,
+                    y = 1.0,
+                ),
+            ).rotate(kotlin.math.PI / 2).bbox,
+        )
+        assertBox(
+            expected = box(
+                x0 = -1.0,
+                x1 = 0.0,
+                y0 = 0.0,
+                y1 = 1.0,
+            ),
+            actual = rect(
+                Axis2Values(
+                    x = 1.0,
+                    y = 1.0,
+                ),
+            ).mirror(Axis2.X.direction).bbox,
+        )
     }
 
     @Test
     fun booleans_union_their_operands() {
-        assertBox(box(-2.0, 10.0, -2.0, 10.0), square.fuse(circle(2.0)).bbox)
+        assertBox(
+            expected = box(
+                x0 = -2.0,
+                x1 = 10.0,
+                y0 = -2.0,
+                y1 = 10.0,
+            ),
+            actual = square.fuse(circle(2.0)).bbox,
+        )
     }
 
     @Test
     fun offset_grows_and_shrink_stays_inside() {
-        assertBox(box(-7.0, 7.0, -7.0, 7.0), circle(5.0).offset2d(2.0).bbox)
-        assertBox(circle(5.0).bbox, circle(5.0).offset2d(-1.0).bbox)
+        assertBox(
+            expected = box(
+                x0 = -7.0,
+                x1 = 7.0,
+                y0 = -7.0,
+                y1 = 7.0,
+            ),
+            actual = circle(5.0).offset2d(2.0).bbox,
+        )
+        assertBox(
+            expected = circle(5.0).bbox,
+            actual = circle(5.0).offset2d(-1.0).bbox,
+        )
     }
 }

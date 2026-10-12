@@ -35,21 +35,48 @@ private const val DISCRIMINATOR = "type"
 private var schemaPackage = DEFAULT_SCHEMA_PACKAGE
 
 /** Kotlin type used for non-empty arrays (`minItems >= 1`); set from the command line. */
-private var nonEmptyList = ClassName("arrow.core", "NonEmptyList")
+private var nonEmptyList = ClassName(
+    "arrow.core",
+    "NonEmptyList",
+)
 
 /** Serializer the generated non-empty properties are annotated with; set from the command line. */
-private var nonEmptyListSerializer = ClassName("arrow.core.serialization", "NonEmptyListSerializer")
+private var nonEmptyListSerializer = ClassName(
+    "arrow.core.serialization",
+    "NonEmptyListSerializer",
+)
 
 /** Names of `$defs` that are enums; used to render enum-typed schema defaults as `Enum.CONSTANT`. */
 private var enumNames: Set<String> = emptySet()
 
-private val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
-private val SERIAL_NAME = ClassName("kotlinx.serialization", "SerialName")
-private val JVM_INLINE = ClassName("kotlin.jvm", "JvmInline")
-private val JSON_CLASS_DISCRIMINATOR = ClassName("kotlinx.serialization.json", "JsonClassDiscriminator")
-private val LIST = ClassName("kotlin.collections", "List")
-private val FOLD = ClassName("org.hnau.commons.gen.fold.annotations", "Fold")
-private val ENUM_VALUES = ClassName("org.hnau.commons.gen.enumvalues.annotations", "EnumValues")
+private val SERIALIZABLE = ClassName(
+    "kotlinx.serialization",
+    "Serializable",
+)
+private val SERIAL_NAME = ClassName(
+    "kotlinx.serialization",
+    "SerialName",
+)
+private val JVM_INLINE = ClassName(
+    "kotlin.jvm",
+    "JvmInline",
+)
+private val JSON_CLASS_DISCRIMINATOR = ClassName(
+    "kotlinx.serialization.json",
+    "JsonClassDiscriminator",
+)
+private val LIST = ClassName(
+    "kotlin.collections",
+    "List",
+)
+private val FOLD = ClassName(
+    "org.hnau.commons.gen.fold.annotations",
+    "Fold",
+)
+private val ENUM_VALUES = ClassName(
+    "org.hnau.commons.gen.enumvalues.annotations",
+    "EnumValues",
+)
 
 /**
  * Generates `kotlinx.serialization` classes from the vg3 IR JSON Schema.
@@ -66,8 +93,10 @@ private val ENUM_VALUES = ClassName("org.hnau.commons.gen.enumvalues.annotations
  * - array with `minItems >= 1` (no `maxItems`) -> `NonEmptyList<T>` with `@Serializable(with = …)`
  * - non-required properties become optional (schema `default`, or `= null` so the engine applies its own default)
  */
-fun main(args: Array<String>) {
-    require(args.size in 2..5) { "usage: <schema.json> <output-dir> [package] [non-empty-list] [non-empty-serializer]" }
+fun main(
+    args: Array<String>,
+) {
+    require(value = args.size in 2..5) { "usage: <schema.json> <output-dir> [package] [non-empty-list] [non-empty-serializer]" }
     schemaPackage = args.getOrNull(2) ?: DEFAULT_SCHEMA_PACKAGE
     args.getOrNull(3)?.let { nonEmptyList = ClassName.bestGuess(it) }
     args.getOrNull(4)?.let { nonEmptyListSerializer = ClassName.bestGuess(it) }
@@ -77,50 +106,92 @@ fun main(args: Array<String>) {
     val outputDir = File(args[1]).apply { mkdirs() }
 
     definitions.forEach { (name, definition) ->
-        buildFile(name, definition.jsonObject).writeTo(outputDir)
+        buildFile(
+            name = name,
+            definition = definition.jsonObject,
+        ).writeTo(outputDir)
     }
 
     val rootDefinition = schema.filterKeys { it != "\$defs" }
-    buildFile(ROOT_NAME, JsonObject(rootDefinition)).writeTo(outputDir)
+    buildFile(
+        name = ROOT_NAME,
+        definition = JsonObject(rootDefinition),
+    ).writeTo(outputDir)
 
     println("vg3 codegen: wrote ${definitions.size + 1} file(s) to ${outputDir.absolutePath}")
 }
 
-private fun buildFile(name: String, definition: JsonObject): FileSpec {
+private fun buildFile(
+    name: String,
+    definition: JsonObject,
+): FileSpec {
     val type = when {
-        definition.containsKey("oneOf") -> sealedType(name, definition)
-        definition["enum"] != null -> enumType(name, definition)
-        definition["type"]?.jsonPrimitive?.contentOrNull == "object" -> objectType(name, definition)
-        isScalar(definition) -> valueClass(name, definition)
+        definition.containsKey("oneOf") -> sealedType(
+            name = name,
+            definition = definition,
+        )
+        definition["enum"] != null -> enumType(
+            name = name,
+            definition = definition,
+        )
+        definition["type"]?.jsonPrimitive?.contentOrNull == "object" -> objectType(
+            name = name,
+            definition = definition,
+        )
+        isScalar(definition) -> valueClass(
+            name = name,
+            definition = definition,
+        )
         else -> error("vg3 codegen: unsupported definition '$name': $definition")
     }
-    return FileSpec.builder(schemaPackage, name).addType(type).build()
+    return FileSpec.builder(
+        packageName = schemaPackage,
+        fileName = name,
+    ).addType(type).build()
 }
 
 /** A named scalar (e.g. `BodyIndex`): a `@JvmInline value class` over its primitive. */
-private fun valueClass(name: String, definition: JsonObject): TypeSpec {
+private fun valueClass(
+    name: String,
+    definition: JsonObject,
+): TypeSpec {
     val type = primitiveType(definition)
-    val property = PropertySpec.builder("value", type).initializer("value").build()
+    val property = PropertySpec.builder(
+        "value",
+        type,
+    ).initializer("value").build()
     return TypeSpec.classBuilder(name)
         .addAnnotation(JVM_INLINE)
         .addAnnotation(SERIALIZABLE)
         .addModifiers(KModifier.VALUE)
         .primaryConstructor(
-            FunSpec.constructorBuilder().addParameter("value", type).build(),
+            FunSpec.constructorBuilder().addParameter(
+                "value",
+                type,
+            ).build(),
         )
         .addProperty(property)
         .build()
 }
 
-private fun sealedType(name: String, definition: JsonObject): TypeSpec {
-    val parent = ClassName(schemaPackage, name)
+private fun sealedType(
+    name: String,
+    definition: JsonObject,
+): TypeSpec {
+    val parent = ClassName(
+        schemaPackage,
+        name,
+    )
     val builder = TypeSpec.interfaceBuilder(name)
         .addModifiers(KModifier.SEALED)
         .addAnnotation(SERIALIZABLE)
         .addAnnotation(FOLD)
         .addAnnotation(
             AnnotationSpec.builder(JSON_CLASS_DISCRIMINATOR)
-                .addMember("%S", DISCRIMINATOR)
+                .addMember(
+                    "%S",
+                    DISCRIMINATOR,
+                )
                 .build(),
         )
 
@@ -177,7 +248,10 @@ private fun objectType(
     builder.addAnnotation(SERIALIZABLE)
     if (serialName != null) {
         builder.addAnnotation(
-            AnnotationSpec.builder(SERIAL_NAME).addMember("%S", serialName).build(),
+            AnnotationSpec.builder(SERIAL_NAME).addMember(
+                "%S",
+                serialName,
+            ).build(),
         )
     }
     if (superinterface != null) {
@@ -186,7 +260,10 @@ private fun objectType(
     return builder.build()
 }
 
-private fun enumType(name: String, definition: JsonObject): TypeSpec {
+private fun enumType(
+    name: String,
+    definition: JsonObject,
+): TypeSpec {
     val builder = TypeSpec.enumBuilder(name)
         .addAnnotation(SERIALIZABLE)
         .addAnnotation(FOLD)
@@ -194,9 +271,14 @@ private fun enumType(name: String, definition: JsonObject): TypeSpec {
     definition.getValue("enum").jsonArray.forEach { value ->
         val wire = value.jsonPrimitive.content
         builder.addEnumConstant(
-            enumConstantName(wire),
-            TypeSpec.anonymousClassBuilder()
-                .addAnnotation(AnnotationSpec.builder(SERIAL_NAME).addMember("%S", wire).build())
+            name = enumConstantName(wire),
+            typeSpec = TypeSpec.anonymousClassBuilder()
+                .addAnnotation(
+                    AnnotationSpec.builder(SERIAL_NAME).addMember(
+                        "%S",
+                        wire,
+                    ).build(),
+                )
                 .build(),
         )
     }
@@ -208,7 +290,11 @@ private data class Field(
     val property: PropertySpec,
 )
 
-private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field {
+private fun fieldOf(
+    name: String,
+    schema: JsonObject,
+    required: Boolean,
+): Field {
     val hasDefault = schema.containsKey("default")
     val baseType = resolveType(schema)
     val nullable = !required && !hasDefault
@@ -219,29 +305,49 @@ private fun fieldOf(name: String, schema: JsonObject, required: Boolean): Field 
         else -> null
     }
 
-    val parameter = ParameterSpec.builder(name, type)
+    val parameter = ParameterSpec.builder(
+        name,
+        type,
+    )
         .apply {
-            if (default != null) defaultValue("%L", default)
+            if (default != null) defaultValue(
+                "%L",
+                default,
+            )
             if (isNonEmptyList(schema)) {
                 addAnnotation(
                     AnnotationSpec.builder(SERIALIZABLE)
-                        .addMember("with = %T::class", nonEmptyListSerializer)
+                        .addMember(
+                            "with = %T::class",
+                            nonEmptyListSerializer,
+                        )
                         .build(),
                 )
             }
         }
         .build()
-    val property = PropertySpec.builder(name, type)
-        .initializer("%N", name)
+    val property = PropertySpec.builder(
+        name,
+        type,
+    )
+        .initializer(
+            "%N",
+            name,
+        )
         .build()
-    return Field(parameter, property)
+    return Field(
+        parameter = parameter,
+        property = property,
+    )
 }
 
 /**
  * A non-empty list: an array with `minItems >= 1` and no `maxItems` (fixed-size arrays like the
  * `matrix` stay plain `List`). Maps to the Kotlin `NonEmptyList` with its Arrow serializer.
  */
-private fun isNonEmptyList(schema: JsonObject): Boolean {
+private fun isNonEmptyList(
+    schema: JsonObject,
+): Boolean {
     val type = schema["type"]
     if (type is JsonArray) return false
     return type?.jsonPrimitive?.contentOrNull == "array" &&
@@ -249,9 +355,14 @@ private fun isNonEmptyList(schema: JsonObject): Boolean {
         !schema.containsKey("maxItems")
 }
 
-private fun resolveType(schema: JsonObject): TypeName {
+private fun resolveType(
+    schema: JsonObject,
+): TypeName {
     schema["\$ref"]?.let { reference ->
-        return ClassName(schemaPackage, reference.jsonPrimitive.content.removePrefix(REF_PREFIX))
+        return ClassName(
+            schemaPackage,
+            reference.jsonPrimitive.content.removePrefix(REF_PREFIX),
+        )
     }
     schema["anyOf"]?.let { anyOf ->
         val concrete = anyOf.jsonArray.first {
@@ -275,22 +386,35 @@ private fun resolveType(schema: JsonObject): TypeName {
     }
 }
 
-private fun isScalar(schema: JsonObject): Boolean {
+private fun isScalar(
+    schema: JsonObject,
+): Boolean {
     val type = schema["type"] ?: return false
     val names = if (type is JsonArray) {
         type.map { it.jsonPrimitive.content }
     } else {
         listOf(type.jsonPrimitive.content)
     }
-    return names.any { it in setOf("number", "integer", "string", "boolean") }
+    return names.any {
+        it in setOf(
+            "number",
+            "integer",
+            "string",
+            "boolean",
+        )
+    }
 }
 
 /** The Kotlin primitive backing a scalar schema type. */
-private fun primitiveType(schema: JsonObject): TypeName = primitiveTypeName(
+private fun primitiveType(
+    schema: JsonObject,
+): TypeName = primitiveTypeName(
     schema["type"]?.jsonPrimitive?.contentOrNull ?: error("vg3 codegen: not a scalar: $schema"),
 )
 
-private fun primitiveTypeName(name: String): TypeName = when (name) {
+private fun primitiveTypeName(
+    name: String,
+): TypeName = when (name) {
     "number" -> DOUBLE
     "integer" -> INT
     "string" -> STRING
@@ -298,14 +422,19 @@ private fun primitiveTypeName(name: String): TypeName = when (name) {
     else -> error("vg3 codegen: not a scalar type: $name")
 }
 
-private fun literal(value: JsonPrimitive): String = when {
+private fun literal(
+    value: JsonPrimitive,
+): String = when {
     value.booleanOrNull != null -> value.booleanOrNull.toString()
     value.isString -> "\"${value.content.replace("\"", "\\\"")}\""
     else -> value.content
 }
 
 /** Renders a schema default: an enum default becomes `EnumType.CONSTANT`, others a plain literal. */
-private fun defaultLiteral(type: TypeName, value: JsonPrimitive): String {
+private fun defaultLiteral(
+    type: TypeName,
+    value: JsonPrimitive,
+): String {
     val simpleName = (type as? ClassName)?.simpleName
     return if (simpleName != null && simpleName in enumNames) {
         "$simpleName.${enumConstantName(value.content)}"
@@ -314,8 +443,17 @@ private fun defaultLiteral(type: TypeName, value: JsonPrimitive): String {
     }
 }
 
-private fun pascalCase(value: String): String =
-    value.split('_', '-').joinToString("") { part -> part.replaceFirstChar(Char::uppercaseChar) }
+private fun pascalCase(
+    value: String,
+): String =
+    value.split(
+        '_',
+        '-',
+    ).joinToString(separator = "") { part -> part.replaceFirstChar(Char::uppercaseChar) }
 
-private fun enumConstantName(value: String): String =
-    value.uppercase().replace('-', '_')
+private fun enumConstantName(
+    value: String,
+): String = value.uppercase().replace(
+    oldChar = '-',
+    newChar = '_',
+)

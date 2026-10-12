@@ -28,7 +28,10 @@ import com.squareup.kotlinpoet.ksp.writeTo
 private const val DOMAIN_PACKAGE = "org.hnau.ktcad"
 private const val IR_PACKAGE = "$DOMAIN_PACKAGE.ir"
 
-private val FOLD = ClassName("org.hnau.commons.gen.fold.annotations", "Fold")
+private val FOLD = ClassName(
+    "org.hnau.commons.gen.fold.annotations",
+    "Fold",
+)
 
 /**
  * Generates the reference-based domain layers from the generated `ir` sealed nodes.
@@ -71,10 +74,19 @@ private val DOMAINS = listOf(
         nodeFqn = "$IR_PACKAGE.Body",
         domainName = "Solid",
         selfIndexFqn = "$IR_PACKAGE.BodyIndex",
-        references = listOf(Reference("$IR_PACKAGE.SketchIndex", "Region", "sketch")),
+        references = listOf(
+            Reference(
+                indexFqn = "$IR_PACKAGE.SketchIndex",
+                domainName = "Region",
+                lambdaName = "sketch",
+            ),
+        ),
         factories = true,
         // Hand-written with `centerX/Y/Z` sugar (see PrimitiveExt.kt).
-        factorySkip = setOf("Box", "Cylinder"),
+        factorySkip = setOf(
+            "Box",
+            "Cylinder",
+        ),
     ),
     Domain(
         nodeFqn = "$IR_PACKAGE.Sketch",
@@ -92,7 +104,9 @@ class SolidProcessor(
 
     private var generated = false
 
-    override fun process(resolver: Resolver): List<KSAnnotated> {
+    override fun process(
+        resolver: Resolver,
+    ): List<KSAnnotated> {
         if (generated) return emptyList()
         generated = true
 
@@ -106,29 +120,68 @@ class SolidProcessor(
             // The `ir` lives in the main source set; when the processor also runs for test sources
             // the IR is already compiled, so there is no originating file (and nothing new to emit).
             val origin = node.containingFile ?: return@forEach
-            val file = generate(domain, node)
-            file.writeTo(codeGenerator, Dependencies(aggregating = false, origin))
+            val file = generate(
+                domain = domain,
+                node = node,
+            )
+            file.writeTo(
+                codeGenerator = codeGenerator,
+                dependencies = Dependencies(
+                    false,
+                    origin,
+                ),
+            )
             logger.info("SolidProcessor: generated ${domain.domainName}")
         }
         return emptyList()
     }
 
-    private fun generate(domain: Domain, node: KSClassDeclaration): FileSpec {
+    private fun generate(
+        domain: Domain,
+        node: KSClassDeclaration,
+    ): FileSpec {
         val nodeType = node.toClassName()
         val variants: List<KSClassDeclaration> =
             node.getSealedSubclasses().toList().sortedBy { it.simpleName.asString() }
         if (variants.isEmpty()) {
             logger.warn("SolidProcessor: ${domain.nodeFqn} has no sealed subclasses")
         }
-        val domainType = ClassName(DOMAIN_PACKAGE, domain.domainName)
+        val domainType = ClassName(
+            DOMAIN_PACKAGE,
+            domain.domainName,
+        )
 
-        val builder = FileSpec.builder(DOMAIN_PACKAGE, domain.domainName)
-            .addType(sealedType(domain, variants, domainType))
-            .addFunction(lowerMapper(domain, variants, nodeType, domainType))
+        val builder = FileSpec.builder(
+            packageName = DOMAIN_PACKAGE,
+            fileName = domain.domainName,
+        )
+            .addType(
+                sealedType(
+                    domain = domain,
+                    variants = variants,
+                    domainType = domainType,
+                ),
+            )
+            .addFunction(
+                lowerMapper(
+                    domain = domain,
+                    variants = variants,
+                    nodeType = nodeType,
+                    domainType = domainType,
+                ),
+            )
         if (domain.factories) {
             variants
                 .filterNot { it.simpleName.asString() in domain.factorySkip }
-                .forEach { builder.addFunction(factory(domain, it, domainType)) }
+                .forEach {
+                    builder.addFunction(
+                        factory(
+                            domain = domain,
+                            variant = it,
+                            domainType = domainType,
+                        ),
+                    )
+                }
         }
         return builder.build()
     }
@@ -146,9 +199,7 @@ class SolidProcessor(
         variants.forEach { variant ->
             val name = variant.simpleName.asString()
             if (variant.classKind == ClassKind.OBJECT) {
-                builder.addType(
-                    TypeSpec.objectBuilder(name).addSuperinterface(domainType).build(),
-                )
+                builder.addType(TypeSpec.objectBuilder(name).addSuperinterface(domainType).build())
                 return@forEach
             }
             val parameters = orderedParameters(variant)
@@ -160,17 +211,30 @@ class SolidProcessor(
             val constructor = FunSpec.constructorBuilder()
             val properties = parameters.map { parameter ->
                 val parameterName = parameter.name!!.asString()
-                val typeName = domainType(domain, parameter.type.resolve(), domainType)
+                val typeName = domainType(
+                    domain = domain,
+                    type = parameter.type.resolve(),
+                    domainType = domainType,
+                )
                 constructor.addParameter(
-                    ParameterSpec.builder(parameterName, typeName)
+                    ParameterSpec.builder(
+                        parameterName,
+                        typeName,
+                    )
                         .apply {
                             if (parameter.hasDefault) {
-                                defaultValue("%L", defaultSource(parameter.type.resolve()))
+                                defaultValue(
+                                    "%L",
+                                    defaultSource(parameter.type.resolve()),
+                                )
                             }
                         }
                         .build(),
                 )
-                PropertySpec.builder(parameterName, typeName).initializer(parameterName).build()
+                PropertySpec.builder(
+                    parameterName,
+                    typeName,
+                ).initializer(parameterName).build()
             }
             type.addModifiers(KModifier.DATA)
                 .primaryConstructor(constructor.build())
@@ -203,7 +267,12 @@ class SolidProcessor(
                 reference.lambdaName,
                 LambdaTypeName.get(
                     parameters = listOf(
-                        ParameterSpec.unnamed(ClassName(DOMAIN_PACKAGE, reference.domainName)),
+                        ParameterSpec.unnamed(
+                            ClassName(
+                                DOMAIN_PACKAGE,
+                                reference.domainName,
+                            ),
+                        ),
                     ),
                     returnType = ClassName.bestGuess(reference.indexFqn),
                 ),
@@ -213,14 +282,31 @@ class SolidProcessor(
         val body = CodeBlock.builder().add("return when (this) {\n").indent()
         variants.forEach { variant ->
             val name = variant.simpleName.asString()
-            body.add("is %T.%L -> ", domainType, name)
+            body.add(
+                "is %T.%L -> ",
+                domainType,
+                name,
+            )
             if (variant.classKind == ClassKind.OBJECT) {
-                body.add("%T.%L\n", nodeType, name)
+                body.add(
+                    "%T.%L\n",
+                    nodeType,
+                    name,
+                )
             } else {
-                body.add("%T.%L(", nodeType, name)
-                body.add(argumentList(variant) { parameter ->
-                    renderField(domain, parameter)
-                })
+                body.add(
+                    "%T.%L(",
+                    nodeType,
+                    name,
+                )
+                body.add(
+                    argumentList(variant = variant) { parameter ->
+                        renderField(
+                            domain = domain,
+                            parameter = parameter,
+                        )
+                    },
+                )
                 body.add(")\n")
             }
         }
@@ -228,14 +314,37 @@ class SolidProcessor(
         return builder.returns(nodeType).addCode(body.build()).build()
     }
 
-    private fun renderField(domain: Domain, parameter: KSValueParameter): CodeBlock {
+    private fun renderField(
+        domain: Domain,
+        parameter: KSValueParameter,
+    ): CodeBlock {
         val name = parameter.name!!.asString()
-        return when (val kind = fieldKind(domain, parameter.type.resolve())) {
-            FieldKind.NONE -> CodeBlock.of("%N", name)
-            FieldKind.SELF_SINGLE -> CodeBlock.of("operand(%N)", name)
-            FieldKind.SELF_LIST -> CodeBlock.of("%N.map(operand)", name)
-            is FieldKind.REF_SINGLE -> CodeBlock.of("%N(%N)", kind.reference.lambdaName, name)
-            is FieldKind.REF_LIST -> CodeBlock.of("%N.map(%N)", name, kind.reference.lambdaName)
+        return when (val kind = fieldKind(
+            domain = domain,
+            type = parameter.type.resolve(),
+        )) {
+            FieldKind.NONE -> CodeBlock.of(
+                "%N",
+                name,
+            )
+            FieldKind.SELF_SINGLE -> CodeBlock.of(
+                "operand(%N)",
+                name,
+            )
+            FieldKind.SELF_LIST -> CodeBlock.of(
+                "%N.map(operand)",
+                name,
+            )
+            is FieldKind.REF_SINGLE -> CodeBlock.of(
+                "%N(%N)",
+                kind.reference.lambdaName,
+                name,
+            )
+            is FieldKind.REF_LIST -> CodeBlock.of(
+                "%N.map(%N)",
+                name,
+                kind.reference.lambdaName,
+            )
         }
     }
 
@@ -250,28 +359,48 @@ class SolidProcessor(
         val builder = FunSpec.builder(name).returns(domainType)
         if (variant.classKind == ClassKind.OBJECT) {
             return builder
-                .addCode("return %T.%L", domainType, variant.simpleName.asString())
+                .addCode(
+                    "return %T.%L",
+                    domainType,
+                    variant.simpleName.asString(),
+                )
                 .build()
         }
         val arguments = orderedParameters(variant).map { parameter ->
             val parameterName = parameter.name!!.asString()
-            val type = domainType(domain, parameter.type.resolve(), domainType)
+            val type = domainType(
+                domain = domain,
+                type = parameter.type.resolve(),
+                domainType = domainType,
+            )
             builder.addParameter(
-                ParameterSpec.builder(parameterName, type)
+                ParameterSpec.builder(
+                    parameterName,
+                    type,
+                )
                     .apply {
                         if (parameter.hasDefault) {
-                            defaultValue("%L", defaultSource(parameter.type.resolve()))
+                            defaultValue(
+                                "%L",
+                                defaultSource(parameter.type.resolve()),
+                            )
                         }
                     }
                     .build(),
             )
-            CodeBlock.of("%N", parameterName)
+            CodeBlock.of(
+                "%N",
+                parameterName,
+            )
         }
         builder.addCode(
             "return %T.%L(%L)",
             domainType,
             variant.simpleName.asString(),
-            CodeBlock.of(arguments.joinToString(", ") { "%L" }, *arguments.toTypedArray()),
+            CodeBlock.of(
+                arguments.joinToString(separator = ", ") { "%L" },
+                *arguments.toTypedArray(),
+            ),
         )
         return builder.build()
     }
@@ -279,29 +408,51 @@ class SolidProcessor(
     // --- helpers -------------------------------------------------------
 
     /** Domain field type: self/ref indices widen, parameterized types widen their arguments. */
-    private fun domainType(domain: Domain, type: KSType, domainType: ClassName): TypeName {
-        if (isType(type, domain.selfIndexFqn)) {
+    private fun domainType(
+        domain: Domain,
+        type: KSType,
+        domainType: ClassName,
+    ): TypeName {
+        if (isType(
+            type = type,
+            fqn = domain.selfIndexFqn,
+        )) {
             return domainType.nullableIf(type)
         }
         domain.references.forEach { reference ->
-            if (isType(type, reference.indexFqn)) {
-                return ClassName(DOMAIN_PACKAGE, reference.domainName).nullableIf(type)
+            if (isType(
+                type = type,
+                fqn = reference.indexFqn,
+            )) {
+                return ClassName(
+                    DOMAIN_PACKAGE,
+                    reference.domainName,
+                ).nullableIf(type)
             }
         }
         if (type.arguments.isNotEmpty()) {
             val base = (type.declaration as KSClassDeclaration).toClassName()
             val widened = type.arguments.map { argument ->
-                domainType(domain, argument.type!!.resolve(), domainType)
+                domainType(
+                    domain = domain,
+                    type = argument.type!!.resolve(),
+                    domainType = domainType,
+                )
             }
             return base.parameterizedBy(widened).nullableIf(type)
         }
         return type.toTypeName()
     }
 
-    private fun TypeName.nullableIf(type: KSType): TypeName =
+    private fun TypeName.nullableIf(
+        type: KSType,
+    ): TypeName =
         if (type.isMarkedNullable) copy(nullable = true) else this
 
-    private fun isType(type: KSType, fqn: String): Boolean =
+    private fun isType(
+        type: KSType,
+        fqn: String,
+    ): Boolean =
         type.declaration.qualifiedName?.asString() == fqn
 
     /** What role a field plays: self operand, external reference, or neither. */
@@ -309,17 +460,36 @@ class SolidProcessor(
         object NONE : FieldKind
         object SELF_SINGLE : FieldKind
         object SELF_LIST : FieldKind
-        data class REF_SINGLE(val reference: Reference) : FieldKind
-        data class REF_LIST(val reference: Reference) : FieldKind
+        data class REF_SINGLE(
+            val reference: Reference,
+        ) : FieldKind
+        data class REF_LIST(
+            val reference: Reference,
+        ) : FieldKind
     }
 
-    private fun fieldKind(domain: Domain, type: KSType): FieldKind {
-        if (isType(type, domain.selfIndexFqn)) return FieldKind.SELF_SINGLE
+    private fun fieldKind(
+        domain: Domain,
+        type: KSType,
+    ): FieldKind {
+        if (isType(
+            type = type,
+            fqn = domain.selfIndexFqn,
+        )) return FieldKind.SELF_SINGLE
         val argument = type.arguments.singleOrNull()?.type?.resolve()
-        if (argument != null && isType(argument, domain.selfIndexFqn)) return FieldKind.SELF_LIST
+        if (argument != null && isType(
+            type = argument,
+            fqn = domain.selfIndexFqn,
+        )) return FieldKind.SELF_LIST
         domain.references.forEach { reference ->
-            if (isType(type, reference.indexFqn)) return FieldKind.REF_SINGLE(reference)
-            if (argument != null && isType(argument, reference.indexFqn)) {
+            if (isType(
+                type = type,
+                fqn = reference.indexFqn,
+            )) return FieldKind.REF_SINGLE(reference)
+            if (argument != null && isType(
+                type = argument,
+                fqn = reference.indexFqn,
+            )) {
                 return FieldKind.REF_LIST(reference)
             }
         }
@@ -327,7 +497,9 @@ class SolidProcessor(
     }
 
     /** The variant's constructor parameters, required ones first (defaulted ones last). */
-    private fun orderedParameters(variant: KSClassDeclaration): List<KSValueParameter> =
+    private fun orderedParameters(
+        variant: KSClassDeclaration,
+    ): List<KSValueParameter> =
         variant.primaryConstructor!!.parameters.sortedBy { it.hasDefault }
 
     private fun argumentList(
@@ -336,8 +508,11 @@ class SolidProcessor(
     ): CodeBlock {
         val parameters = variant.primaryConstructor!!.parameters
         if (parameters.isEmpty()) return CodeBlock.of("")
-        val format = parameters.joinToString(", ") { "${it.name!!.asString()} = %L" }
-        return CodeBlock.of(format, *parameters.map(render).toTypedArray())
+        val format = parameters.joinToString(separator = ", ") { "${it.name!!.asString()} = %L" }
+        return CodeBlock.of(
+            format,
+            *parameters.map(render).toTypedArray(),
+        )
     }
 
     /**
@@ -348,7 +523,9 @@ class SolidProcessor(
      * An enum's default is taken to be its first constant: the IR marks the default variant with
      * `#[default]`, and enum constants are emitted in declaration order.
      */
-    private fun defaultSource(type: KSType): String {
+    private fun defaultSource(
+        type: KSType,
+    ): String {
         if (type.isMarkedNullable) {
             return "null"
         }
@@ -363,7 +540,7 @@ class SolidProcessor(
                 .firstOrNull()
                 ?.simpleName
                 ?.asString()
-            check(first != null) { "SolidProcessor: enum $name has no constants" }
+            check(value = first != null) { "SolidProcessor: enum $name has no constants" }
             return "$name.$first"
         }
         error("SolidProcessor: unsupported non-null default for $name")

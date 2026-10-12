@@ -16,20 +16,69 @@ class AxisValuesExtTest {
 
     @Test
     fun arithmetic_combines_components() {
-        val a = Axis3Values(x = 1.0, y = 2.0, z = 3.0)
-        val b = Axis3Values(x = 4.0, y = 5.0, z = 6.0)
-        assertEquals(Axis3Values(x = 5.0, y = 7.0, z = 9.0), a + b)
-        assertEquals(Axis3Values(x = -3.0, y = -3.0, z = -3.0), a - b)
-        assertEquals(Axis3Values(x = 4.0, y = 10.0, z = 18.0), a * b)
-        assertEquals(Axis3Values(x = 2.0, y = 4.0, z = 6.0), a * 2.0)
+        val a = Axis3Values(
+            x = 1.0,
+            y = 2.0,
+            z = 3.0,
+        )
+        val b = Axis3Values(
+            x = 4.0,
+            y = 5.0,
+            z = 6.0,
+        )
+        assertEquals(
+            expected = Axis3Values(
+                x = 5.0,
+                y = 7.0,
+                z = 9.0,
+            ),
+            actual = a + b,
+        )
+        assertEquals(
+            expected = Axis3Values(
+                x = -3.0,
+                y = -3.0,
+                z = -3.0,
+            ),
+            actual = a - b,
+        )
+        assertEquals(
+            expected = Axis3Values(
+                x = 4.0,
+                y = 10.0,
+                z = 18.0,
+            ),
+            actual = a * b,
+        )
+        assertEquals(
+            expected = Axis3Values(
+                x = 2.0,
+                y = 4.0,
+                z = 6.0,
+            ),
+            actual = a * 2.0,
+        )
     }
 
     @Test
     fun model_round_trip_preserves_the_value() {
-        val v3 = Axis3Values(x = 1.0, y = 2.0, z = 3.0)
-        assertEquals(v3, v3.toVec3().toAxis3Values())
+        val v3 = Axis3Values(
+            x = 1.0,
+            y = 2.0,
+            z = 3.0,
+        )
+        assertEquals(
+            expected = v3,
+            actual = v3.toVec3().toAxis3Values(),
+        )
 
-        val v2 = Axis2Values(x = 4.0, y = 5.0)
-        assertEquals(v2, v2.toVec2().toAxis2Values())
+        val v2 = Axis2Values(
+            x = 4.0,
+            y = 5.0,
+        )
+        assertEquals(
+            expected = v2,
+            actual = v2.toVec2().toAxis2Values(),
+        )
     }
 }

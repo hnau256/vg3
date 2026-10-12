@@ -26,11 +26,7 @@ data class PrintPart(
  */
 fun List<PrintPart>.stepPreviewAndStlExport(
     step: Format.Step = Format.Step(filename = "out/preview.step"),
-    stl: Format.Stl = Format.Stl(
-        output = Output.Multi(
-            path = "out/stl",
-        )
-    ),
+    stl: Format.Stl = Format.Stl(output = Output.Multi(path = "out/stl")),
 ) {
     map(PrintPart::part)
         .model()

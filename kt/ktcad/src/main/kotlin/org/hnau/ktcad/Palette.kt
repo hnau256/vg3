@@ -24,10 +24,19 @@ internal val PALETTE: List<Color> = listOf(
 ).map(::colorFromRgbHex)
 
 /** The palette color for [name] (`floorMod` keeps negative hashes inside the palette). */
-internal fun paletteColor(name: String): Color =
-    PALETTE[Math.floorMod(name.hashCode(), PALETTE.size)]
+internal fun paletteColor(
+    name: String,
+): Color =
+    PALETTE[
+        Math.floorMod(
+            name.hashCode(),
+            PALETTE.size,
+        )
+    ]
 
-private fun colorFromRgbHex(hex: Int): Color = Color(
+private fun colorFromRgbHex(
+    hex: Int,
+): Color = Color(
     r = ((hex shr 16) and 0xFF) / 255.0,
     g = ((hex shr 8) and 0xFF) / 255.0,
     b = (hex and 0xFF) / 255.0,

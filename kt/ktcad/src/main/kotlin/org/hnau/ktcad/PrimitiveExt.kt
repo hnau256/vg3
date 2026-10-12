@@ -27,7 +27,7 @@ fun box(
         height = size[Axis3.Z],
     )
     if (Axis3.entries.none { centered[it] }) return box
-    return box.translate(size.combineWith(centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
+    return box.translate(size.combineWith(other = centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
 }
 
 /**
@@ -40,6 +40,10 @@ fun cylinder(
     angle: Double? = null,
     centerZ: Boolean = false,
 ): Solid {
-    val cylinder = Solid.Cylinder(radius = radius, height = height, angle = angle)
+    val cylinder = Solid.Cylinder(
+        radius = radius,
+        height = height,
+        angle = angle,
+    )
     return if (centerZ) cylinder.translate(Axis3.Z.direction * (-height / 2)) else cylinder
 }
