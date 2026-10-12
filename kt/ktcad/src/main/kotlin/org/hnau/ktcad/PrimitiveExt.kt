@@ -19,7 +19,7 @@ import org.hnau.ktcad.axis.times
  */
 fun box(
     size: Axis3Values<Double>,
-    centered: Axis3Values<Boolean> = Axis3Values(x = false, y = false, z = false),
+    centered: Axis3Values<Boolean> = Axis3Values.create { false },
 ): Solid {
     val box = Solid.Box(
         width = size[Axis3.X],
@@ -27,7 +27,7 @@ fun box(
         height = size[Axis3.Z],
     )
     if (Axis3.entries.none { centered[it] }) return box
-    return box.translate(Axis3Values.create { axis -> if (centered[axis]) -size[axis] / 2 else 0.0 })
+    return box.translate(size.combineWith(centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
 }
 
 /**

@@ -135,7 +135,7 @@ listOf(
   `bezierTo(first, second, vararg)`, `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные
   `Rel` — фабрика сама ведёт текущую точку; касательные `spline` и полюса `bezier` позволяют явно
   стыковать с `helix` по касательной). 2D-контур: `contour(start, segment…)`; готовые:
-  `rect(width, height, centerX?, centerY?)`
+  `rect(size: Axis2Values<Double>, centered: Axis2Values<Boolean>)`
   (sugar = `polygon` из 4 точек), `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`);
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.

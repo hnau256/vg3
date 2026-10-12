@@ -20,6 +20,12 @@ internal operator fun Vec2.times(factor: Double): Vec2 =
 
 internal operator fun Double.times(vector: Vec2): Vec2 = vector * this
 
+internal operator fun Vec2.plus(other: Vec2): Vec2 = combineWith(other) { a, b -> a + b }
+
+internal operator fun Vec2.minus(other: Vec2): Vec2 = combineWith(other) { a, b -> a - b }
+
+internal operator fun Vec2.times(other: Vec2): Vec2 = combineWith(other) { a, b -> a * b }
+
 internal inline fun Vec2.map(transform: (axis: Axis2, value: Double) -> Double): Vec2 = Vec2(
     x = transform(Axis2.X, x),
     y = transform(Axis2.Y, y),
@@ -63,6 +69,12 @@ internal operator fun Vec3.times(factor: Double): Vec3 =
     map { value -> if (value == 0.0) 0.0 else value * factor }
 
 internal operator fun Double.times(vector: Vec3): Vec3 = vector * this
+
+internal operator fun Vec3.plus(other: Vec3): Vec3 = combineWith(other) { a, b -> a + b }
+
+internal operator fun Vec3.minus(other: Vec3): Vec3 = combineWith(other) { a, b -> a - b }
+
+internal operator fun Vec3.times(other: Vec3): Vec3 = combineWith(other) { a, b -> a * b }
 
 internal inline fun Vec3.map(transform: (axis: Axis3, value: Double) -> Double): Vec3 = Vec3(
     x = transform(Axis3.X, x),

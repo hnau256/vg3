@@ -1,6 +1,7 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.axis.Axis2Values
 import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.ir.Vec2
 import kotlin.test.Test
@@ -38,12 +39,15 @@ class PrimitiveExtTest {
                 Vec2(0.0, 3.0),
             ),
         )
-        assertEquals(expected, rect(2.0, 3.0))
+        assertEquals(expected, rect(Axis2Values(x = 2.0, y = 3.0)))
     }
 
     @Test
     fun centering_rect_adds_a_transform() {
-        assertTrue(rect(2.0, 3.0, centerX = true) is Region.Transform)
+        assertTrue(
+            rect(Axis2Values(x = 2.0, y = 3.0), centered = Axis2Values(x = true, y = false))
+                is Region.Transform,
+        )
     }
 
     @Test

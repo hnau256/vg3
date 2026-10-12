@@ -33,7 +33,7 @@ val Region.bbox: Axis2Values<ClosedRange<Double>>
             val operands = if (kind == BooleanKind.CUT) arguments.toList() else arguments.toList() + tools
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
-        ifCircle = { radius -> Axis2Values(x = -radius..radius, y = -radius..radius) },
+        ifCircle = { radius -> Axis2Values.create { -radius..radius } },
         ifContour = { edges, start ->
             var box = pointsBox(listOf(start))
             var current = start
@@ -58,10 +58,7 @@ private fun Curve2.controlPoints(from: Vec2): List<Vec2> = when (this) {
 }
 
 private fun pointsBox(points: Iterable<Vec2>): Axis2Values<ClosedRange<Double>> =
-    Axis2Values(
-        x = points.minOf { it.x }..points.maxOf { it.x },
-        y = points.minOf { it.y }..points.maxOf { it.y },
-    )
+    Axis2Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
 private fun Axis2Values<ClosedRange<Double>>.cover(
     other: Axis2Values<ClosedRange<Double>>,
@@ -72,21 +69,20 @@ private fun Axis2Values<ClosedRange<Double>>.grow(distance: Double): Axis2Values
 
 private fun Axis2Values<ClosedRange<Double>>.transform(
     op: TransformOp2,
-): Axis2Values<ClosedRange<Double>> {
-    val corners = listOf(
-        Vec2(x = x.start, y = y.start),
-        Vec2(x = x.endInclusive, y = y.start),
-        Vec2(x = x.endInclusive, y = y.endInclusive),
-        Vec2(x = x.start, y = y.endInclusive),
-    )
-    return pointsBox(corners.map(op::transformPoint))
-}
+): Axis2Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
+
+private fun Axis2Values<ClosedRange<Double>>.corners(): List<Vec2> =
+    Axis2.entries.fold(listOf(vec2 { 0.0 })) { corners, axis ->
+        corners.flatMap { corner ->
+            listOf(this[axis].start, this[axis].endInclusive)
+                .map { value -> corner.copy(axis) { value } }
+        }
+    }
 
 private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
-    is TransformOp2.Translate ->
-        point.combineWith(value) { a, b -> a + b }
+    is TransformOp2.Translate -> point + value
     is TransformOp2.Rotate -> {
-        val v = point.combineWith(center) { p, c -> p - c }
+        val v = point - center
         val cosine = cos(angle)
         val sine = sin(angle)
         vec2 { axis ->
@@ -94,15 +90,13 @@ private fun TransformOp2.transformPoint(point: Vec2): Vec2 = when (this) {
                 Axis2.X -> v[Axis2.X] * cosine - v[Axis2.Y] * sine
                 Axis2.Y -> v[Axis2.X] * sine + v[Axis2.Y] * cosine
             }
-        }.combineWith(center) { r, c -> r + c }
+        } + center
     }
     is TransformOp2.Mirror -> {
         val n = normalized(normal)
-        val projection = point.combineWith(center) { p, c -> p - c }.dot(n)
-        point.combineWith(n) { p, ni -> p - 2.0 * projection * ni }
+        point - n * (2.0 * (point - center).dot(n))
     }
-    is TransformOp2.Scale ->
-        point.combineWith(value) { a, b -> a * b }
+    is TransformOp2.Scale -> point * value
 }
 
 private fun Vec2.dot(other: Vec2): Double = Axis2.entries.sumOf { get(it) * other[it] }

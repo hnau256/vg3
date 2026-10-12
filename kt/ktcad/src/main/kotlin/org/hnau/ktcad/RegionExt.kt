@@ -2,13 +2,15 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
+import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.direction
+import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.axis.toVec2
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp2
-import org.hnau.ktcad.ir.Vec2
 
 /**
  * DSL sugar over [Region] (the planar sketch domain): primitives, a free contour, booleans and
@@ -21,26 +23,21 @@ import org.hnau.ktcad.ir.Vec2
 // no `rect` node (OpenCASCADE has no rectangle primitive), so `rect` is pure DSL sugar: a `Polygon`.
 
 /**
- * An axis-aligned rectangle with its corner at the origin, extending into the `+` quadrant. A
- * `center*` flag shifts it by half its size along that axis so it is centred there instead.
+ * An axis-aligned rectangle with its corner at the origin, extending along `+X`/`+Y` by [size]. A
+ * `centered` flag shifts it by half its size along that axis so it is centred there instead.
  */
 fun rect(
-    width: Double,
-    height: Double,
-    centerX: Boolean = false,
-    centerY: Boolean = false,
+    size: Axis2Values<Double>,
+    centered: Axis2Values<Boolean> = Axis2Values.create { false },
 ): Region {
-    val rectangle = Region.Polygon(
-        points = nonEmptyListOf(
-            Vec2(x = 0.0, y = 0.0),
-            Vec2(x = width, y = 0.0),
-            Vec2(x = width, y = height),
-            Vec2(x = 0.0, y = height),
-        ),
+    val rectangle = polygon(
+        Axis2Values.create { 0.0 },
+        size * Axis2.X.direction,
+        size,
+        size * Axis2.Y.direction,
     )
-    val dx = if (centerX) -width / 2 else 0.0
-    val dy = if (centerY) -height / 2 else 0.0
-    return if (dx == 0.0 && dy == 0.0) rectangle else rectangle.translate(Axis2Values(x = dx, y = dy))
+    if (Axis2.entries.none { centered[it] }) return rectangle
+    return rectangle.translate(size.combineWith(centered) { value, isCentered -> if (isCentered) -value / 2 else 0.0 })
 }
 
 /** A full circle of [radius] centred at the origin. */

@@ -6,6 +6,8 @@ import org.hnau.ktcad.bbox.combineWith
 import org.hnau.ktcad.bbox.copy
 import org.hnau.ktcad.bbox.get
 import org.hnau.ktcad.bbox.map
+import org.hnau.ktcad.bbox.minus
+import org.hnau.ktcad.bbox.plus
 import org.hnau.ktcad.bbox.times
 import org.hnau.ktcad.bbox.vec2
 import org.hnau.ktcad.bbox.vec3
@@ -82,6 +84,15 @@ class VecExtTest {
         assertEquals(Vec3(x = 2.0, y = 4.0, z = 6.0), 2.0 * Vec3(x = 1.0, y = 2.0, z = 3.0))
         assertEquals(Vec2(x = 2.0, y = 4.0), Vec2(x = 1.0, y = 2.0) * 2.0)
         assertEquals(Vec3(x = -1.0, y = 0.0, z = 0.0), Vec3(x = 1.0, y = 0.0, z = 0.0) * -1.0)
+    }
+
+    @Test
+    fun plus_minus_and_times_combine_components() {
+        val a = Vec3(x = 1.0, y = 2.0, z = 3.0)
+        val b = Vec3(x = 4.0, y = 5.0, z = 6.0)
+        assertEquals(Vec3(x = 5.0, y = 7.0, z = 9.0), a + b)
+        assertEquals(Vec3(x = -3.0, y = -3.0, z = -3.0), a - b)
+        assertEquals(Vec3(x = 4.0, y = 10.0, z = 18.0), a * b)
     }
 
     @Test

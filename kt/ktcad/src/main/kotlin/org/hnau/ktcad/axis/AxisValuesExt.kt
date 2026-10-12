@@ -27,3 +27,21 @@ operator fun Axis3Values<Double>.times(factor: Double): Axis3Values<Double> =
 operator fun Double.times(vector: Axis2Values<Double>): Axis2Values<Double> = vector * this
 
 operator fun Double.times(vector: Axis3Values<Double>): Axis3Values<Double> = vector * this
+
+operator fun Axis2Values<Double>.plus(other: Axis2Values<Double>): Axis2Values<Double> =
+    combineWith(other) { a, b -> a + b }
+
+operator fun Axis3Values<Double>.plus(other: Axis3Values<Double>): Axis3Values<Double> =
+    combineWith(other) { a, b -> a + b }
+
+operator fun Axis2Values<Double>.minus(other: Axis2Values<Double>): Axis2Values<Double> =
+    combineWith(other) { a, b -> a - b }
+
+operator fun Axis3Values<Double>.minus(other: Axis3Values<Double>): Axis3Values<Double> =
+    combineWith(other) { a, b -> a - b }
+
+operator fun Axis2Values<Double>.times(other: Axis2Values<Double>): Axis2Values<Double> =
+    combineWith(other) { a, b -> a * b }
+
+operator fun Axis3Values<Double>.times(other: Axis3Values<Double>): Axis3Values<Double> =
+    combineWith(other) { a, b -> a * b }

@@ -2,6 +2,7 @@ package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.Region
 import org.hnau.ktcad.Solid
+import org.hnau.ktcad.axis.Axis2
 import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.fold
@@ -83,11 +84,7 @@ private fun box(
 ): Axis3Values<ClosedRange<Double>> = Axis3Values(x = x, y = y, z = z)
 
 private fun pointsBox(points: Iterable<Vec3>): Axis3Values<ClosedRange<Double>> =
-    Axis3Values(
-        x = points.minOf { it.x }..points.maxOf { it.x },
-        y = points.minOf { it.y }..points.maxOf { it.y },
-        z = points.minOf { it.z }..points.maxOf { it.z },
-    )
+    Axis3Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
 private fun Axis3Values<ClosedRange<Double>>.cover(
     other: Axis3Values<ClosedRange<Double>>,
@@ -99,12 +96,7 @@ private fun Axis3Values<ClosedRange<Double>>.grow(distance: Double): Axis3Values
 /** The radius of the profile about its own origin — how far a swept section can reach from the path. */
 private fun profileRadius(profile: Region): Double {
     val profileBox = profile.bbox
-    return maxOf(
-        abs(profileBox.x.start),
-        abs(profileBox.x.endInclusive),
-        abs(profileBox.y.start),
-        abs(profileBox.y.endInclusive),
-    )
+    return Axis2.entries.maxOf { axis -> maxOf(abs(profileBox[axis].start), abs(profileBox[axis].endInclusive)) }
 }
 
 // --- Paths (3D) -------------------------------------------------------------
@@ -161,26 +153,18 @@ private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> =
     }
 
 private fun TransformOp.transformPoint(point: Vec3): Vec3 = when (this) {
-    is TransformOp.Translate ->
-        point.combineWith(value) { a, b -> a + b }
-    is TransformOp.Scale ->
-        point.combineWith(value) { a, b -> a * b }
+    is TransformOp.Translate -> point + value
+    is TransformOp.Scale -> point * value
     is TransformOp.Mirror -> {
         val n = normalized(normal)
-        val projection = point.combineWith(center) { p, c -> p - c }.dot(n)
-        point.combineWith(n) { p, ni -> p - 2.0 * projection * ni }
+        point - n * (2.0 * (point - center).dot(n))
     }
     is TransformOp.Rotate -> {
         val a = normalized(axis)
-        val v = point.combineWith(center) { p, c -> p - c }
+        val v = point - center
         val cosine = cos(angle)
         val sine = sin(angle)
-        val dot = v.dot(a)
-        val cross = a.cross(v)
-        v
-            .combineWith(cross) { vi, ci -> vi * cosine + ci * sine }
-            .combineWith(a) { base, ai -> base + ai * dot * (1.0 - cosine) }
-            .combineWith(center) { r, c -> r + c }
+        v * cosine + a.cross(v) * sine + a * (v.dot(a) * (1.0 - cosine)) + center
     }
     is TransformOp.Matrix -> vec3 { axis ->
         val row = when (axis) {

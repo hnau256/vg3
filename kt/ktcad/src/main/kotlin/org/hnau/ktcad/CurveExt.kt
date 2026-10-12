@@ -4,6 +4,7 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import org.hnau.ktcad.axis.Axis2Values
 import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.plus
 import org.hnau.ktcad.axis.toAxis2Values
 import org.hnau.ktcad.axis.toAxis3Values
 import org.hnau.ktcad.axis.toVec2
@@ -33,7 +34,7 @@ fun lineTo(to: Axis2Values<Double>): ContourSegment = { Curve2.Line(to = to.toVe
 
 /** A `line` offset from the current point by `delta`. */
 fun lineRel(delta: Axis2Values<Double>): ContourSegment = { current ->
-    Curve2.Line(to = current().combineWith(delta) { a, b -> a + b }.toVec2())
+    Curve2.Line(to = (current() + delta).toVec2())
 }
 
 fun arcTo(via: Axis2Values<Double>, to: Axis2Values<Double>): ContourSegment =
@@ -42,10 +43,7 @@ fun arcTo(via: Axis2Values<Double>, to: Axis2Values<Double>): ContourSegment =
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(via: Axis2Values<Double>, to: Axis2Values<Double>): ContourSegment = { current ->
     val point = current()
-    Curve2.Arc(
-        via = point.combineWith(via) { a, b -> a + b }.toVec2(),
-        to = point.combineWith(to) { a, b -> a + b }.toVec2(),
-    )
+    Curve2.Arc(via = (point + via).toVec2(), to = (point + to).toVec2())
 }
 
 fun splineTo(
@@ -75,7 +73,7 @@ fun lineTo(to: Axis3Values<Double>): PathSegment = { Curve3.Line(to = to.toVec3(
 
 /** A `line` offset from the current point by `delta`. */
 fun lineRel(delta: Axis3Values<Double>): PathSegment = { current ->
-    Curve3.Line(to = current().combineWith(delta) { a, b -> a + b }.toVec3())
+    Curve3.Line(to = (current() + delta).toVec3())
 }
 
 fun arcTo(via: Axis3Values<Double>, to: Axis3Values<Double>): PathSegment =
@@ -84,10 +82,7 @@ fun arcTo(via: Axis3Values<Double>, to: Axis3Values<Double>): PathSegment =
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(via: Axis3Values<Double>, to: Axis3Values<Double>): PathSegment = { current ->
     val point = current()
-    Curve3.Arc(
-        via = point.combineWith(via) { a, b -> a + b }.toVec3(),
-        to = point.combineWith(to) { a, b -> a + b }.toVec3(),
-    )
+    Curve3.Arc(via = (point + via).toVec3(), to = (point + to).toVec3())
 }
 
 fun splineTo(

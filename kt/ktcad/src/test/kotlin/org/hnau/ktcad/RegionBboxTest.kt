@@ -46,10 +46,10 @@ class RegionBboxTest {
 
     @Test
     fun transforms_apply_to_the_box_corners() {
-        assertBox(box(3.0, 4.0, 4.0, 5.0), rect(1.0, 1.0).translate(Axis2Values(x = 3.0, y = 4.0)).bbox)
-        assertBox(box(0.0, 2.0, -1.0, 0.0), rect(1.0, 1.0).scale(Axis2Values(x = 2.0, y = -1.0)).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).rotate(kotlin.math.PI / 2).bbox)
-        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(1.0, 1.0).mirror(Axis2.X.direction).bbox)
+        assertBox(box(3.0, 4.0, 4.0, 5.0), rect(Axis2Values(x = 1.0, y = 1.0)).translate(Axis2Values(x = 3.0, y = 4.0)).bbox)
+        assertBox(box(0.0, 2.0, -1.0, 0.0), rect(Axis2Values(x = 1.0, y = 1.0)).scale(Axis2Values(x = 2.0, y = -1.0)).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(Axis2Values(x = 1.0, y = 1.0)).rotate(kotlin.math.PI / 2).bbox)
+        assertBox(box(-1.0, 0.0, 0.0, 1.0), rect(Axis2Values(x = 1.0, y = 1.0)).mirror(Axis2.X.direction).bbox)
     }
 
     @Test

@@ -58,7 +58,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-fillet2d.stl")
         output.delete()
 
-        listOf(Part(name = "rounded", solid = rect(10.0, 10.0).fillet2dAll(2.0).extrude(5.0)))
+        listOf(Part(name = "rounded", solid = rect(Axis2Values(x = 10.0, y = 10.0)).fillet2dAll(2.0).extrude(5.0)))
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
