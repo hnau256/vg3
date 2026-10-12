@@ -12,12 +12,17 @@ import org.hnau.ktcad.bbox.interpolate
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.TransformOp2
 
+fun Region.transform(
+    transform: TransformOp2,
+): Region.Transform = Region.Transform(
+    target = this,
+    op = transform,
+)
 
 fun Region.translate(
     value: A2Values<Double>,
-): Region = Region.Transform(
-    target = this,
-    op = TransformOp2.Translate(value = value.toVec2()),
+): Region = transform(
+    transform = TransformOp2.Translate(value = value.toVec2()),
 )
 
 fun Region.put(
@@ -35,9 +40,8 @@ fun Region.put(
 fun Region.rotate(
     angle: Double,
     center: A2Values<Double> = A2Values.zero,
-): Region = Region.Transform(
-    target = this,
-    op = TransformOp2.Rotate(
+): Region = transform(
+    transform = TransformOp2.Rotate(
         center = center.toVec2(),
         angle = angle,
     ),
@@ -46,9 +50,8 @@ fun Region.rotate(
 fun Region.mirror(
     normal: A2Values<Double>,
     center: A2Values<Double> = A2Values.zero,
-): Region = Region.Transform(
-    target = this,
-    op = TransformOp2.Mirror(
+): Region = transform(
+    transform = TransformOp2.Mirror(
         center = center.toVec2(),
         normal = normal.toVec2(),
     ),
@@ -56,13 +59,16 @@ fun Region.mirror(
 
 fun Region.scale(
     factor: Double,
-): Region = scale(A2Values.create { factor })
+): Region = scale(
+    value = A2Values.create { factor },
+)
 
 fun Region.scale(
     value: A2Values<Double>,
-): Region = Region.Transform(
-    target = this,
-    op = TransformOp2.Scale(value = value.toVec2()),
+): Region = transform(
+    transform = TransformOp2.Scale(
+        value = value.toVec2(),
+    ),
 )
 
 
