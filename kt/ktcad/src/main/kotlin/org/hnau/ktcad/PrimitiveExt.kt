@@ -1,12 +1,9 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.bbox.Axis3
-import org.hnau.ktcad.bbox.Axis3Values
-import org.hnau.ktcad.bbox.direction
-import org.hnau.ktcad.bbox.get
-import org.hnau.ktcad.bbox.times
-import org.hnau.ktcad.bbox.vec3
-import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.direction
+import org.hnau.ktcad.axis.times
 
 /**
  * Hand-written factories for primitives whose placement can be centred on demand.
@@ -21,7 +18,7 @@ import org.hnau.ktcad.ir.Vec3
  * its size along every axis flagged there, so it is centred on those axes instead.
  */
 fun box(
-    size: Vec3,
+    size: Axis3Values<Double>,
     centered: Axis3Values<Boolean> = Axis3Values(x = false, y = false, z = false),
 ): Solid {
     val box = Solid.Box(
@@ -30,7 +27,7 @@ fun box(
         height = size[Axis3.Z],
     )
     if (Axis3.entries.none { centered[it] }) return box
-    return box.translate(vec3 { axis -> if (centered[axis]) -size[axis] / 2 else 0.0 })
+    return box.translate(Axis3Values.create { axis -> if (centered[axis]) -size[axis] / 2 else 0.0 })
 }
 
 /**

@@ -2,7 +2,12 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.bbox.combineWith
+import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.toAxis2Values
+import org.hnau.ktcad.axis.toAxis3Values
+import org.hnau.ktcad.axis.toVec2
+import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Path
@@ -19,82 +24,92 @@ import org.hnau.ktcad.ir.Vec3
  * absolute segment follow a `helix` (whose end the DSL cannot compute).
  */
 
-typealias ContourSegment = (() -> Vec2) -> Curve2
-typealias PathSegment = (() -> Vec3) -> Curve3
+typealias ContourSegment = (() -> Axis2Values<Double>) -> Curve2
+typealias PathSegment = (() -> Axis3Values<Double>) -> Curve3
 
 // --- 2D segments ------------------------------------------------------------
 
-fun lineTo(to: Vec2): ContourSegment = { Curve2.Line(to = to) }
+fun lineTo(to: Axis2Values<Double>): ContourSegment = { Curve2.Line(to = to.toVec2()) }
 
 /** A `line` offset from the current point by `delta`. */
-fun lineRel(delta: Vec2): ContourSegment = { current ->
-    Curve2.Line(to = current().combineWith(delta) { a, b -> a + b })
+fun lineRel(delta: Axis2Values<Double>): ContourSegment = { current ->
+    Curve2.Line(to = current().combineWith(delta) { a, b -> a + b }.toVec2())
 }
 
-fun arcTo(via: Vec2, to: Vec2): ContourSegment = { Curve2.Arc(via = via, to = to) }
+fun arcTo(via: Axis2Values<Double>, to: Axis2Values<Double>): ContourSegment =
+    { Curve2.Arc(via = via.toVec2(), to = to.toVec2()) }
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
-fun arcRel(via: Vec2, to: Vec2): ContourSegment = { current ->
+fun arcRel(via: Axis2Values<Double>, to: Axis2Values<Double>): ContourSegment = { current ->
     val point = current()
     Curve2.Arc(
-        via = point.combineWith(via) { a, b -> a + b },
-        to = point.combineWith(to) { a, b -> a + b },
+        via = point.combineWith(via) { a, b -> a + b }.toVec2(),
+        to = point.combineWith(to) { a, b -> a + b }.toVec2(),
     )
 }
 
 fun splineTo(
-    initial: Vec2,
-    vararg additional: Vec2,
-    tangentStart: Vec2? = null,
-    tangentEnd: Vec2? = null,
+    initial: Axis2Values<Double>,
+    vararg additional: Axis2Values<Double>,
+    tangentStart: Axis2Values<Double>? = null,
+    tangentEnd: Axis2Values<Double>? = null,
 ): ContourSegment = {
     Curve2.Spline(
-        points = nonEmptyListOf(initial, *additional),
-        tangent_start = tangentStart,
-        tangent_end = tangentEnd,
+        points = nonEmptyListOf(initial, *additional).map { it.toVec2() },
+        tangent_start = tangentStart?.toVec2(),
+        tangent_end = tangentEnd?.toVec2(),
     )
 }
 
 /** A 2D Bezier: [first], [second] and [additional] are the poles after the current point. */
-fun bezierTo(first: Vec2, second: Vec2, vararg additional: Vec2): ContourSegment =
-    { Curve2.Bezier(points = nonEmptyListOf(first, second, *additional)) }
+fun bezierTo(
+    first: Axis2Values<Double>,
+    second: Axis2Values<Double>,
+    vararg additional: Axis2Values<Double>,
+): ContourSegment =
+    { Curve2.Bezier(points = nonEmptyListOf(first, second, *additional).map { it.toVec2() }) }
 
 // --- 3D segments ------------------------------------------------------------
 
-fun lineTo(to: Vec3): PathSegment = { Curve3.Line(to = to) }
+fun lineTo(to: Axis3Values<Double>): PathSegment = { Curve3.Line(to = to.toVec3()) }
 
 /** A `line` offset from the current point by `delta`. */
-fun lineRel(delta: Vec3): PathSegment = { current ->
-    Curve3.Line(to = current().combineWith(delta) { a, b -> a + b })
+fun lineRel(delta: Axis3Values<Double>): PathSegment = { current ->
+    Curve3.Line(to = current().combineWith(delta) { a, b -> a + b }.toVec3())
 }
 
-fun arcTo(via: Vec3, to: Vec3): PathSegment = { Curve3.Arc(via = via, to = to) }
+fun arcTo(via: Axis3Values<Double>, to: Axis3Values<Double>): PathSegment =
+    { Curve3.Arc(via = via.toVec3(), to = to.toVec3()) }
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
-fun arcRel(via: Vec3, to: Vec3): PathSegment = { current ->
+fun arcRel(via: Axis3Values<Double>, to: Axis3Values<Double>): PathSegment = { current ->
     val point = current()
     Curve3.Arc(
-        via = point.combineWith(via) { a, b -> a + b },
-        to = point.combineWith(to) { a, b -> a + b },
+        via = point.combineWith(via) { a, b -> a + b }.toVec3(),
+        to = point.combineWith(to) { a, b -> a + b }.toVec3(),
     )
 }
 
 fun splineTo(
-    initial: Vec3,
-    vararg additional: Vec3,
-    tangentStart: Vec3? = null,
-    tangentEnd: Vec3? = null,
+    initial: Axis3Values<Double>,
+    vararg additional: Axis3Values<Double>,
+    tangentStart: Axis3Values<Double>? = null,
+    tangentEnd: Axis3Values<Double>? = null,
 ): PathSegment = {
     Curve3.Spline(
-        points = nonEmptyListOf(initial, *additional),
-        tangent_start = tangentStart,
-        tangent_end = tangentEnd,
+        points = nonEmptyListOf(initial, *additional).map { it.toVec3() },
+        tangent_start = tangentStart?.toVec3(),
+        tangent_end = tangentEnd?.toVec3(),
     )
 }
 
 /** A 3D Bezier: [first], [second] and [additional] are the poles after the current point. */
-fun bezierTo(first: Vec3, second: Vec3, vararg additional: Vec3): PathSegment =
-    { Curve3.Bezier(points = nonEmptyListOf(first, second, *additional)) }
+fun bezierTo(
+    first: Axis3Values<Double>,
+    second: Axis3Values<Double>,
+    vararg additional: Axis3Values<Double>,
+): PathSegment =
+    { Curve3.Bezier(points = nonEmptyListOf(first, second, *additional).map { it.toVec3() }) }
 
 /**
  * A helix around the Z axis through the origin, starting at the current point (its radius and phase
@@ -106,16 +121,22 @@ fun helix(pitch: Double, height: Double, rightHanded: Boolean = true): PathSegme
 // --- Contour factory --------------------------------------------------------
 
 /** A planar region from a start point and segments (relative segments see the current point). */
-fun contour(start: Vec2, segments: NonEmptyList<ContourSegment>): Region =
-    Region.Contour(start = start, edges = buildChain(start, segments, Curve2::end))
+fun contour(start: Axis2Values<Double>, segments: NonEmptyList<ContourSegment>): Region =
+    Region.Contour(
+        start = start.toVec2(),
+        edges = buildChain(start, segments) { it.end().toAxis2Values() },
+    )
 
-fun contour(start: Vec2, initial: ContourSegment, vararg additional: ContourSegment): Region =
+fun contour(start: Axis2Values<Double>, initial: ContourSegment, vararg additional: ContourSegment): Region =
     contour(start, nonEmptyListOf(initial, *additional))
 
-fun Path(start: Vec3, segments: NonEmptyList<PathSegment>): Path =
-    Path(start = start, edges = buildChain(start, segments, Curve3::end))
+fun Path(start: Axis3Values<Double>, segments: NonEmptyList<PathSegment>): Path =
+    Path(
+        start = start.toVec3(),
+        edges = buildChain(start, segments) { it.end().toAxis3Values() },
+    )
 
-fun Path(start: Vec3, initial: PathSegment, vararg additional: PathSegment): Path =
+fun Path(start: Axis3Values<Double>, initial: PathSegment, vararg additional: PathSegment): Path =
     Path(start, nonEmptyListOf(initial, *additional))
 
 /**
@@ -138,11 +159,11 @@ private fun <P, C> buildChain(
 // --- Ready-made 3D contours -------------------------------------------------
 
 /** An open 3D polyline through the given absolute points. */
-fun polyline(first: Vec3, second: Vec3, vararg tail: Vec3): Path =
+fun polyline(first: Axis3Values<Double>, second: Axis3Values<Double>, vararg tail: Axis3Values<Double>): Path =
     Path(first, lineTo(second), *tail.map { lineTo(it) }.toTypedArray())
 
 /** A closed 3D polygon through the given absolute points. */
-fun polygon(first: Vec3, second: Vec3, vararg tail: Vec3): Path =
+fun polygon(first: Axis3Values<Double>, second: Axis3Values<Double>, vararg tail: Axis3Values<Double>): Path =
     polyline(first, second, *tail).close()
 
 /** Closes a 3D contour with a `line` back to its start. */

@@ -3,14 +3,14 @@ package org.hnau.ktcad
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
-import org.hnau.ktcad.bbox.Axis3
+import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.bbox.interpolate
-import org.hnau.ktcad.bbox.vec3
+import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.FaceSelection
 import org.hnau.ktcad.ir.JoinKind
-import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.TransformOp
 
 /**
@@ -62,9 +62,9 @@ operator fun Solid.times(other: Solid): Solid = common(listOf(this, other))
 
 // --- Translation ------------------------------------------------------------
 
-/** Translate by a [Vec3] (e.g. `Axis3.Z.direction * 5.0`). */
-fun Solid.translate(value: Vec3): Solid =
-    transform(op = TransformOp.Translate(value = value), target = this)
+/** Translate by an axis value (e.g. `Axis3.Z.direction * 5.0`). */
+fun Solid.translate(value: Axis3Values<Double>): Solid =
+    transform(op = TransformOp.Translate(value = value.toVec3()), target = this)
 
 /*fun Solid.put(
     target: Solid,
@@ -81,30 +81,30 @@ fun Solid.translate(value: Vec3): Solid =
 // --- Scale ------------------------------------------------------------------
 
 /** Uniform scale by `factor`. */
-fun Solid.scale(factor: Double): Solid = scale(vec3 { factor })
+fun Solid.scale(factor: Double): Solid = scale(Axis3Values.create { factor })
 
-/** Non-uniform scale by a [Vec3] (e.g. `Axis3.X.direction * 2.0`). */
-fun Solid.scale(value: Vec3): Solid =
-    transform(op = TransformOp.Scale(value = value), target = this)
+/** Non-uniform scale by an axis value (e.g. `Axis3.X.direction * 2.0`). */
+fun Solid.scale(value: Axis3Values<Double>): Solid =
+    transform(op = TransformOp.Scale(value = value.toVec3()), target = this)
 
 // --- Rotation ---------------------------------------------------------------
 
 /** Rotate by `angle` (radians) about `axis`, around `center` (default: origin). */
 fun Solid.rotate(
-    axis: Vec3,
+    axis: Axis3Values<Double>,
     angle: Double,
-    center: Vec3 = ORIGIN,
+    center: Axis3Values<Double> = ORIGIN,
 ): Solid = transform(
-    op = TransformOp.Rotate(center = center, axis = axis, angle = angle),
+    op = TransformOp.Rotate(center = center.toVec3(), axis = axis.toVec3(), angle = angle),
     target = this,
 )
 
 // --- Mirror -----------------------------------------------------------------
 
 /** Mirror across the plane through `center` (default: origin) with the given `normal`. */
-fun Solid.mirror(normal: Vec3, center: Vec3 = ORIGIN): Solid =
+fun Solid.mirror(normal: Axis3Values<Double>, center: Axis3Values<Double> = ORIGIN): Solid =
     transform(
-        op = TransformOp.Mirror(center = center, normal = normal),
+        op = TransformOp.Mirror(center = center.toVec3(), normal = normal.toVec3()),
         target = this,
     )
 
@@ -135,4 +135,4 @@ fun Solid.thickSolid(offset: Double, expression: String, join: JoinKind): Solid 
     target = this,
 )
 
-private val ORIGIN = vec3 { 0.0 }
+private val ORIGIN = Axis3Values.create { 0.0 }

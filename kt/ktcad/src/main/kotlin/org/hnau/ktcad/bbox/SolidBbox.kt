@@ -2,6 +2,8 @@ package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.Region
 import org.hnau.ktcad.Solid
+import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.fold
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.Curve3

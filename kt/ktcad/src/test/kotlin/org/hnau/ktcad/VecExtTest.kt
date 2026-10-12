@@ -1,7 +1,7 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.bbox.Axis2
-import org.hnau.ktcad.bbox.Axis3
+import org.hnau.ktcad.axis.Axis2
+import org.hnau.ktcad.axis.Axis3
 import org.hnau.ktcad.bbox.combineWith
 import org.hnau.ktcad.bbox.copy
 import org.hnau.ktcad.bbox.get

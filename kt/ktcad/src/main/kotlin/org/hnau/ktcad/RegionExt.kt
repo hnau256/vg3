@@ -2,7 +2,8 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.bbox.vec2
+import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.toVec2
 import org.hnau.ktcad.ir.BooleanKind
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.RadiusSpec
@@ -39,14 +40,14 @@ fun rect(
     )
     val dx = if (centerX) -width / 2 else 0.0
     val dy = if (centerY) -height / 2 else 0.0
-    return if (dx == 0.0 && dy == 0.0) rectangle else rectangle.translate(Vec2(x = dx, y = dy))
+    return if (dx == 0.0 && dy == 0.0) rectangle else rectangle.translate(Axis2Values(x = dx, y = dy))
 }
 
 /** A full circle of [radius] centred at the origin. */
 fun circle(radius: Double): Region = Region.Circle(radius = radius)
 
-fun polygon(first: Vec2, second: Vec2, vararg tail: Vec2): Region =
-    Region.Polygon(points = nonEmptyListOf(first, second, *tail))
+fun polygon(first: Axis2Values<Double>, second: Axis2Values<Double>, vararg tail: Axis2Values<Double>): Region =
+    Region.Polygon(points = nonEmptyListOf(first, second, *tail).map { it.toVec2() })
 
 // --- Booleans ---------------------------------------------------------------
 
@@ -70,25 +71,25 @@ private fun regionBool(kind: BooleanKind, first: Region, second: Region): Region
 
 // --- Transforms -------------------------------------------------------------
 
-private val REGION_ORIGIN = vec2 { 0.0 }
+private val REGION_ORIGIN = Axis2Values.create { 0.0 }
 
-/** Translate by a [Vec2]. */
-fun Region.translate(value: Vec2): Region =
-    Region.Transform(target = this, op = TransformOp2.Translate(value = value))
+/** Translate by an axis value. */
+fun Region.translate(value: Axis2Values<Double>): Region =
+    Region.Transform(target = this, op = TransformOp2.Translate(value = value.toVec2()))
 
-fun Region.rotate(angle: Double, center: Vec2 = REGION_ORIGIN): Region =
-    Region.Transform(target = this, op = TransformOp2.Rotate(center = center, angle = angle))
+fun Region.rotate(angle: Double, center: Axis2Values<Double> = REGION_ORIGIN): Region =
+    Region.Transform(target = this, op = TransformOp2.Rotate(center = center.toVec2(), angle = angle))
 
 /** Mirror across the line through `center` (default: origin) with the given `normal`. */
-fun Region.mirror(normal: Vec2, center: Vec2 = REGION_ORIGIN): Region =
-    Region.Transform(target = this, op = TransformOp2.Mirror(center = center, normal = normal))
+fun Region.mirror(normal: Axis2Values<Double>, center: Axis2Values<Double> = REGION_ORIGIN): Region =
+    Region.Transform(target = this, op = TransformOp2.Mirror(center = center.toVec2(), normal = normal.toVec2()))
 
 /** Uniform scale by `factor`. */
-fun Region.scale(factor: Double): Region = scale(vec2 { factor })
+fun Region.scale(factor: Double): Region = scale(Axis2Values.create { factor })
 
-/** Non-uniform scale by a [Vec2]. */
-fun Region.scale(value: Vec2): Region =
-    Region.Transform(target = this, op = TransformOp2.Scale(value = value))
+/** Non-uniform scale by an axis value. */
+fun Region.scale(value: Axis2Values<Double>): Region =
+    Region.Transform(target = this, op = TransformOp2.Scale(value = value.toVec2()))
 
 // --- Fillet / offset --------------------------------------------------------
 

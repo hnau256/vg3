@@ -1,9 +1,10 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.bbox.Axis3
-import org.hnau.ktcad.bbox.direction
+import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.ir.Vec2
-import org.hnau.ktcad.ir.Vec3
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -21,7 +22,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-box.stl")
         output.delete()
 
-        listOf(Part(name = "box", solid = box(Vec3(1.0, 2.0, 3.0))))
+        listOf(Part(name = "box", solid = box(Axis3Values(x = 1.0, y = 2.0, z = 3.0))))
             .model()
             .export(Format.Stl(output = Output.Single(output.absolutePath)))
 
@@ -37,10 +38,10 @@ class ExportSmokeTest {
         output.delete()
 
         val square = polygon(
-            Vec2(0.0, 0.0),
-            Vec2(10.0, 0.0),
-            Vec2(10.0, 10.0),
-            Vec2(0.0, 10.0),
+            Axis2Values(x = 0.0, y = 0.0),
+            Axis2Values(x = 10.0, y = 0.0),
+            Axis2Values(x = 10.0, y = 10.0),
+            Axis2Values(x = 0.0, y = 10.0),
         )
         listOf(Part(name = "prism", solid = square.extrude(5.0)))
             .model()
@@ -88,7 +89,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-thick.stl")
         output.delete()
 
-        val hollow = box(Vec3(10.0, 10.0, 10.0)).thickSolid(
+        val hollow = box(Axis3Values(x = 10.0, y = 10.0, z = 10.0)).thickSolid(
             offset = -1.0,
             expression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
         )
@@ -107,7 +108,7 @@ class ExportSmokeTest {
         val output = File(System.getProperty("java.io.tmpdir"), "vg3-smoke-report.json")
         output.delete()
 
-        listOf(Part(name = "box", solid = box(Vec3(1.0, 2.0, 3.0))))
+        listOf(Part(name = "box", solid = box(Axis3Values(x = 1.0, y = 2.0, z = 3.0))))
             .model()
             .export(Format.Json(filename = output.absolutePath))
 
@@ -127,11 +128,11 @@ class ExportSmokeTest {
 
         listOf(
             PrintPart(
-                part = Part(name = "hook", solid = box(Vec3(1.0, 1.0, 1.0))),
+                part = Part(name = "hook", solid = box(Axis3Values(x = 1.0, y = 1.0, z = 1.0))),
                 stlTransformation = { rotate(Axis3.X.direction, Math.PI) },
             ),
             PrintPart(
-                part = Part(name = "cabinet", solid = box(Vec3(3.0, 3.0, 3.0))),
+                part = Part(name = "cabinet", solid = box(Axis3Values(x = 3.0, y = 3.0, z = 3.0))),
                 stlTransformation = null,
             ),
         ).stepPreviewAndStlExport(

@@ -1,6 +1,8 @@
 package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.Region
+import org.hnau.ktcad.axis.Axis2
+import org.hnau.ktcad.axis.Axis2Values
 import org.hnau.ktcad.end
 import org.hnau.ktcad.fold
 import org.hnau.ktcad.ir.BooleanKind

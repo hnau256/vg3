@@ -1,5 +1,6 @@
 package org.hnau.ktcad
 
+import org.hnau.ktcad.axis.Axis2Values
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.Sketch
 import org.hnau.ktcad.ir.Vec2
@@ -9,7 +10,7 @@ import kotlin.test.assertTrue
 
 class RegionExtTest {
 
-    private val square = polygon(Vec2(0.0, 0.0), Vec2(10.0, 0.0), Vec2(10.0, 10.0), Vec2(0.0, 10.0))
+    private val square = polygon(Axis2Values(x = 0.0, y = 0.0), Axis2Values(x = 10.0, y = 0.0), Axis2Values(x = 10.0, y = 10.0), Axis2Values(x = 0.0, y = 10.0))
 
     @Test
     fun booleans_lower_to_a_single_sketch_bool() {
@@ -27,7 +28,7 @@ class RegionExtTest {
     @Test
     fun transform_lowers_to_a_sketch_transform() {
         val arena = Arena()
-        val index = arena.region(square.translate(Vec2(3.0, 4.0)))
+        val index = arena.region(square.translate(Axis2Values(x = 3.0, y = 4.0)))
 
         assertEquals(2, arena.sketches.size)
         val transform = arena.sketches[index.value] as Sketch.Transform

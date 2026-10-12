@@ -1,6 +1,8 @@
 package org.hnau.ktcad
 
 import arrow.core.toNonEmptyListOrThrow
+import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.Axis3Values
 import org.hnau.ktcad.ir.Continuity
 import org.hnau.ktcad.ir.FilletKind
 import org.hnau.ktcad.ir.Vec2
@@ -13,7 +15,7 @@ import kotlin.test.assertEquals
 
 class BuildExtTest {
 
-    private val square = polygon(Vec2(0.0, 0.0), Vec2(10.0, 0.0), Vec2(10.0, 10.0), Vec2(0.0, 10.0))
+    private val square = polygon(Axis2Values(x = 0.0, y = 0.0), Axis2Values(x = 10.0, y = 0.0), Axis2Values(x = 10.0, y = 10.0), Axis2Values(x = 0.0, y = 10.0))
 
     @Test
     fun extrude_maps_to_factory() {
@@ -27,7 +29,7 @@ class BuildExtTest {
 
     @Test
     fun sweep_maps_to_factory() {
-        val spine = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(0.0, 0.0, 20.0)))
+        val spine = Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 0.0, y = 0.0, z = 20.0)))
         assertEquals(sweep(path = spine, profile = square), square.sweep(spine))
         assertEquals(
             sweep(mode = SweepMode.RIGID, path = spine, profile = square),
@@ -38,15 +40,15 @@ class BuildExtTest {
     @Test
     fun loft_maps_to_factory() {
         val sections = listOf(
-            Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(10.0, 0.0, 0.0)), lineTo(Vec3(10.0, 10.0, 0.0))),
-            Path(Vec3(0.0, 0.0, 10.0), lineTo(Vec3(10.0, 0.0, 10.0)), lineTo(Vec3(10.0, 10.0, 10.0))),
+            Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 10.0, y = 0.0, z = 0.0)), lineTo(Axis3Values(x = 10.0, y = 10.0, z = 0.0))),
+            Path(Axis3Values(x = 0.0, y = 0.0, z = 10.0), lineTo(Axis3Values(x = 10.0, y = 0.0, z = 10.0)), lineTo(Axis3Values(x = 10.0, y = 10.0, z = 10.0))),
         )
         assertEquals(loft(ruled = true, sections = sections.toNonEmptyListOrThrow()), sections.toNonEmptyListOrThrow().loft(ruled = true))
     }
 
     @Test
     fun fillet_all_and_expression() {
-        val solid = box(Vec3(10.0, 10.0, 10.0))
+        val solid = box(Axis3Values(x = 10.0, y = 10.0, z = 10.0))
         assertEquals(
             fillet(kind = FilletKind.FILLET, radius = RadiusSpec.All(2.0), target = solid),
             solid.filletAll(2.0),
@@ -63,15 +65,15 @@ class BuildExtTest {
 
     @Test
     fun sweep_and_loft_settings_map_to_the_ir() {
-        val spine = Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(0.0, 0.0, 10.0)))
-        val square = polygon(Vec2(-1.0, -1.0), Vec2(1.0, -1.0), Vec2(1.0, 1.0))
+        val spine = Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 0.0, y = 0.0, z = 10.0)))
+        val square = polygon(Axis2Values(x = -1.0, y = -1.0), Axis2Values(x = 1.0, y = -1.0), Axis2Values(x = 1.0, y = 1.0))
         val sweep = square.sweep(spine, transition = TransitionKind.ROUND_CORNER)
         sweep as Solid.Sweep
         assertEquals(TransitionKind.ROUND_CORNER, sweep.transition)
 
         val sections = listOf(
-            Path(Vec3(0.0, 0.0, 0.0), lineTo(Vec3(10.0, 0.0, 0.0)), lineTo(Vec3(10.0, 10.0, 0.0))),
-            Path(Vec3(0.0, 0.0, 10.0), lineTo(Vec3(10.0, 0.0, 10.0)), lineTo(Vec3(10.0, 10.0, 10.0))),
+            Path(Axis3Values(x = 0.0, y = 0.0, z = 0.0), lineTo(Axis3Values(x = 10.0, y = 0.0, z = 0.0)), lineTo(Axis3Values(x = 10.0, y = 10.0, z = 0.0))),
+            Path(Axis3Values(x = 0.0, y = 0.0, z = 10.0), lineTo(Axis3Values(x = 10.0, y = 0.0, z = 10.0)), lineTo(Axis3Values(x = 10.0, y = 10.0, z = 10.0))),
         )
         val loft = sections.toNonEmptyListOrThrow().loft(continuity = Continuity.C2, maxDegree = 8)
         loft as Solid.Loft
@@ -81,7 +83,7 @@ class BuildExtTest {
 
     @Test
     fun fillet_selected_with_radius() {
-        val solid = box(Vec3(10.0, 10.0, 10.0))
+        val solid = box(Axis3Values(x = 10.0, y = 10.0, z = 10.0))
         assertEquals(
             fillet(
                 kind = FilletKind.FILLET,

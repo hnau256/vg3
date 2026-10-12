@@ -74,10 +74,10 @@ dependencies {
 
 ```kotlin
 import org.hnau.ktcad.*
-import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.axis.Axis3Values
 
 fun main() {
-    val body = box(Vec3(20.0, 20.0, 5.0))
+    val body = box(Axis3Values(x = 20.0, y = 20.0, z = 5.0))
     val boss = cylinder(radius = 5.0, height = 10.0)
     val model = fuse(listOf(body, boss))
 
@@ -106,13 +106,17 @@ listOf(
 
 ### API
 
+Пользовательский слой работает с `Axis2Values<Double>`/`Axis3Values<Double>` (`org.hnau.ktcad.axis`),
+а `Vec2`/`Vec3` (`org.hnau.ktcad.ir`) — внутренняя модель (`Body`): сахар переводит `AxisNValues → VecN`
+при сборке узлов, так что в пользовательском коде `VecN` не встречается.
+
 - **Фабрики** (по одному на узел IR): `box`, `sphere`, `cylinder`, `cone`, `torus`, `wedge`, `halfspace`,
   `polyhedron`, `extrude`, `revolve`, `sweep`, `loft`, `bool`, `transform`, `fillet`, `offset`.
   Возвращают `Solid`; `extrude`/`revolve`/`sweep` принимают `Region` (эскиз). `sphere`/`cylinder`/
   `cone`/`torus` принимают необязательный `angle` (сегмент-клин). `box`/`cylinder`/`rect`
-  необязательно центрируются: `box(size: Vec3, centered: Axis3Values<Boolean>)` (по каждой оси из
-  `centered`), `cylinder` — `centerZ`, `rect` — `centerX`/`centerY` (`Boolean = false`) — это sugar над
-  `translate`.
+  необязательно центрируются: `box(size: Axis3Values<Double>, centered: Axis3Values<Boolean>)` (по
+  каждой оси из `centered`), `cylinder` — `centerZ`, `rect` — `centerX`/`centerY` (`Boolean = false`) —
+  это sugar над `translate`.
 - **`Solid`** — immutable доменный узел; операнды — другие `Solid` (не индексы).
 - **Булевы:** `+` (fuse), `-` (cut), `*` (common), а также `fuse(parts)`, `cut(base, tools)`,
   `common(parts)` — sugar над единым узлом `bool`. `cut` требует непустой `tools: NonEmptyList<Solid>`.
@@ -121,24 +125,24 @@ listOf(
 - **`thickSolid(offset, expression)`** — полая оболочка толщиной `offset` (отрицательное — внутрь,
   как в OCCT); `expression` — булев Rhai-предикат по граням (`face`, плюс `box`), выбирающий проёмы;
   есть перегрузка с `join`.
-- **Трансформации** (возвращают новый `Solid`): `translate(value: Vec3)`, `scale(factor)` /
-  `scale(value: Vec3)`, `rotate(axis: Vec3, angle, center?)`, `mirror(normal: Vec3, center?)`.
-  `Axis3` — инструмент, а не параметр: направление задаётся вектором, напр. `Axis3.Z.direction * 5.0`
-  или `Axis3.X.direction` (`X=+X, Y=+Y, Z=+Z`); значение — через `vec3 { axis -> … }`. Углы — радианы
-  (`Math.toRadians(deg)`).
-- **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; сегменты: `lineTo`/`lineRel`,
-  `arcTo`/`arcRel`, `splineTo(…, tangentStart?, tangentEnd?)`, `bezierTo(first, second, vararg)`,
-  `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую
-  точку; касательные `spline` и полюса `bezier` позволяют явно стыковать с `helix` по касательной).
-  2D-контур: `contour(start, segment…)`; готовые:
+- **Трансформации** (возвращают новый `Solid`): `translate(value: Axis3Values<Double>)`, `scale(factor)` /
+  `scale(value: Axis3Values<Double>)`, `rotate(axis: Axis3Values<Double>, angle, center?)`,
+  `mirror(normal: Axis3Values<Double>, center?)`. `Axis3` — инструмент, а не параметр: направление
+  задаётся значением, напр. `Axis3.Z.direction * 5.0` или `Axis3.X.direction` (`X=+X, Y=+Y, Z=+Z`).
+  Углы — радианы (`Math.toRadians(deg)`).
+- **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; точки — `Axis2Values<Double>`/
+  `Axis3Values<Double>`. Сегменты: `lineTo`/`lineRel`, `arcTo`/`arcRel`, `splineTo(…, tangentStart?, tangentEnd?)`,
+  `bezierTo(first, second, vararg)`, `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные
+  `Rel` — фабрика сама ведёт текущую точку; касательные `spline` и полюса `bezier` позволяют явно
+  стыковать с `helix` по касательной). 2D-контур: `contour(start, segment…)`; готовые:
   `rect(width, height, centerX?, centerY?)`
   (sugar = `polygon` из 4 точек), `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`);
   `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
   имеет ≥1 ребро, поэтому пустой контур невыразим.
 - **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
-  `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(value: Vec2)`, `rotate(angle, center?)`,
-  `mirror(normal: Vec2, center?)`, `scale(factor)` / `scale(value: Vec2)`, и `offset2d(distance)`.
-  Скругление углов (имя отражает
+  `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(value: Axis2Values<Double>)`,
+  `rotate(angle, center?)`, `mirror(normal: Axis2Values<Double>, center?)`, `scale(factor)` /
+  `scale(value: Axis2Values<Double>)`, и `offset2d(distance)`. Скругление углов (имя отражает
   способ выбора радиуса): `fillet2dAll(radius)` (постоянный всем), `fillet2dExpression(expression)`
   (Rhai, переменная `vertex`, радиус по углу) и `fillet2dSelected(expression, radius)` (булев предикат
   отбора углов). Эскизы **не экспортируются** — только служат профилем тел.
