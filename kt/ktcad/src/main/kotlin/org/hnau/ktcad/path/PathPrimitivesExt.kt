@@ -14,19 +14,19 @@ import org.hnau.ktcad.utils.buildChain
 
 typealias PathSegment = (() -> A3Values<Double>) -> Curve3
 
-fun lineTo(
+fun line3To(
     to: A3Values<Double>,
 ): PathSegment = {
     Curve3.Line(to = to.toVec3())
 }
 
-fun lineRel(
+fun line3Rel(
     delta: A3Values<Double>,
 ): PathSegment = { current ->
     Curve3.Line(to = (current() + delta).toVec3())
 }
 
-fun arcTo(
+fun arc3To(
     via: A3Values<Double>,
     to: A3Values<Double>,
 ): PathSegment = {
@@ -36,7 +36,7 @@ fun arcTo(
     )
 }
 
-fun arcRel(
+fun arc3Rel(
     via: A3Values<Double>,
     to: A3Values<Double>,
 ): PathSegment = { current ->
@@ -47,7 +47,7 @@ fun arcRel(
     )
 }
 
-fun splineTo(
+fun spline3To(
     initial: A3Values<Double>,
     vararg additional: A3Values<Double>,
     tangentStart: A3Values<Double>? = null,
@@ -63,7 +63,7 @@ fun splineTo(
     )
 }
 
-fun splineRel(
+fun spline3Rel(
     initial: A3Values<Double>,
     vararg additional: A3Values<Double>,
     tangentStart: A3Values<Double>? = null,
@@ -80,7 +80,7 @@ fun splineRel(
     )
 }
 
-fun bezierTo(
+fun bezier3To(
     first: A3Values<Double>,
     second: A3Values<Double>,
     vararg additional: A3Values<Double>,
@@ -94,7 +94,7 @@ fun bezierTo(
     )
 }
 
-fun bezierRel(
+fun bezier3Rel(
     first: A3Values<Double>,
     second: A3Values<Double>,
     vararg additional: A3Values<Double>,
@@ -121,7 +121,7 @@ fun helix(
     )
 }
 
-fun polygon(
+fun polygon3(
     first: A3Values<Double>,
     second: A3Values<Double>,
     vararg tail: A3Values<Double>,
@@ -160,8 +160,8 @@ fun polyline(
     vararg tail: A3Values<Double>,
 ): Path = path(
     first,
-    lineTo(second),
-    *tail.map { lineTo(it) }.toTypedArray(),
+    line3To(second),
+    *tail.map { line3To(it) }.toTypedArray(),
 )
 
 fun Path.close(): Path = copy(

@@ -14,7 +14,7 @@ import org.hnau.ktcad.utils.buildChain
 
 typealias ContourSegment = (() -> A2Values<Double>) -> Curve2
 
-fun lineTo(
+fun line2To(
     to: A2Values<Double>,
 ): ContourSegment = {
     Curve2.Line(
@@ -22,7 +22,7 @@ fun lineTo(
     )
 }
 
-fun lineRel(
+fun line2Rel(
     delta: A2Values<Double>,
 ): ContourSegment = { current ->
     Curve2.Line(
@@ -30,7 +30,7 @@ fun lineRel(
     )
 }
 
-fun arcTo(
+fun arc2To(
     via: A2Values<Double>,
     to: A2Values<Double>,
 ): ContourSegment = {
@@ -40,7 +40,7 @@ fun arcTo(
     )
 }
 
-fun arcRel(
+fun arc2Rel(
     via: A2Values<Double>,
     to: A2Values<Double>,
 ): ContourSegment = { current ->
@@ -51,7 +51,7 @@ fun arcRel(
     )
 }
 
-fun splineTo(
+fun spline2To(
     initial: A2Values<Double>,
     vararg additional: A2Values<Double>,
     tangentStart: A2Values<Double>? = null,
@@ -67,7 +67,7 @@ fun splineTo(
     )
 }
 
-fun splineRel(
+fun spline2Rel(
     initial: A2Values<Double>,
     vararg additional: A2Values<Double>,
     tangentStart: A2Values<Double>? = null,
@@ -84,7 +84,7 @@ fun splineRel(
     )
 }
 
-fun bezierTo(
+fun bezier2To(
     first: A2Values<Double>,
     second: A2Values<Double>,
     vararg additional: A2Values<Double>,
@@ -98,7 +98,7 @@ fun bezierTo(
     )
 }
 
-fun bezierRel(
+fun bezier2Rel(
     first: A2Values<Double>,
     second: A2Values<Double>,
     vararg additional: A2Values<Double>,

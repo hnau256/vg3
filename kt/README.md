@@ -130,16 +130,17 @@ listOf(
   `mirror(normal: A3Values<Double>, center?)`. `A3` — инструмент, а не параметр: направление
   задаётся значением, напр. `A3.Z.direction * 5.0` или `A3.X.direction` (`X=+X, Y=+Y, Z=+Z`).
   Углы — радианы (`Math.toRadians(deg)`).
-- **Контуры** — 2D живёт в домене `Region`, 3D — в `Path(start, segment…)`; точки — `A2Values<Double>`/
-  `A3Values<Double>`. Сегменты: `lineTo`/`lineRel`, `arcTo`/`arcRel`, `splineTo(…, tangentStart?, tangentEnd?)`,
-  `bezierTo(first, second, vararg)`, `helix(pitch, height, rightHanded?)` (абсолютные `To`, относительные
-  `Rel` — фабрика сама ведёт текущую точку; касательные `spline` и полюса `bezier` позволяют явно
-  стыковать с `helix` по касательной). 2D-контур: `contour(start, segment…)`; готовые:
-  `rect(size: A2Values<Double>, centered: A2Values<Boolean>)`
-  (sugar = `polygon` из 4 точек), `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`);
-  `polygon(first, second, vararg)`; 3D: `polyline(...)`, `polygon(...)`, `Path.close()`. Контур всегда
-  имеет ≥1 ребро, поэтому пустой контур невыразим.
-- **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon`/`contour` + булевы
+- **Контуры** — 2D живёт в домене `Region`, 3D — в `path(start, segment…)`; точки — `A2Values<Double>`/
+  `A3Values<Double>`. Сегменты разведены по размерности: `line2To`/`line2Rel`, `arc2To`/`arc2Rel`,
+  `spline2To`/`spline2Rel`, `bezier2To`/`bezier2Rel` (2D) и `line3To`/`line3Rel`, `arc3To`/`arc3Rel`,
+  `spline3To`/`spline3Rel`, `bezier3To`/`bezier3Rel`, `helix(pitch, height, rightHanded?)` (3D;
+  абсолютные `To`, относительные `Rel` — фабрика сама ведёт текущую точку; касательные `spline` и
+  полюса `bezier` позволяют явно стыковать с `helix` по касательной). 2D-контур: `contour(start, segment…)`;
+  готовые: `rect(size: A2Values<Double>, centered: Set<A2>)` (sugar = `polygon2` из 4 точек),
+  `circle(radius)` (узел `Region.Circle`, OCCT `gp_Circ`); `polygon2(first, second, vararg)`;
+  3D: `polyline(...)`, `polygon3(...)`, `Path.close()`. Контур всегда имеет ≥1 ребро, поэтому пустой
+  контур невыразим.
+- **`Region`** — immutable доменный 2D-узел (эскиз): `circle`/`polygon2`/`contour` + булевы
   `fuse`/`cut`/`common` (`+`/`-`/`*`), трансформации `translate(value: A2Values<Double>)`,
   `rotate(angle, center?)`, `mirror(normal: A2Values<Double>, center?)`, `scale(factor)` /
   `scale(value: A2Values<Double>)`, и `offset2d(distance)`. Скругление углов (имя отражает

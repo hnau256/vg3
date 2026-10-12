@@ -10,7 +10,7 @@ import org.hnau.ktcad.region.fillet2dAll
 import org.hnau.ktcad.region.fillet2dExpression
 import org.hnau.ktcad.region.fillet2dSelected
 import org.hnau.ktcad.region.offset2d
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.polygon2
 import org.hnau.ktcad.region.translate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 
 class RegionExtTest {
 
-    private val square = polygon(
+    private val square = polygon2(
         A2Values(
             x = 0.0,
             y = 0.0,

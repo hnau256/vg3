@@ -10,7 +10,9 @@ import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.TransformOp
 import org.hnau.ktcad.ir.Vec3
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.path.line3To
+import org.hnau.ktcad.path.path
+import org.hnau.ktcad.region.polygon2
 import org.hnau.ktcad.solid.cut
 import org.hnau.ktcad.solid.cylinder
 import org.hnau.ktcad.solid.fuse
@@ -25,7 +27,7 @@ import kotlin.test.assertEquals
 
 class SolidBboxTest {
 
-    private val square = polygon(
+    private val square = polygon2(
         A2Values(
             x = 0.0,
             y = 0.0,
@@ -260,7 +262,7 @@ class SolidBboxTest {
             ).bbox,
         )
 
-        val ring = polygon(
+        val ring = polygon2(
             A2Values(
                 x = 2.0,
                 y = 0.0,
@@ -296,20 +298,20 @@ class SolidBboxTest {
 
     @Test
     fun loft_unions_its_sections_and_sweep_grows_the_path() {
-        val lower = Path(
+        val lower = path(
             A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 4.0,
                     y = 0.0,
                     z = 0.0,
                 ),
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 4.0,
                     y = 4.0,
@@ -317,20 +319,20 @@ class SolidBboxTest {
                 ),
             ),
         )
-        val upper = Path(
+        val upper = path(
             A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 10.0,
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 2.0,
                     y = 0.0,
                     z = 10.0,
                 ),
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 2.0,
                     y = 2.0,
@@ -355,13 +357,13 @@ class SolidBboxTest {
             ).bbox,
         )
 
-        val path = Path(
+        val path = path(
             A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 10.0,
                     y = 0.0,

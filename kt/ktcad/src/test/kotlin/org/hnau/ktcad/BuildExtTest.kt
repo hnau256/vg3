@@ -13,7 +13,9 @@ import org.hnau.ktcad.solid.filletAll
 import org.hnau.ktcad.solid.filletExpression
 import org.hnau.ktcad.solid.filletSelected
 import org.hnau.ktcad.region.loft
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.path.line3To
+import org.hnau.ktcad.path.path
+import org.hnau.ktcad.region.polygon2
 import org.hnau.ktcad.region.revolve
 import org.hnau.ktcad.region.sweep
 import org.hnau.ktcad.solid.box
@@ -22,7 +24,7 @@ import kotlin.test.assertEquals
 
 class BuildExtTest {
 
-    private val square = polygon(
+    private val square = polygon2(
         A2Values(
             x = 0.0,
             y = 0.0,
@@ -65,13 +67,13 @@ class BuildExtTest {
 
     @Test
     fun sweep_maps_to_factory() {
-        val spine = Path(
+        val spine = path(
             A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
@@ -102,20 +104,20 @@ class BuildExtTest {
     @Test
     fun loft_maps_to_factory() {
         val sections = listOf(
-            Path(
+            path(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = 0.0,
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 0.0,
                         z = 0.0,
                     ),
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 10.0,
@@ -123,20 +125,20 @@ class BuildExtTest {
                     ),
                 ),
             ),
-            Path(
+            path(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = 10.0,
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 0.0,
                         z = 10.0,
                     ),
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 10.0,
@@ -186,13 +188,13 @@ class BuildExtTest {
 
     @Test
     fun sweep_and_loft_settings_map_to_the_ir() {
-        val spine = Path(
+        val spine = path(
             A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            lineTo(
+            line3To(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
@@ -200,7 +202,7 @@ class BuildExtTest {
                 ),
             ),
         )
-        val square = polygon(
+        val square = polygon2(
             A2Values(
                 x = -1.0,
                 y = -1.0,
@@ -225,20 +227,20 @@ class BuildExtTest {
         )
 
         val sections = listOf(
-            Path(
+            path(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = 0.0,
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 0.0,
                         z = 0.0,
                     ),
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 10.0,
@@ -246,20 +248,20 @@ class BuildExtTest {
                     ),
                 ),
             ),
-            Path(
+            path(
                 A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = 10.0,
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 0.0,
                         z = 10.0,
                     ),
                 ),
-                lineTo(
+                line3To(
                     A3Values(
                         x = 10.0,
                         y = 10.0,

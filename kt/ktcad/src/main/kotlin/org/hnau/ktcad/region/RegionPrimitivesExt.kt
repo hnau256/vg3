@@ -15,7 +15,7 @@ fun rect(
     size: A2Values<Double>,
     centered: Set<A2> = emptySet(),
 ): Region {
-    val rectangle = polygon(
+    val rectangle = polygon2(
         A2Values.create { 0.0 },
         size * A2.X.direction,
         size,
@@ -44,7 +44,7 @@ fun circle(
     radius = radius,
 )
 
-fun polygon(
+fun polygon2(
     first: A2Values<Double>,
     second: A2Values<Double>,
     vararg tail: A2Values<Double>,

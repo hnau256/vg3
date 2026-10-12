@@ -12,7 +12,6 @@ import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.solid.box
 import org.hnau.ktcad.solid.common
 import org.hnau.ktcad.solid.cut
-import org.hnau.ktcad.solid.cylinder
 import org.hnau.ktcad.solid.fuse
 import org.hnau.ktcad.solid.minus
 import org.hnau.ktcad.solid.mirror
@@ -246,7 +245,7 @@ class SolidExtTest {
             ),
         ).thickSolid(
             offset = -1.0,
-            expression = "is_parallel(face.normal, Z)",
+            selectFaceExpression = "is_parallel(face.normal, Z)",
         )
         hollow as Solid.ThickSolid
         assertEquals(

@@ -8,8 +8,20 @@ import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.path.bezier3To
+import org.hnau.ktcad.path.helix
+import org.hnau.ktcad.path.line3Rel
+import org.hnau.ktcad.path.line3To
+import org.hnau.ktcad.path.path
+import org.hnau.ktcad.path.polygon3
+import org.hnau.ktcad.path.polyline
+import org.hnau.ktcad.path.spline3To
+import org.hnau.ktcad.region.arc2Rel
 import org.hnau.ktcad.region.circle
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.contour
+import org.hnau.ktcad.region.line2Rel
+import org.hnau.ktcad.region.line2To
+import org.hnau.ktcad.region.polygon2
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -40,13 +52,13 @@ class CurveExtTest {
                 x = 0.0,
                 y = 0.0,
             ),
-            lineTo(
+            line2To(
                 a2(
                     x = 10.0,
                     y = 0.0,
                 ),
             ),
-            lineRel(
+            line2Rel(
                 a2(
                     x = 0.0,
                     y = 10.0,
@@ -81,13 +93,13 @@ class CurveExtTest {
 
     @Test
     fun path_builds_from_segments() {
-        val path = Path(
+        val path = path(
             a3(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            lineTo(
+            line3To(
                 a3(
                     x = 1.0,
                     y = 2.0,
@@ -116,13 +128,13 @@ class CurveExtTest {
                 x = 0.0,
                 y = 0.0,
             ),
-            lineTo(
+            line2To(
                 a2(
                     x = 2.0,
                     y = 0.0,
                 ),
             ),
-            arcRel(
+            arc2Rel(
                 via = a2(
                     x = 0.0,
                     y = 1.0,
@@ -158,7 +170,7 @@ class CurveExtTest {
 
     @Test
     fun polygon_region_holds_its_points() {
-        val poly = polygon(
+        val poly = polygon2(
             a2(
                 x = 0.0,
                 y = 0.0,
@@ -220,7 +232,7 @@ class CurveExtTest {
         )
         assertEquals(
             expected = 3,
-            actual = polygon(
+            actual = polygon3(
                 a,
                 b,
                 c,
@@ -228,7 +240,7 @@ class CurveExtTest {
         )   // + closing line back to start
         assertEquals(
             expected = Curve3.Line(a.toVec3()),
-            actual = polygon(
+            actual = polygon3(
                 a,
                 b,
                 c,
@@ -240,7 +252,7 @@ class CurveExtTest {
     fun built_region_feeds_extrude() {
         val solid = extrude(
             height = 5.0,
-            profile = polygon(
+            profile = polygon2(
                 a2(
                     x = 0.0,
                     y = 0.0,
@@ -264,7 +276,7 @@ class CurveExtTest {
 
     @Test
     fun helix_builds_a_helix_curve() {
-        val path = Path(
+        val path = path(
             a3(
                 x = 0.0,
                 y = 0.0,
@@ -289,7 +301,7 @@ class CurveExtTest {
 
     @Test
     fun helix_can_be_followed_by_an_absolute_segment() {
-        val path = Path(
+        val path = path(
             a3(
                 x = 0.0,
                 y = 0.0,
@@ -299,7 +311,7 @@ class CurveExtTest {
                 pitch = 1.0,
                 height = 4.0,
             ),
-            lineTo(
+            line3To(
                 a3(
                     x = 0.0,
                     y = 0.0,
@@ -316,7 +328,7 @@ class CurveExtTest {
     @Test
     fun relative_segment_after_helix_fails() {
         assertFailsWith<IllegalStateException> {
-            Path(
+            path(
                 a3(
                     x = 0.0,
                     y = 0.0,
@@ -326,7 +338,7 @@ class CurveExtTest {
                     pitch = 1.0,
                     height = 4.0,
                 ),
-                lineRel(
+                line3Rel(
                     a3(
                         x = 0.0,
                         y = 0.0,
@@ -339,13 +351,13 @@ class CurveExtTest {
 
     @Test
     fun bezier_builds_a_bezier_curve() {
-        val path = Path(
+        val path = path(
             a3(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            bezierTo(
+            bezier3To(
                 a3(
                     x = 0.0,
                     y = 0.0,
@@ -391,13 +403,13 @@ class CurveExtTest {
 
     @Test
     fun spline_carries_end_tangents() {
-        val path = Path(
+        val path = path(
             a3(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
-            splineTo(
+            spline3To(
                 a3(
                     x = 10.0,
                     y = 0.0,

@@ -8,7 +8,12 @@ import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.region.circle
 import org.hnau.ktcad.region.mirror
 import org.hnau.ktcad.region.offset2d
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.arc2To
+import org.hnau.ktcad.region.bezier2To
+import org.hnau.ktcad.region.contour
+import org.hnau.ktcad.region.line2Rel
+import org.hnau.ktcad.region.line2To
+import org.hnau.ktcad.region.polygon2
 import org.hnau.ktcad.region.rect
 import org.hnau.ktcad.region.rotate
 import org.hnau.ktcad.region.scale
@@ -19,7 +24,7 @@ import kotlin.test.assertEquals
 
 class RegionBboxTest {
 
-    private val square = polygon(
+    private val square = polygon2(
         A2Values(
             x = 0.0,
             y = 0.0,
@@ -104,13 +109,13 @@ class RegionBboxTest {
                 x = 0.0,
                 y = 0.0,
             ),
-            lineTo(
+            line2To(
                 A2Values(
                     x = 10.0,
                     y = 0.0,
                 ),
             ),
-            lineRel(
+            line2Rel(
                 A2Values(
                     x = 0.0,
                     y = 10.0,
@@ -132,7 +137,7 @@ class RegionBboxTest {
                 x = 0.0,
                 y = 0.0,
             ),
-            arcTo(
+            arc2To(
                 via = A2Values(
                     x = 5.0,
                     y = 5.0,
@@ -161,7 +166,7 @@ class RegionBboxTest {
                 x = 0.0,
                 y = 0.0,
             ),
-            bezierTo(
+            bezier2To(
                 A2Values(
                     x = 10.0,
                     y = 0.0,

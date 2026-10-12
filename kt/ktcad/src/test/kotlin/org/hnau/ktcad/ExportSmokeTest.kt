@@ -9,7 +9,7 @@ import org.hnau.ktcad.region.extrude
 import org.hnau.ktcad.region.fillet2dAll
 import org.hnau.ktcad.region.minus
 import org.hnau.ktcad.region.offset2d
-import org.hnau.ktcad.region.polygon
+import org.hnau.ktcad.region.polygon2
 import org.hnau.ktcad.region.rect
 import org.hnau.ktcad.solid.box
 import org.hnau.ktcad.solid.rotate
@@ -63,7 +63,7 @@ class ExportSmokeTest {
         )
         output.delete()
 
-        val square = polygon(
+        val square = polygon2(
             A2Values(
                 x = 0.0,
                 y = 0.0,
@@ -164,7 +164,7 @@ class ExportSmokeTest {
             ),
         ).thickSolid(
             offset = -1.0,
-            expression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
+            selectFaceExpression = "is_parallel(face.normal, Z) && is_close(face.center.z, box.max.z)",
         )
         listOf(
             Part(
