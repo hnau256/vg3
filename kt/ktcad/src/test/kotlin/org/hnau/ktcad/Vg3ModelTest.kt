@@ -5,7 +5,7 @@ import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.ir.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +31,7 @@ class Vg3ModelTest {
                 Part(
                     name = "box",
                     solid = box(
-                        Axis3Values(
+                        A3Values(
                             x = 1.0,
                             y = 1.0,
                             z = 1.0,
@@ -59,7 +59,7 @@ class Vg3ModelTest {
                 Part(
                     name = "box",
                     solid = box(
-                        Axis3Values(
+                        A3Values(
                             x = 1.0,
                             y = 1.0,
                             z = 1.0,

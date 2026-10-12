@@ -1,8 +1,8 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.ir.FaceSelection
@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 class SolidExtTest {
 
     private val a = box(
-        Axis3Values(
+        A3Values(
             x = 1.0,
             y = 1.0,
             z = 1.0,
@@ -56,53 +56,53 @@ class SolidExtTest {
     fun axis_direction_builds_a_translation() {
         assertEquals(
             expected = a.translate(
-                Axis3Values(
+                A3Values(
                     x = 3.0,
                     y = 0.0,
                     z = 0.0,
                 ),
             ),
-            actual = a.translate(Axis3.X.direction * 3.0),
+            actual = a.translate(A3.X.direction * 3.0),
         )
         assertEquals(
             expected = a.translate(
-                Axis3Values(
+                A3Values(
                     x = -3.0,
                     y = 0.0,
                     z = 0.0,
                 ),
             ),
-            actual = a.translate(Axis3.X.direction * -3.0),
+            actual = a.translate(A3.X.direction * -3.0),
         )
         assertEquals(
             expected = a.translate(
-                Axis3Values(
+                A3Values(
                     x = 0.0,
                     y = 3.0,
                     z = 0.0,
                 ),
             ),
-            actual = a.translate(Axis3.Y.direction * 3.0),
+            actual = a.translate(A3.Y.direction * 3.0),
         )
         assertEquals(
             expected = a.translate(
-                Axis3Values(
+                A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = 5.0,
                 ),
             ),
-            actual = a.translate(Axis3.Z.direction * 5.0),
+            actual = a.translate(A3.Z.direction * 5.0),
         )
         assertEquals(
             expected = a.translate(
-                Axis3Values(
+                A3Values(
                     x = 0.0,
                     y = 0.0,
                     z = -5.0,
                 ),
             ),
-            actual = a.translate(Axis3.Z.direction * -5.0),
+            actual = a.translate(A3.Z.direction * -5.0),
         )
     }
 
@@ -127,7 +127,7 @@ class SolidExtTest {
                 target = a,
             ),
             actual = a.rotate(
-                axis = Axis3.X.direction,
+                axis = A3.X.direction,
                 angle = 0.5,
             ),
         )
@@ -137,7 +137,7 @@ class SolidExtTest {
     fun uniform_scale_expands_all_axes() {
         assertEquals(
             expected = a.scale(
-                Axis3Values(
+                A3Values(
                     x = 2.0,
                     y = 2.0,
                     z = 2.0,
@@ -162,7 +162,7 @@ class SolidExtTest {
                 target = a,
             ),
             actual = a.scale(
-                Axis3Values(
+                A3Values(
                     x = 2.0,
                     y = 1.0,
                     z = 1.0,
@@ -190,7 +190,7 @@ class SolidExtTest {
                 op = op,
                 target = a,
             ),
-            actual = a.mirror(Axis3.Z.direction),
+            actual = a.mirror(A3.Z.direction),
         )
     }
 
@@ -219,7 +219,7 @@ class SolidExtTest {
         )
 
         val grown = box(
-            Axis3Values(
+            A3Values(
                 x = 1.0,
                 y = 1.0,
                 z = 1.0,
@@ -238,7 +238,7 @@ class SolidExtTest {
     @Test
     fun thickSolid_maps_to_the_thick_solid_node() {
         val hollow = box(
-            Axis3Values(
+            A3Values(
                 x = 10.0,
                 y = 10.0,
                 z = 10.0,

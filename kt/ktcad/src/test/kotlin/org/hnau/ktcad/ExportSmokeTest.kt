@@ -1,8 +1,8 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
-import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
+import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.ir.Vec2
 import java.io.File
@@ -29,7 +29,7 @@ class ExportSmokeTest {
             Part(
                 name = "box",
                 solid = box(
-                    Axis3Values(
+                    A3Values(
                         x = 1.0,
                         y = 2.0,
                         z = 3.0,
@@ -55,19 +55,19 @@ class ExportSmokeTest {
         output.delete()
 
         val square = polygon(
-            Axis2Values(
+            A2Values(
                 x = 0.0,
                 y = 0.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 10.0,
                 y = 0.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 10.0,
                 y = 10.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 0.0,
                 y = 10.0,
             ),
@@ -99,7 +99,7 @@ class ExportSmokeTest {
             Part(
                 name = "rounded",
                 solid = rect(
-                    Axis2Values(
+                    A2Values(
                         x = 10.0,
                         y = 10.0,
                     ),
@@ -148,7 +148,7 @@ class ExportSmokeTest {
         output.delete()
 
         val hollow = box(
-            Axis3Values(
+            A3Values(
                 x = 10.0,
                 y = 10.0,
                 z = 10.0,
@@ -184,7 +184,7 @@ class ExportSmokeTest {
             Part(
                 name = "box",
                 solid = box(
-                    Axis3Values(
+                    A3Values(
                         x = 1.0,
                         y = 2.0,
                         z = 3.0,
@@ -223,7 +223,7 @@ class ExportSmokeTest {
                 part = Part(
                     name = "hook",
                     solid = box(
-                        Axis3Values(
+                        A3Values(
                             x = 1.0,
                             y = 1.0,
                             z = 1.0,
@@ -232,7 +232,7 @@ class ExportSmokeTest {
                 ),
                 stlTransformation = {
                     rotate(
-                        axis = Axis3.X.direction,
+                        axis = A3.X.direction,
                         angle = Math.PI,
                     )
                 },
@@ -241,7 +241,7 @@ class ExportSmokeTest {
                 part = Part(
                     name = "cabinet",
                     solid = box(
-                        Axis3Values(
+                        A3Values(
                             x = 3.0,
                             y = 3.0,
                             z = 3.0,

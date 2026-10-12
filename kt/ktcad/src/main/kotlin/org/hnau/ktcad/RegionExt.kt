@@ -2,9 +2,9 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.axis.toVec2
@@ -31,16 +31,16 @@ import org.hnau.commons.kotlin.foldBoolean
  * `centered` flag shifts it by half its size along that axis so it is centred there instead.
  */
 fun rect(
-    size: Axis2Values<Double>,
-    centered: Axis2Values<Boolean> = Axis2Values.create { false },
+    size: A2Values<Double>,
+    centered: A2Values<Boolean> = A2Values.create { false },
 ): Region {
     val rectangle = polygon(
-        Axis2Values.create { 0.0 },
-        size * Axis2.X.direction,
+        A2Values.create { 0.0 },
+        size * A2.X.direction,
         size,
-        size * Axis2.Y.direction,
+        size * A2.Y.direction,
     )
-    if (Axis2.entries.none { centered[it] }) return rectangle
+    if (A2.entries.none { centered[it] }) return rectangle
     return rectangle.translate(
         size.combineWith(other = centered) { value, isCentered ->
             isCentered.foldBoolean(
@@ -57,9 +57,9 @@ fun circle(
 ): Region = Region.Circle(radius = radius)
 
 fun polygon(
-    first: Axis2Values<Double>,
-    second: Axis2Values<Double>,
-    vararg tail: Axis2Values<Double>,
+    first: A2Values<Double>,
+    second: A2Values<Double>,
+    vararg tail: A2Values<Double>,
 ): Region =
     Region.Polygon(
         points = nonEmptyListOf(
@@ -119,11 +119,11 @@ private fun regionBool(
 
 // --- Transforms -------------------------------------------------------------
 
-private val REGION_ORIGIN = Axis2Values.create { 0.0 }
+private val REGION_ORIGIN = A2Values.create { 0.0 }
 
 /** Translate by an axis value. */
 fun Region.translate(
-    value: Axis2Values<Double>,
+    value: A2Values<Double>,
 ): Region =
     Region.Transform(
         target = this,
@@ -132,7 +132,7 @@ fun Region.translate(
 
 fun Region.put(
     target: Region,
-    axis: Axis2,
+    axis: A2,
     targetFraction: Double,
     thisFraction: Double,
 ): Region {
@@ -144,7 +144,7 @@ fun Region.put(
 
 fun Region.rotate(
     angle: Double,
-    center: Axis2Values<Double> = REGION_ORIGIN,
+    center: A2Values<Double> = REGION_ORIGIN,
 ): Region =
     Region.Transform(
         target = this,
@@ -156,8 +156,8 @@ fun Region.rotate(
 
 /** Mirror across the line through `center` (default: origin) with the given `normal`. */
 fun Region.mirror(
-    normal: Axis2Values<Double>,
-    center: Axis2Values<Double> = REGION_ORIGIN,
+    normal: A2Values<Double>,
+    center: A2Values<Double> = REGION_ORIGIN,
 ): Region =
     Region.Transform(
         target = this,
@@ -170,11 +170,11 @@ fun Region.mirror(
 /** Uniform scale by `factor`. */
 fun Region.scale(
     factor: Double,
-): Region = scale(Axis2Values.create { factor })
+): Region = scale(A2Values.create { factor })
 
 /** Non-uniform scale by an axis value. */
 fun Region.scale(
-    value: Axis2Values<Double>,
+    value: A2Values<Double>,
 ): Region =
     Region.Transform(
         target = this,

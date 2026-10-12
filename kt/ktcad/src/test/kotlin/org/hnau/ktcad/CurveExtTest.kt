@@ -1,8 +1,8 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Curve3
@@ -17,7 +17,7 @@ class CurveExtTest {
     private fun a2(
         x: Double,
         y: Double,
-    ) = Axis2Values(
+    ) = A2Values(
         x = x,
         y = y,
     )
@@ -25,7 +25,7 @@ class CurveExtTest {
         x: Double,
         y: Double,
         z: Double,
-    ) = Axis3Values(
+    ) = A3Values(
         x = x,
         y = y,
         z = z,

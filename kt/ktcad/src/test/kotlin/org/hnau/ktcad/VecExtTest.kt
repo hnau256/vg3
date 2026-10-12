@@ -1,8 +1,8 @@
 package org.hnau.ktcad
 
 import org.hnau.commons.kotlin.foldBoolean
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.bbox.combineWith
 import org.hnau.ktcad.bbox.copy
 import org.hnau.ktcad.bbox.get
@@ -28,15 +28,15 @@ class VecExtTest {
         )
         assertEquals(
             expected = 1.0,
-            actual = v3[Axis3.X],
+            actual = v3[A3.X],
         )
         assertEquals(
             expected = 2.0,
-            actual = v3[Axis3.Y],
+            actual = v3[A3.Y],
         )
         assertEquals(
             expected = 3.0,
-            actual = v3[Axis3.Z],
+            actual = v3[A3.Z],
         )
 
         val v2 = Vec2(
@@ -45,11 +45,11 @@ class VecExtTest {
         )
         assertEquals(
             expected = 4.0,
-            actual = v2[Axis2.X],
+            actual = v2[A2.X],
         )
         assertEquals(
             expected = 5.0,
-            actual = v2[Axis2.Y],
+            actual = v2[A2.Y],
         )
     }
 
@@ -78,7 +78,7 @@ class VecExtTest {
                 y = 2.0,
                 z = 3.0,
             ).map { axis, value ->
-                (axis == Axis3.Z).foldBoolean(
+                (axis == A3.Z).foldBoolean(
                     ifTrue = { -value },
                     ifFalse = { value },
                 )
@@ -93,7 +93,7 @@ class VecExtTest {
                 x = 1.0,
                 y = 4.0,
             ).map { axis, value ->
-                (axis == Axis2.Y).foldBoolean(
+                (axis == A2.Y).foldBoolean(
                     ifTrue = { -value },
                     ifFalse = { value * 2 },
                 )
@@ -135,7 +135,7 @@ class VecExtTest {
                     y = 4.0,
                 ),
             ) { axis, a, b ->
-                (axis == Axis2.X).foldBoolean(
+                (axis == A2.X).foldBoolean(
                     ifTrue = { a + b },
                     ifFalse = { a + b },
                 )
@@ -152,7 +152,7 @@ class VecExtTest {
                 z = 0.0,
             ),
             actual = vec3 { axis ->
-                (axis == Axis3.X).foldBoolean(
+                (axis == A3.X).foldBoolean(
                     ifTrue = { 1.0 },
                     ifFalse = { 0.0 },
                 )
@@ -164,7 +164,7 @@ class VecExtTest {
                 y = 1.0,
             ),
             actual = vec2 { axis ->
-                (axis == Axis2.Y).foldBoolean(
+                (axis == A2.Y).foldBoolean(
                     ifTrue = { 1.0 },
                     ifFalse = { 0.0 },
                 )
@@ -272,7 +272,7 @@ class VecExtTest {
                 x = 1.0,
                 y = 2.0,
                 z = 3.0,
-            ).copy(axis = Axis3.Y) { -it },
+            ).copy(axis = A3.Y) { -it },
         )
         assertEquals(
             expected = Vec2(
@@ -282,7 +282,7 @@ class VecExtTest {
             actual = Vec2(
                 x = 1.0,
                 y = 2.0,
-            ).copy(axis = Axis2.X) { -it },
+            ).copy(axis = A2.X) { -it },
         )
     }
 }

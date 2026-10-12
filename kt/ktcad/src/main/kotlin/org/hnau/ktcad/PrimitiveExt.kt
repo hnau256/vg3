@@ -1,7 +1,7 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.commons.kotlin.foldBoolean
@@ -19,15 +19,15 @@ import org.hnau.commons.kotlin.foldBoolean
  * its size along every axis flagged there, so it is centred on those axes instead.
  */
 fun box(
-    size: Axis3Values<Double>,
-    centered: Axis3Values<Boolean> = Axis3Values.create { false },
+    size: A3Values<Double>,
+    centered: A3Values<Boolean> = A3Values.create { false },
 ): Solid {
     val box = Solid.Box(
-        width = size[Axis3.X],
-        length = size[Axis3.Y],
-        height = size[Axis3.Z],
+        width = size[A3.X],
+        length = size[A3.Y],
+        height = size[A3.Z],
     )
-    if (Axis3.entries.none { centered[it] }) return box
+    if (A3.entries.none { centered[it] }) return box
     return box.translate(
         size.combineWith(other = centered) { value, isCentered ->
             isCentered.foldBoolean(
@@ -53,5 +53,5 @@ fun cylinder(
         height = height,
         angle = angle,
     )
-    return if (centerZ) cylinder.translate(Axis3.Z.direction * (-height / 2)) else cylinder
+    return if (centerZ) cylinder.translate(A3.Z.direction * (-height / 2)) else cylinder
 }

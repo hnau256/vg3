@@ -2,11 +2,11 @@ package org.hnau.ktcad
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.plus
-import org.hnau.ktcad.axis.toAxis2Values
-import org.hnau.ktcad.axis.toAxis3Values
+import org.hnau.ktcad.axis.toA2Values
+import org.hnau.ktcad.axis.toA3Values
 import org.hnau.ktcad.axis.toVec2
 import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.ir.Curve2
@@ -26,25 +26,25 @@ import org.hnau.ktcad.ir.fold
  * absolute segment follow a `helix` (whose end the DSL cannot compute).
  */
 
-typealias ContourSegment = (() -> Axis2Values<Double>) -> Curve2
-typealias PathSegment = (() -> Axis3Values<Double>) -> Curve3
+typealias ContourSegment = (() -> A2Values<Double>) -> Curve2
+typealias PathSegment = (() -> A3Values<Double>) -> Curve3
 
 // --- 2D segments ------------------------------------------------------------
 
 fun lineTo(
-    to: Axis2Values<Double>,
+    to: A2Values<Double>,
 ): ContourSegment = { Curve2.Line(to = to.toVec2()) }
 
 /** A `line` offset from the current point by `delta`. */
 fun lineRel(
-    delta: Axis2Values<Double>,
+    delta: A2Values<Double>,
 ): ContourSegment = { current ->
     Curve2.Line(to = (current() + delta).toVec2())
 }
 
 fun arcTo(
-    via: Axis2Values<Double>,
-    to: Axis2Values<Double>,
+    via: A2Values<Double>,
+    to: A2Values<Double>,
 ): ContourSegment =
     {
         Curve2.Arc(
@@ -55,8 +55,8 @@ fun arcTo(
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(
-    via: Axis2Values<Double>,
-    to: Axis2Values<Double>,
+    via: A2Values<Double>,
+    to: A2Values<Double>,
 ): ContourSegment = { current ->
     val point = current()
     Curve2.Arc(
@@ -66,10 +66,10 @@ fun arcRel(
 }
 
 fun splineTo(
-    initial: Axis2Values<Double>,
-    vararg additional: Axis2Values<Double>,
-    tangentStart: Axis2Values<Double>? = null,
-    tangentEnd: Axis2Values<Double>? = null,
+    initial: A2Values<Double>,
+    vararg additional: A2Values<Double>,
+    tangentStart: A2Values<Double>? = null,
+    tangentEnd: A2Values<Double>? = null,
 ): ContourSegment = {
     Curve2.Spline(
         points = nonEmptyListOf(
@@ -83,9 +83,9 @@ fun splineTo(
 
 /** A 2D Bezier: [first], [second] and [additional] are the poles after the current point. */
 fun bezierTo(
-    first: Axis2Values<Double>,
-    second: Axis2Values<Double>,
-    vararg additional: Axis2Values<Double>,
+    first: A2Values<Double>,
+    second: A2Values<Double>,
+    vararg additional: A2Values<Double>,
 ): ContourSegment =
     {
         Curve2.Bezier(
@@ -100,19 +100,19 @@ fun bezierTo(
 // --- 3D segments ------------------------------------------------------------
 
 fun lineTo(
-    to: Axis3Values<Double>,
+    to: A3Values<Double>,
 ): PathSegment = { Curve3.Line(to = to.toVec3()) }
 
 /** A `line` offset from the current point by `delta`. */
 fun lineRel(
-    delta: Axis3Values<Double>,
+    delta: A3Values<Double>,
 ): PathSegment = { current ->
     Curve3.Line(to = (current() + delta).toVec3())
 }
 
 fun arcTo(
-    via: Axis3Values<Double>,
-    to: Axis3Values<Double>,
+    via: A3Values<Double>,
+    to: A3Values<Double>,
 ): PathSegment =
     {
         Curve3.Arc(
@@ -123,8 +123,8 @@ fun arcTo(
 
 /** An `arc` whose `via` and `to` are offsets from the current point. */
 fun arcRel(
-    via: Axis3Values<Double>,
-    to: Axis3Values<Double>,
+    via: A3Values<Double>,
+    to: A3Values<Double>,
 ): PathSegment = { current ->
     val point = current()
     Curve3.Arc(
@@ -134,10 +134,10 @@ fun arcRel(
 }
 
 fun splineTo(
-    initial: Axis3Values<Double>,
-    vararg additional: Axis3Values<Double>,
-    tangentStart: Axis3Values<Double>? = null,
-    tangentEnd: Axis3Values<Double>? = null,
+    initial: A3Values<Double>,
+    vararg additional: A3Values<Double>,
+    tangentStart: A3Values<Double>? = null,
+    tangentEnd: A3Values<Double>? = null,
 ): PathSegment = {
     Curve3.Spline(
         points = nonEmptyListOf(
@@ -151,9 +151,9 @@ fun splineTo(
 
 /** A 3D Bezier: [first], [second] and [additional] are the poles after the current point. */
 fun bezierTo(
-    first: Axis3Values<Double>,
-    second: Axis3Values<Double>,
-    vararg additional: Axis3Values<Double>,
+    first: A3Values<Double>,
+    second: A3Values<Double>,
+    vararg additional: A3Values<Double>,
 ): PathSegment =
     {
         Curve3.Bezier(
@@ -186,16 +186,16 @@ fun helix(
 
 /** A planar region from a start point and segments (relative segments see the current point). */
 fun contour(
-    start: Axis2Values<Double>,
+    start: A2Values<Double>,
     segments: NonEmptyList<ContourSegment>,
 ): Region =
     Region.Contour(
         start = start.toVec2(),
-        edges = buildChain(start = start, segments = segments) { it.end().toAxis2Values() },
+        edges = buildChain(start = start, segments = segments) { it.end().toA2Values() },
     )
 
 fun contour(
-    start: Axis2Values<Double>,
+    start: A2Values<Double>,
     initial: ContourSegment,
     vararg additional: ContourSegment,
 ): Region =
@@ -208,16 +208,16 @@ fun contour(
     )
 
 fun Path(
-    start: Axis3Values<Double>,
+    start: A3Values<Double>,
     segments: NonEmptyList<PathSegment>,
 ): Path =
     Path(
         start = start.toVec3(),
-        edges = buildChain(start = start, segments = segments) { it.end().toAxis3Values() },
+        edges = buildChain(start = start, segments = segments) { it.end().toA3Values() },
     )
 
 fun Path(
-    start: Axis3Values<Double>,
+    start: A3Values<Double>,
     initial: PathSegment,
     vararg additional: PathSegment,
 ): Path =
@@ -250,9 +250,9 @@ private fun <P, C> buildChain(
 
 /** An open 3D polyline through the given absolute points. */
 fun polyline(
-    first: Axis3Values<Double>,
-    second: Axis3Values<Double>,
-    vararg tail: Axis3Values<Double>,
+    first: A3Values<Double>,
+    second: A3Values<Double>,
+    vararg tail: A3Values<Double>,
 ): Path =
     Path(
         first,
@@ -262,9 +262,9 @@ fun polyline(
 
 /** A closed 3D polygon through the given absolute points. */
 fun polygon(
-    first: Axis3Values<Double>,
-    second: Axis3Values<Double>,
-    vararg tail: Axis3Values<Double>,
+    first: A3Values<Double>,
+    second: A3Values<Double>,
+    vararg tail: A3Values<Double>,
 ): Path =
     polyline(
         first,

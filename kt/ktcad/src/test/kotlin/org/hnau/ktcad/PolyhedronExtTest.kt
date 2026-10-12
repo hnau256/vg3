@@ -1,6 +1,6 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.toVec3
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,22 +10,22 @@ class PolyhedronExtTest {
 
     @Test
     fun shared_points_are_deduplicated_by_equals() {
-        val a = Axis3Values(
+        val a = A3Values(
             x = 0.0,
             y = 0.0,
             z = 0.0,
         )
-        val b = Axis3Values(
+        val b = A3Values(
             x = 1.0,
             y = 0.0,
             z = 0.0,
         )
-        val c = Axis3Values(
+        val c = A3Values(
             x = 0.0,
             y = 1.0,
             z = 0.0,
         )
-        val d = Axis3Values(
+        val d = A3Values(
             x = 0.0,
             y = 0.0,
             z = 1.0,

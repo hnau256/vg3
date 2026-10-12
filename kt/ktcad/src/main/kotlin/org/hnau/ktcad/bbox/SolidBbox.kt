@@ -2,9 +2,9 @@ package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.Region
 import org.hnau.ktcad.Solid
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.fold
 import org.hnau.ktcad.ir.BooleanKind
@@ -39,7 +39,7 @@ import kotlin.math.sqrt
  * - `fillet` — the target's box (a fillet/chamfer only removes material);
  * - `offset`/`thick_solid` — the target's box grown by a positive distance (a shrink stays inside).
  */
-val Solid.bbox: Axis3Values<ClosedRange<Double>>
+val Solid.bbox: A3Values<ClosedRange<Double>>
     get() = fold(
         ifBool = { arguments, kind, tools ->
             val operands = (kind == BooleanKind.CUT).foldBoolean(
@@ -139,7 +139,7 @@ private fun box(
     x: ClosedRange<Double>,
     y: ClosedRange<Double>,
     z: ClosedRange<Double>,
-): Axis3Values<ClosedRange<Double>> = Axis3Values(
+): A3Values<ClosedRange<Double>> = A3Values(
     x = x,
     y = y,
     z = z,
@@ -147,16 +147,16 @@ private fun box(
 
 private fun pointsBox(
     points: Iterable<Vec3>,
-): Axis3Values<ClosedRange<Double>> =
-    Axis3Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
+): A3Values<ClosedRange<Double>> =
+    A3Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
-private fun Axis3Values<ClosedRange<Double>>.cover(
-    other: Axis3Values<ClosedRange<Double>>,
-): Axis3Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
+private fun A3Values<ClosedRange<Double>>.cover(
+    other: A3Values<ClosedRange<Double>>,
+): A3Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun Axis3Values<ClosedRange<Double>>.grow(
+private fun A3Values<ClosedRange<Double>>.grow(
     distance: Double,
-): Axis3Values<ClosedRange<Double>> =
+): A3Values<ClosedRange<Double>> =
     map {
         it.grow(
             maxOf(
@@ -171,7 +171,7 @@ private fun profileRadius(
     profile: Region,
 ): Double {
     val profileBox = profile.bbox
-    return Axis2.entries.maxOf { axis ->
+    return A2.entries.maxOf { axis ->
         maxOf(
             a = abs(profileBox[axis].start),
             b = abs(profileBox[axis].endInclusive),
@@ -183,7 +183,7 @@ private fun profileRadius(
 
 private fun pathBox(
     path: Path,
-): Axis3Values<ClosedRange<Double>> {
+): A3Values<ClosedRange<Double>> {
     var box = pointsBox(listOf(path.start))
     var current = path.start
     path.edges.forEach { edge ->
@@ -196,7 +196,7 @@ private fun pathBox(
 /** A segment's bounding box, from its [from] point (the previous endpoint). */
 private fun Curve3.geometryBox(
     from: Vec3,
-): Axis3Values<ClosedRange<Double>> = fold(
+): A3Values<ClosedRange<Double>> = fold(
     ifLine = { to ->
         pointsBox(
             listOf(
@@ -267,12 +267,12 @@ private fun Curve3.endPoint(
 
 // --- Transforms (3D) --------------------------------------------------------
 
-private fun Axis3Values<ClosedRange<Double>>.transform(
+private fun A3Values<ClosedRange<Double>>.transform(
     op: TransformOp,
-): Axis3Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
+): A3Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
 
-private fun Axis3Values<ClosedRange<Double>>.corners(): List<Vec3> =
-    Axis3.entries.fold(initial = listOf(vec3 { 0.0 })) { corners, axis ->
+private fun A3Values<ClosedRange<Double>>.corners(): List<Vec3> =
+    A3.entries.fold(initial = listOf(vec3 { 0.0 })) { corners, axis ->
         corners.flatMap { corner ->
             listOf(
                 this[axis].start,
@@ -304,9 +304,9 @@ private fun TransformOp.transformPoint(
                 ifY = { 4 },
                 ifZ = { 8 },
             )
-            m[row] * point[Axis3.X] +
-                m[row + 1] * point[Axis3.Y] +
-                m[row + 2] * point[Axis3.Z] +
+            m[row] * point[A3.X] +
+                m[row + 1] * point[A3.Y] +
+                m[row + 2] * point[A3.Z] +
                 m[row + 3]
         }
     },
@@ -314,15 +314,15 @@ private fun TransformOp.transformPoint(
 
 private fun Vec3.dot(
     other: Vec3,
-): Double = Axis3.entries.sumOf { get(it) * other[it] }
+): Double = A3.entries.sumOf { get(it) * other[it] }
 
 private fun Vec3.cross(
     other: Vec3,
 ): Vec3 = vec3 { axis ->
     axis.fold(
-        ifX = { this[Axis3.Y] * other[Axis3.Z] - this[Axis3.Z] * other[Axis3.Y] },
-        ifY = { this[Axis3.Z] * other[Axis3.X] - this[Axis3.X] * other[Axis3.Z] },
-        ifZ = { this[Axis3.X] * other[Axis3.Y] - this[Axis3.Y] * other[Axis3.X] },
+        ifX = { this[A3.Y] * other[A3.Z] - this[A3.Z] * other[A3.Y] },
+        ifY = { this[A3.Z] * other[A3.X] - this[A3.X] * other[A3.Z] },
+        ifZ = { this[A3.X] * other[A3.Y] - this[A3.Y] * other[A3.X] },
     )
 }
 

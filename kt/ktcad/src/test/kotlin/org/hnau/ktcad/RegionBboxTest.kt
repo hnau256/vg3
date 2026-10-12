@@ -1,7 +1,7 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.ir.Vec2
@@ -11,19 +11,19 @@ import kotlin.test.assertEquals
 class RegionBboxTest {
 
     private val square = polygon(
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 10.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 10.0,
             y = 10.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 10.0,
         ),
@@ -34,14 +34,14 @@ class RegionBboxTest {
         x1: Double,
         y0: Double,
         y1: Double,
-    ) = Axis2Values(
+    ) = A2Values(
         x = x0..x1,
         y = y0..y1,
     )
 
     private fun assertBox(
-        expected: Axis2Values<ClosedRange<Double>>,
-        actual: Axis2Values<ClosedRange<Double>>,
+        expected: A2Values<ClosedRange<Double>>,
+        actual: A2Values<ClosedRange<Double>>,
     ) {
         val eps = 1e-9
         assertEquals(
@@ -91,18 +91,18 @@ class RegionBboxTest {
     @Test
     fun contour_bounds_lines_and_arcs_by_control_points() {
         val lines = contour(
-            Axis2Values(
+            A2Values(
                 x = 0.0,
                 y = 0.0,
             ),
             lineTo(
-                Axis2Values(
+                A2Values(
                     x = 10.0,
                     y = 0.0,
                 ),
             ),
             lineRel(
-                Axis2Values(
+                A2Values(
                     x = 0.0,
                     y = 10.0,
                 ),
@@ -119,16 +119,16 @@ class RegionBboxTest {
         )
 
         val arc = contour(
-            Axis2Values(
+            A2Values(
                 x = 0.0,
                 y = 0.0,
             ),
             arcTo(
-                via = Axis2Values(
+                via = A2Values(
                     x = 5.0,
                     y = 5.0,
                 ),
-                to = Axis2Values(
+                to = A2Values(
                     x = 10.0,
                     y = 0.0,
                 ),
@@ -148,16 +148,16 @@ class RegionBboxTest {
     @Test
     fun contour_outlines_bezier_poles_from_the_start_point() {
         val region = contour(
-            Axis2Values(
+            A2Values(
                 x = 0.0,
                 y = 0.0,
             ),
             bezierTo(
-                Axis2Values(
+                A2Values(
                     x = 10.0,
                     y = 0.0,
                 ),
-                Axis2Values(
+                A2Values(
                     x = 10.0,
                     y = 10.0,
                 ),
@@ -184,12 +184,12 @@ class RegionBboxTest {
                 y1 = 5.0,
             ),
             actual = rect(
-                Axis2Values(
+                A2Values(
                     x = 1.0,
                     y = 1.0,
                 ),
             ).translate(
-                Axis2Values(
+                A2Values(
                     x = 3.0,
                     y = 4.0,
                 ),
@@ -203,12 +203,12 @@ class RegionBboxTest {
                 y1 = 0.0,
             ),
             actual = rect(
-                Axis2Values(
+                A2Values(
                     x = 1.0,
                     y = 1.0,
                 ),
             ).scale(
-                Axis2Values(
+                A2Values(
                     x = 2.0,
                     y = -1.0,
                 ),
@@ -222,7 +222,7 @@ class RegionBboxTest {
                 y1 = 1.0,
             ),
             actual = rect(
-                Axis2Values(
+                A2Values(
                     x = 1.0,
                     y = 1.0,
                 ),
@@ -236,11 +236,11 @@ class RegionBboxTest {
                 y1 = 1.0,
             ),
             actual = rect(
-                Axis2Values(
+                A2Values(
                     x = 1.0,
                     y = 1.0,
                 ),
-            ).mirror(Axis2.X.direction).bbox,
+            ).mirror(A2.X.direction).bbox,
         )
     }
 

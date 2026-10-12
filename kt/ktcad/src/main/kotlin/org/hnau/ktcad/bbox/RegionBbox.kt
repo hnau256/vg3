@@ -1,8 +1,8 @@
 package org.hnau.ktcad.bbox
 
 import org.hnau.ktcad.Region
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.end
 import org.hnau.ktcad.fold
@@ -30,7 +30,7 @@ import kotlin.math.sqrt
  * - `fillet2d` — the target's box (rounding corners only removes material);
  * - `offset2d` — the target's box grown by a positive `distance` (a shrink stays inside it).
  */
-val Region.bbox: Axis2Values<ClosedRange<Double>>
+val Region.bbox: A2Values<ClosedRange<Double>>
     get() = fold(
         ifBool = { arguments, kind, tools ->
             val operands = (kind == BooleanKind.CUT).foldBoolean(
@@ -39,7 +39,7 @@ val Region.bbox: Axis2Values<ClosedRange<Double>>
             )
             operands.map { it.bbox }.reduce { a, b -> a.cover(b) }
         },
-        ifCircle = { radius -> Axis2Values.create { -radius..radius } },
+        ifCircle = { radius -> A2Values.create { -radius..radius } },
         ifContour = { edges, start ->
             var box = pointsBox(listOf(start))
             var current = start
@@ -78,16 +78,16 @@ private fun Curve2.controlPoints(
 
 private fun pointsBox(
     points: Iterable<Vec2>,
-): Axis2Values<ClosedRange<Double>> =
-    Axis2Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
+): A2Values<ClosedRange<Double>> =
+    A2Values.create { axis -> points.minOf { it[axis] }..points.maxOf { it[axis] } }
 
-private fun Axis2Values<ClosedRange<Double>>.cover(
-    other: Axis2Values<ClosedRange<Double>>,
-): Axis2Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
+private fun A2Values<ClosedRange<Double>>.cover(
+    other: A2Values<ClosedRange<Double>>,
+): A2Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun Axis2Values<ClosedRange<Double>>.grow(
+private fun A2Values<ClosedRange<Double>>.grow(
     distance: Double,
-): Axis2Values<ClosedRange<Double>> =
+): A2Values<ClosedRange<Double>> =
     map {
         it.grow(
             maxOf(
@@ -97,12 +97,12 @@ private fun Axis2Values<ClosedRange<Double>>.grow(
         )
     }
 
-private fun Axis2Values<ClosedRange<Double>>.transform(
+private fun A2Values<ClosedRange<Double>>.transform(
     op: TransformOp2,
-): Axis2Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
+): A2Values<ClosedRange<Double>> = pointsBox(corners().map(op::transformPoint))
 
-private fun Axis2Values<ClosedRange<Double>>.corners(): List<Vec2> =
-    Axis2.entries.fold(initial = listOf(vec2 { 0.0 })) { corners, axis ->
+private fun A2Values<ClosedRange<Double>>.corners(): List<Vec2> =
+    A2.entries.fold(initial = listOf(vec2 { 0.0 })) { corners, axis ->
         corners.flatMap { corner ->
             listOf(
                 this[axis].start,
@@ -126,8 +126,8 @@ private fun TransformOp2.transformPoint(
         val sine = sin(angle)
         vec2 { axis ->
             axis.fold(
-                ifX = { v[Axis2.X] * cosine - v[Axis2.Y] * sine },
-                ifY = { v[Axis2.X] * sine + v[Axis2.Y] * cosine },
+                ifX = { v[A2.X] * cosine - v[A2.Y] * sine },
+                ifY = { v[A2.X] * sine + v[A2.Y] * cosine },
             )
         } + center
     },
@@ -135,7 +135,7 @@ private fun TransformOp2.transformPoint(
 
 private fun Vec2.dot(
     other: Vec2,
-): Double = Axis2.entries.sumOf { get(it) * other[it] }
+): Double = A2.entries.sumOf { get(it) * other[it] }
 
 private fun normalized(
     vector: Vec2,

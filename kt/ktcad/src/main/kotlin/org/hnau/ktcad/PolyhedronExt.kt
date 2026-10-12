@@ -3,7 +3,7 @@ package org.hnau.ktcad
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.ir.Vec3
 
@@ -16,7 +16,7 @@ import org.hnau.ktcad.ir.Vec3
  * reusing the same deduplicating [Lowering] arena as the IR lowering.
  */
 fun polyhedron(
-    faces: NonEmptyList<List<Axis3Values<Double>>>,
+    faces: NonEmptyList<List<A3Values<Double>>>,
 ): Solid {
     val points = Lowering<Vec3, Int, Vec3>(wrap = { it }) { point, _ -> point }
     val faceIndices = faces.map { face -> face.map { points.indexOf(it.toVec3()) } }
@@ -28,8 +28,8 @@ fun polyhedron(
 
 /** Variadic convenience: `polyhedron(face0, face1, …)`. */
 fun polyhedron(
-    first: List<Axis3Values<Double>>,
-    vararg additional: List<Axis3Values<Double>>,
+    first: List<A3Values<Double>>,
+    vararg additional: List<A3Values<Double>>,
 ): Solid =
     polyhedron(
         nonEmptyListOf(

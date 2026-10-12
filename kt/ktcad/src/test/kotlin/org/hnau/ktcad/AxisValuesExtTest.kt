@@ -1,12 +1,12 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.minus
 import org.hnau.ktcad.axis.plus
 import org.hnau.ktcad.axis.times
-import org.hnau.ktcad.axis.toAxis2Values
-import org.hnau.ktcad.axis.toAxis3Values
+import org.hnau.ktcad.axis.toA2Values
+import org.hnau.ktcad.axis.toA3Values
 import org.hnau.ktcad.axis.toVec2
 import org.hnau.ktcad.axis.toVec3
 import kotlin.test.Test
@@ -16,18 +16,18 @@ class AxisValuesExtTest {
 
     @Test
     fun arithmetic_combines_components() {
-        val a = Axis3Values(
+        val a = A3Values(
             x = 1.0,
             y = 2.0,
             z = 3.0,
         )
-        val b = Axis3Values(
+        val b = A3Values(
             x = 4.0,
             y = 5.0,
             z = 6.0,
         )
         assertEquals(
-            expected = Axis3Values(
+            expected = A3Values(
                 x = 5.0,
                 y = 7.0,
                 z = 9.0,
@@ -35,7 +35,7 @@ class AxisValuesExtTest {
             actual = a + b,
         )
         assertEquals(
-            expected = Axis3Values(
+            expected = A3Values(
                 x = -3.0,
                 y = -3.0,
                 z = -3.0,
@@ -43,7 +43,7 @@ class AxisValuesExtTest {
             actual = a - b,
         )
         assertEquals(
-            expected = Axis3Values(
+            expected = A3Values(
                 x = 4.0,
                 y = 10.0,
                 z = 18.0,
@@ -51,7 +51,7 @@ class AxisValuesExtTest {
             actual = a * b,
         )
         assertEquals(
-            expected = Axis3Values(
+            expected = A3Values(
                 x = 2.0,
                 y = 4.0,
                 z = 6.0,
@@ -62,23 +62,23 @@ class AxisValuesExtTest {
 
     @Test
     fun model_round_trip_preserves_the_value() {
-        val v3 = Axis3Values(
+        val v3 = A3Values(
             x = 1.0,
             y = 2.0,
             z = 3.0,
         )
         assertEquals(
             expected = v3,
-            actual = v3.toVec3().toAxis3Values(),
+            actual = v3.toVec3().toA3Values(),
         )
 
-        val v2 = Axis2Values(
+        val v2 = A2Values(
             x = 4.0,
             y = 5.0,
         )
         assertEquals(
             expected = v2,
-            actual = v2.toVec2().toAxis2Values(),
+            actual = v2.toVec2().toA2Values(),
         )
     }
 }

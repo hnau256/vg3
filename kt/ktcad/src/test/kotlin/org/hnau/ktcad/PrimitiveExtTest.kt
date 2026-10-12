@@ -1,8 +1,8 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.ir.Vec2
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,7 +19,7 @@ class PrimitiveExtTest {
                 height = 3.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 2.0,
                     z = 3.0,
@@ -32,12 +32,12 @@ class PrimitiveExtTest {
     fun centering_an_axis_adds_a_transform() {
         assertTrue(
             box(
-                size = Axis3Values(
+                size = A3Values(
                     x = 1.0,
                     y = 2.0,
                     z = 3.0,
                 ),
-                centered = Axis3Values(
+                centered = A3Values(
                     x = true,
                     y = false,
                     z = false,
@@ -93,7 +93,7 @@ class PrimitiveExtTest {
         assertEquals(
             expected = expected,
             actual = rect(
-                Axis2Values(
+                A2Values(
                     x = 2.0,
                     y = 3.0,
                 ),
@@ -105,11 +105,11 @@ class PrimitiveExtTest {
     fun centering_rect_adds_a_transform() {
         assertTrue(
             rect(
-                size = Axis2Values(
+                size = A2Values(
                     x = 2.0,
                     y = 3.0,
                 ),
-                centered = Axis2Values(
+                centered = A2Values(
                     x = true,
                     y = false,
                 ),

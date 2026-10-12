@@ -1,6 +1,6 @@
 package org.hnau.ktcad
 
-import org.hnau.ktcad.axis.Axis2Values
+import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.Sketch
 import org.hnau.ktcad.ir.Vec2
@@ -11,19 +11,19 @@ import kotlin.test.assertTrue
 class RegionExtTest {
 
     private val square = polygon(
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 10.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 10.0,
             y = 10.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 10.0,
         ),
@@ -59,7 +59,7 @@ class RegionExtTest {
         val arena = Arena()
         val index = arena.region(
             square.translate(
-                Axis2Values(
+                A2Values(
                     x = 3.0,
                     y = 4.0,
                 ),

@@ -3,8 +3,8 @@ package org.hnau.ktcad
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrThrow
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.bbox.bbox
@@ -19,8 +19,8 @@ import org.hnau.ktcad.ir.TransformOp
  * DSL sugar over [Solid]: booleans and transforms. Every function returns a **new** `Solid`
  * (the domain graph is immutable); nothing is mutated.
  *
- * Canonical axis convention (the engine is dimensionless, angles in radians): `Axis3.X` = `+X`,
- * `Axis3.Y` = `+Y`, `Axis3.Z` = `+Z`; a negative distance/angle reverses the sign.
+ * Canonical axis convention (the engine is dimensionless, angles in radians): `A3.X` = `+X`,
+ * `A3.Y` = `+Y`, `A3.Z` = `+Z`; a negative distance/angle reverses the sign.
  *
  * Transforms wrap the operand in the `transform` IR body (there is a single canonical way to place
  * a shape); the engine applies `ops` left to right.
@@ -102,9 +102,9 @@ operator fun Solid.times(
 
 // --- Translation ------------------------------------------------------------
 
-/** Translate by an axis value (e.g. `Axis3.Z.direction * 5.0`). */
+/** Translate by an axis value (e.g. `A3.Z.direction * 5.0`). */
 fun Solid.translate(
-    value: Axis3Values<Double>,
+    value: A3Values<Double>,
 ): Solid =
     transform(
         op = TransformOp.Translate(value = value.toVec3()),
@@ -113,7 +113,7 @@ fun Solid.translate(
 
 fun Solid.put(
     target: Solid,
-    axis: Axis3,
+    axis: A3,
     targetFraction: Double,
     thisFraction: Double,
 ): Solid {
@@ -128,11 +128,11 @@ fun Solid.put(
 /** Uniform scale by `factor`. */
 fun Solid.scale(
     factor: Double,
-): Solid = scale(Axis3Values.create { factor })
+): Solid = scale(A3Values.create { factor })
 
-/** Non-uniform scale by an axis value (e.g. `Axis3.X.direction * 2.0`). */
+/** Non-uniform scale by an axis value (e.g. `A3.X.direction * 2.0`). */
 fun Solid.scale(
-    value: Axis3Values<Double>,
+    value: A3Values<Double>,
 ): Solid =
     transform(
         op = TransformOp.Scale(value = value.toVec3()),
@@ -143,9 +143,9 @@ fun Solid.scale(
 
 /** Rotate by `angle` (radians) about `axis`, around `center` (default: origin). */
 fun Solid.rotate(
-    axis: Axis3Values<Double>,
+    axis: A3Values<Double>,
     angle: Double,
-    center: Axis3Values<Double> = ORIGIN,
+    center: A3Values<Double> = ORIGIN,
 ): Solid = transform(
     op = TransformOp.Rotate(
         center = center.toVec3(),
@@ -159,8 +159,8 @@ fun Solid.rotate(
 
 /** Mirror across the plane through `center` (default: origin) with the given `normal`. */
 fun Solid.mirror(
-    normal: Axis3Values<Double>,
-    center: Axis3Values<Double> = ORIGIN,
+    normal: A3Values<Double>,
+    center: A3Values<Double> = ORIGIN,
 ): Solid =
     transform(
         op = TransformOp.Mirror(
@@ -220,4 +220,4 @@ fun Solid.thickSolid(
     target = this,
 )
 
-private val ORIGIN = Axis3Values.create { 0.0 }
+private val ORIGIN = A3Values.create { 0.0 }

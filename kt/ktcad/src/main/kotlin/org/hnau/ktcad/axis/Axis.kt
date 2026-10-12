@@ -6,11 +6,11 @@ import org.hnau.commons.kotlin.foldBoolean
 
 @Fold
 @EnumValues
-enum class Axis2 { X, Y }
+enum class A2 { X, Y }
 
-/** The positive unit direction of the axis (`Axis2.X` → `+X`, …). */
-val Axis2.direction: Axis2Values<Double>
-    get() = Axis2Values.create { axis ->
+/** The positive unit direction of the axis (`A2.X` → `+X`, …). */
+val A2.direction: A2Values<Double>
+    get() = A2Values.create { axis ->
         (axis == this).foldBoolean(
             ifTrue = { 1.0 },
             ifFalse = { 0.0 },
@@ -19,11 +19,11 @@ val Axis2.direction: Axis2Values<Double>
 
 @Fold
 @EnumValues
-enum class Axis3 { X, Y, Z }
+enum class A3 { X, Y, Z }
 
-/** The positive unit direction of the axis (`Axis3.X` → `+X`, …). */
-val Axis3.direction: Axis3Values<Double>
-    get() = Axis3Values.create { axis ->
+/** The positive unit direction of the axis (`A3.X` → `+X`, …). */
+val A3.direction: A3Values<Double>
+    get() = A3Values.create { axis ->
         (axis == this).foldBoolean(
             ifTrue = { 1.0 },
             ifFalse = { 0.0 },

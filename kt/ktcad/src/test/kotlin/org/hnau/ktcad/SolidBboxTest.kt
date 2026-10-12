@@ -1,9 +1,9 @@
 package org.hnau.ktcad
 
 import arrow.core.nonEmptyListOf
-import org.hnau.ktcad.axis.Axis2Values
-import org.hnau.ktcad.axis.Axis3
-import org.hnau.ktcad.axis.Axis3Values
+import org.hnau.ktcad.axis.A2Values
+import org.hnau.ktcad.axis.A3
+import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
@@ -18,19 +18,19 @@ import kotlin.test.assertEquals
 class SolidBboxTest {
 
     private val square = polygon(
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 2.0,
             y = 0.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 2.0,
             y = 2.0,
         ),
-        Axis2Values(
+        A2Values(
             x = 0.0,
             y = 2.0,
         ),
@@ -43,15 +43,15 @@ class SolidBboxTest {
         y1: Double,
         z0: Double,
         z1: Double,
-    ) = Axis3Values(
+    ) = A3Values(
         x = x0..x1,
         y = y0..y1,
         z = z0..z1,
     )
 
     private fun assertBox(
-        expected: Axis3Values<ClosedRange<Double>>,
-        actual: Axis3Values<ClosedRange<Double>>,
+        expected: A3Values<ClosedRange<Double>>,
+        actual: A3Values<ClosedRange<Double>>,
     ) {
         val eps = 1e-9
         assertEquals(
@@ -98,7 +98,7 @@ class SolidBboxTest {
                 z1 = 3.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 2.0,
                     z = 3.0,
@@ -253,19 +253,19 @@ class SolidBboxTest {
         )
 
         val ring = polygon(
-            Axis2Values(
+            A2Values(
                 x = 2.0,
                 y = 0.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 4.0,
                 y = 0.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 4.0,
                 y = 3.0,
             ),
-            Axis2Values(
+            A2Values(
                 x = 2.0,
                 y = 3.0,
             ),
@@ -289,20 +289,20 @@ class SolidBboxTest {
     @Test
     fun loft_unions_its_sections_and_sweep_grows_the_path() {
         val lower = Path(
-            Axis3Values(
+            A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
             lineTo(
-                Axis3Values(
+                A3Values(
                     x = 4.0,
                     y = 0.0,
                     z = 0.0,
                 ),
             ),
             lineTo(
-                Axis3Values(
+                A3Values(
                     x = 4.0,
                     y = 4.0,
                     z = 0.0,
@@ -310,20 +310,20 @@ class SolidBboxTest {
             ),
         )
         val upper = Path(
-            Axis3Values(
+            A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 10.0,
             ),
             lineTo(
-                Axis3Values(
+                A3Values(
                     x = 2.0,
                     y = 0.0,
                     z = 10.0,
                 ),
             ),
             lineTo(
-                Axis3Values(
+                A3Values(
                     x = 2.0,
                     y = 2.0,
                     z = 10.0,
@@ -348,13 +348,13 @@ class SolidBboxTest {
         )
 
         val path = Path(
-            Axis3Values(
+            A3Values(
                 x = 0.0,
                 y = 0.0,
                 z = 0.0,
             ),
             lineTo(
-                Axis3Values(
+                A3Values(
                     x = 10.0,
                     y = 0.0,
                     z = 0.0,
@@ -391,19 +391,19 @@ class SolidBboxTest {
             actual = fuse(
                 listOf(
                     box(
-                        Axis3Values(
+                        A3Values(
                             x = 1.0,
                             y = 1.0,
                             z = 1.0,
                         ),
                     ),
                     box(
-                        Axis3Values(
+                        A3Values(
                             x = 1.0,
                             y = 1.0,
                             z = 1.0,
                         ),
-                    ).translate(Axis3.X.direction * 5.0),
+                    ).translate(A3.X.direction * 5.0),
                 ),
             ).bbox,
         )
@@ -418,13 +418,13 @@ class SolidBboxTest {
             ),
             actual = cut(
                 base = box(
-                    Axis3Values(
+                    A3Values(
                         x = 4.0,
                         y = 4.0,
                         z = 4.0,
                     ),
                 ),
-                tools = nonEmptyListOf(halfspace().translate(Axis3.Z.direction * 2.0)),
+                tools = nonEmptyListOf(halfspace().translate(A3.Z.direction * 2.0)),
             ).bbox,
         )
     }
@@ -441,13 +441,13 @@ class SolidBboxTest {
                 z1 = 5.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
                 ),
             ).translate(
-                Axis3Values(
+                A3Values(
                     x = 2.0,
                     y = 3.0,
                     z = 4.0,
@@ -464,13 +464,13 @@ class SolidBboxTest {
                 z1 = 1.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
                 ),
             ).rotate(
-                axis = Axis3.Z.direction,
+                axis = A3.Z.direction,
                 angle = PI / 2,
             ).bbox,
         )
@@ -484,7 +484,7 @@ class SolidBboxTest {
                 z1 = 2.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
@@ -501,12 +501,12 @@ class SolidBboxTest {
                 z1 = 0.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
                 ),
-            ).mirror(Axis3.Z.direction).bbox,
+            ).mirror(A3.Z.direction).bbox,
         )
 
         val matrix = Solid.Transform(
@@ -531,7 +531,7 @@ class SolidBboxTest {
                 ),
             ),
             target = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
@@ -563,7 +563,7 @@ class SolidBboxTest {
                 z1 = 2.0,
             ),
             actual = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,
@@ -574,7 +574,7 @@ class SolidBboxTest {
         val filleted = fillet(
             radius = RadiusSpec.All(0.1),
             target = box(
-                Axis3Values(
+                A3Values(
                     x = 1.0,
                     y = 1.0,
                     z = 1.0,

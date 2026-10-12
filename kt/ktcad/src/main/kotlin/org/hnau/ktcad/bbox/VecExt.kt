@@ -1,18 +1,18 @@
 package org.hnau.ktcad.bbox
 
-import org.hnau.ktcad.axis.Axis2
-import org.hnau.ktcad.axis.Axis3
+import org.hnau.ktcad.axis.A2
+import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.axis.fold
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
 
-// Per-axis sugar over `Vec2`/`Vec3`, mirroring the `@EnumValues`-generated `Axis2Values`/
-// `Axis3Values` API (same operations, with the element type fixed to `Double`).
+// Per-axis sugar over `Vec2`/`Vec3`, mirroring the `@EnumValues`-generated `A2Values`/
+// `A3Values` API (same operations, with the element type fixed to `Double`).
 
 // --- Vec2 -------------------------------------------------------------------
 
 internal operator fun Vec2.get(
-    axis: Axis2,
+    axis: A2,
 ): Double = axis.fold(
     ifX = { x },
     ifY = { y },
@@ -40,14 +40,14 @@ internal operator fun Vec2.times(
 ): Vec2 = combineWith(other = other) { a, b -> a * b }
 
 internal inline fun Vec2.map(
-    transform: (axis: Axis2, value: Double) -> Double,
+    transform: (axis: A2, value: Double) -> Double,
 ): Vec2 = Vec2(
     x = transform(
-        Axis2.X,
+        A2.X,
         x,
     ),
     y = transform(
-        Axis2.Y,
+        A2.Y,
         y,
     ),
 )
@@ -59,15 +59,15 @@ internal inline fun Vec2.map(
 
 internal inline fun Vec2.combineWith(
     other: Vec2,
-    combine: (axis: Axis2, value: Double, other: Double) -> Double,
+    combine: (axis: A2, value: Double, other: Double) -> Double,
 ): Vec2 = Vec2(
     x = combine(
-        Axis2.X,
+        A2.X,
         x,
         other.x,
     ),
     y = combine(
-        Axis2.Y,
+        A2.Y,
         y,
         other.y,
     ),
@@ -84,14 +84,14 @@ internal inline fun Vec2.combineWith(
 }
 
 internal inline fun vec2(
-    createValue: (axis: Axis2) -> Double,
+    createValue: (axis: A2) -> Double,
 ): Vec2 = Vec2(
-    x = createValue(Axis2.X),
-    y = createValue(Axis2.Y),
+    x = createValue(A2.X),
+    y = createValue(A2.Y),
 )
 
 internal inline fun Vec2.copy(
-    axis: Axis2,
+    axis: A2,
     transform: (value: Double) -> Double,
 ): Vec2 = axis.fold(
     ifX = { copy(x = transform(x)) },
@@ -101,7 +101,7 @@ internal inline fun Vec2.copy(
 // --- Vec3 -------------------------------------------------------------------
 
 internal operator fun Vec3.get(
-    axis: Axis3,
+    axis: A3,
 ): Double = axis.fold(
     ifX = { x },
     ifY = { y },
@@ -130,18 +130,18 @@ internal operator fun Vec3.times(
 ): Vec3 = combineWith(other = other) { a, b -> a * b }
 
 internal inline fun Vec3.map(
-    transform: (axis: Axis3, value: Double) -> Double,
+    transform: (axis: A3, value: Double) -> Double,
 ): Vec3 = Vec3(
     x = transform(
-        Axis3.X,
+        A3.X,
         x,
     ),
     y = transform(
-        Axis3.Y,
+        A3.Y,
         y,
     ),
     z = transform(
-        Axis3.Z,
+        A3.Z,
         z,
     ),
 )
@@ -153,20 +153,20 @@ internal inline fun Vec3.map(
 
 internal inline fun Vec3.combineWith(
     other: Vec3,
-    combine: (axis: Axis3, value: Double, other: Double) -> Double,
+    combine: (axis: A3, value: Double, other: Double) -> Double,
 ): Vec3 = Vec3(
     x = combine(
-        Axis3.X,
+        A3.X,
         x,
         other.x,
     ),
     y = combine(
-        Axis3.Y,
+        A3.Y,
         y,
         other.y,
     ),
     z = combine(
-        Axis3.Z,
+        A3.Z,
         z,
         other.z,
     ),
@@ -183,15 +183,15 @@ internal inline fun Vec3.combineWith(
 }
 
 internal inline fun vec3(
-    createValue: (axis: Axis3) -> Double,
+    createValue: (axis: A3) -> Double,
 ): Vec3 = Vec3(
-    x = createValue(Axis3.X),
-    y = createValue(Axis3.Y),
-    z = createValue(Axis3.Z),
+    x = createValue(A3.X),
+    y = createValue(A3.Y),
+    z = createValue(A3.Z),
 )
 
 internal inline fun Vec3.copy(
-    axis: Axis3,
+    axis: A3,
     transform: (value: Double) -> Double,
 ): Vec3 = axis.fold(
     ifX = { copy(x = transform(x)) },
