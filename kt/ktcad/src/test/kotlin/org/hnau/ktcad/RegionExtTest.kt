@@ -4,7 +4,7 @@ import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.region.plus
 import org.hnau.ktcad.ir.RadiusSpec
 import org.hnau.ktcad.ir.Sketch
-import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.circle
 import org.hnau.ktcad.region.extrude
 import org.hnau.ktcad.region.fillet2dAll
 import org.hnau.ktcad.region.fillet2dExpression

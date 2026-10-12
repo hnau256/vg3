@@ -17,7 +17,7 @@ import org.hnau.ktcad.path.polygon3
 import org.hnau.ktcad.path.polyline
 import org.hnau.ktcad.path.spline3To
 import org.hnau.ktcad.region.arc2Rel
-import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.circle
 import org.hnau.ktcad.region.contour
 import org.hnau.ktcad.region.line2Rel
 import org.hnau.ktcad.region.line2To

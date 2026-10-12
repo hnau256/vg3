@@ -5,7 +5,7 @@ import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.region.plus
 import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.axis.direction
-import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.circle
 import org.hnau.ktcad.region.mirror
 import org.hnau.ktcad.region.offset2d
 import org.hnau.ktcad.region.arc2To

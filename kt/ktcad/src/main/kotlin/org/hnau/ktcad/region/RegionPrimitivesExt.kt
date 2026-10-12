@@ -10,6 +10,7 @@ import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.direction
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.axis.toVec2
+import org.hnau.ktcad.polygon
 
 fun rect(
     size: A2Values<Double>,
@@ -38,17 +39,11 @@ fun rect(
         )
 }
 
-fun circle(
-    radius: Double,
-): Region = Region.Circle(
-    radius = radius,
-)
-
 fun polygon2(
     first: A2Values<Double>,
     second: A2Values<Double>,
     vararg tail: A2Values<Double>,
-): Region = Region.Polygon(
+): Region = polygon(
     points = nonEmptyListOf(
         first,
         second,

@@ -4,7 +4,7 @@ import org.hnau.ktcad.axis.A3
 import org.hnau.ktcad.axis.A3Values
 import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.direction
-import org.hnau.ktcad.region.circle
+import org.hnau.ktcad.circle
 import org.hnau.ktcad.region.extrude
 import org.hnau.ktcad.region.fillet2dAll
 import org.hnau.ktcad.region.minus

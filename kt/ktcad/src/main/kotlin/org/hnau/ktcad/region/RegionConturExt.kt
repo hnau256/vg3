@@ -7,6 +7,7 @@ import org.hnau.ktcad.axis.A2Values
 import org.hnau.ktcad.axis.plus
 import org.hnau.ktcad.axis.toA2Values
 import org.hnau.ktcad.axis.toVec2
+import org.hnau.ktcad.contour
 import org.hnau.ktcad.ir.Curve2
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.fold
@@ -116,7 +117,7 @@ fun bezier2Rel(
 fun contour(
     start: A2Values<Double>,
     segments: NonEmptyList<ContourSegment>,
-): Region = Region.Contour(
+): Region = contour(
     start = start.toVec2(),
     edges = buildChain(
         start = start,

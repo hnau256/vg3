@@ -46,8 +46,8 @@ private val FOLD = ClassName(
  * For each domain it emits a matching sealed hierarchy plus:
  * - `<Domain>.lower(operand: (Domain) -> SelfIndex, <ref>: (RefDomain) -> RefIndex)` — the
  *   structural mapper that asks the caller for each child's index (storage stays outside);
- * - factories (`box`, `fuse`, …) for the primary domain (`Solid`) only; `Region` constructors are
- *   DSL sugar written by hand.
+ * - factories (`box`, `fuse`, … for `Solid`; `circle`, `polygon`, … for `Region`) for every domain,
+ *   each returning its concrete variant subtype.
  *
  * No domain → IR mapper is generated: the CLI never returns geometry to Kotlin.
  */
@@ -87,7 +87,7 @@ private val DOMAINS = listOf(
         domainName = "Region",
         selfIndexFqn = "$IR_PACKAGE.SketchIndex",
         references = emptyList(),
-        factories = false,
+        factories = true,
     ),
 )
 

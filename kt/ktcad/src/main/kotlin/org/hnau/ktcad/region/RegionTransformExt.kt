@@ -11,10 +11,12 @@ import org.hnau.ktcad.bbox.bbox
 import org.hnau.ktcad.bbox.interpolate
 import org.hnau.ktcad.ir.JoinKind
 import org.hnau.ktcad.ir.TransformOp2
+import org.hnau.ktcad.offset2d
+import org.hnau.ktcad.transform
 
 fun Region.transform(
     transform: TransformOp2,
-): Region.Transform = Region.Transform(
+): Region.Transform = transform(
     target = this,
     op = transform,
 )
@@ -75,7 +77,7 @@ fun Region.scale(
 fun Region.offset2d(
     distance: Double,
     join: JoinKind = JoinKind.ARC,
-): Region = Region.Offset2d(
+): Region = offset2d(
     target = this,
     distance = distance,
     join = join,

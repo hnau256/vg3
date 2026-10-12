@@ -1,13 +1,14 @@
 package org.hnau.ktcad.region
 
 import org.hnau.ktcad.Region
+import org.hnau.ktcad.fillet2d
 import org.hnau.ktcad.ir.RadiusSpec
 
 fun Region.fillet2d(
     radius: RadiusSpec,
-): Region = Region.Fillet2d(
-    target = this,
+): Region = fillet2d(
     radius = radius,
+    target = this,
 )
 
 fun Region.fillet2dAll(

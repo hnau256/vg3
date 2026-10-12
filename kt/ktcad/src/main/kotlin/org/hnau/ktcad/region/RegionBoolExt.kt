@@ -5,6 +5,7 @@ import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrNull
 import org.hnau.commons.kotlin.foldNullable
 import org.hnau.ktcad.Region
+import org.hnau.ktcad.bool
 import org.hnau.ktcad.ir.BooleanKind
 
 fun NonEmptyList<Region>.bool(
@@ -14,7 +15,7 @@ fun NonEmptyList<Region>.bool(
     .foldNullable(
         ifNull = { head },
         ifNotNull = { nonEmptyTail ->
-            Region.Bool(
+            bool(
                 kind = kind,
                 arguments = nonEmptyListOf(head),
                 tools = nonEmptyTail,
