@@ -2,6 +2,8 @@ package org.hnau.ktcad.axis
 
 import org.hnau.ktcad.ir.Vec2
 import org.hnau.ktcad.ir.Vec3
+import kotlin.math.cos
+import kotlin.math.sin
 
 // User-space sugar over `A2Values<Double>`/`A3Values<Double>`: the model counterparts and
 // scalar multiplication. The `@EnumValues` class already provides `get`/`map`/`combineWith`/`copy`.
@@ -131,3 +133,11 @@ operator fun A2Values<Double>.div(
 operator fun A3Values<Double>.div(
     other: Double,
 ): A3Values<Double> = map { it / other }
+
+fun A2Values.Companion.create(
+    angle: Double,
+    radius: Double,
+): A2Values<Double> = A2Values(
+    x = radius * cos(angle),
+    y = radius * sin(angle),
+)
