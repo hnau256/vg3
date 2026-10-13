@@ -32,16 +32,25 @@ fun Region.translate(
 )
 
 fun Region.calcOffsetTo(
+    axis: A2,
+    thisFraction: Double,
+    target: Double,
+): A2Values<Double> {
+    val thisPosition = this.bbox[axis].interpolate(thisFraction)
+    val delta = target - thisPosition
+    return axis.direction * delta
+}
+
+fun Region.calcOffsetTo(
     target: Region,
     axis: A2,
     targetFraction: Double,
     thisFraction: Double,
-): A2Values<Double> {
-    val targetPosition = target.bbox[axis].interpolate(targetFraction)
-    val thisPosition = this.bbox[axis].interpolate(thisFraction)
-    val delta = targetPosition - thisPosition
-    return axis.direction * delta
-}
+): A2Values<Double> = calcOffsetTo(
+    axis = axis,
+    thisFraction = thisFraction,
+    target = target.bbox[axis].interpolate(targetFraction),
+)
 
 fun Region.put(
     target: Region,

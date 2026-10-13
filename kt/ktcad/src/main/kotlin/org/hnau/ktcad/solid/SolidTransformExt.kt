@@ -26,16 +26,25 @@ fun Solid.translate(
 )
 
 fun Solid.calcOffsetTo(
+    axis: A3,
+    thisFraction: Double,
+    target: Double,
+): A3Values<Double> {
+    val thisPosition = this.bbox[axis].interpolate(thisFraction)
+    val delta = target - thisPosition
+    return axis.direction * delta
+}
+
+fun Solid.calcOffsetTo(
     target: Solid,
     axis: A3,
     targetFraction: Double,
     thisFraction: Double,
-): A3Values<Double> {
-    val targetPosition = target.bbox[axis].interpolate(targetFraction)
-    val thisPosition = this.bbox[axis].interpolate(thisFraction)
-    val delta = targetPosition - thisPosition
-    return axis.direction * delta
-}
+): A3Values<Double> = calcOffsetTo(
+    axis = axis,
+    thisFraction = thisFraction,
+    target = target.bbox[axis].interpolate(targetFraction),
+)
 
 fun Solid.put(
     target: Solid,
