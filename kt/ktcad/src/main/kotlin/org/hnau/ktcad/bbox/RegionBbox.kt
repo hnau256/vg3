@@ -50,7 +50,7 @@ val Region.bbox: A2Values<ClosedRange<Double>>
             box
         },
         ifFillet2d = { _, target -> target.bbox },
-        ifOffset2d = { distance, target, _ -> target.bbox.grow(distance) },
+        ifOffset2d = { distance, target, _ -> target.bbox.growNotShrink(distance) },
         ifPolygon = { points -> pointsBox(points) },
         ifTransform = { op, target -> target.bbox.transform(op) },
     )
@@ -85,17 +85,14 @@ private fun A2Values<ClosedRange<Double>>.cover(
     other: A2Values<ClosedRange<Double>>,
 ): A2Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun A2Values<ClosedRange<Double>>.grow(
+private fun A2Values<ClosedRange<Double>>.growNotShrink(
     distance: Double,
-): A2Values<ClosedRange<Double>> =
-    map {
-        it.grow(
-            maxOf(
-                a = 0.0,
-                b = distance,
-            ),
-        )
-    }
+): A2Values<ClosedRange<Double>> = growOrShrink(
+    distance = maxOf(
+        a = 0.0,
+        b = distance,
+    ),
+)
 
 private fun A2Values<ClosedRange<Double>>.transform(
     op: TransformOp2,

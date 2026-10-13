@@ -14,6 +14,7 @@ import org.hnau.ktcad.ir.TransformOp
 import org.hnau.ktcad.ir.Vec3
 import org.hnau.ktcad.ir.fold
 import org.hnau.commons.kotlin.foldBoolean
+import org.hnau.ktcad.axis.A2Values
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -92,7 +93,7 @@ val Solid.bbox: A3Values<ClosedRange<Double>>
         ifLoft = { sections, _, _, _, _, _, _ ->
             sections.map(::pathBox).reduce { a, b -> a.cover(b) }
         },
-        ifOffset = { distance, target, _ -> target.bbox.grow(distance) },
+        ifOffset = { distance, target, _ -> target.bbox.growNotShrink(distance) },
         ifPolyhedron = { _, points -> pointsBox(points) },
         ifRevolve = { _, profile ->
             val profileBox = profile.bbox
@@ -113,8 +114,8 @@ val Solid.bbox: A3Values<ClosedRange<Double>>
                 z = -radius..radius,
             )
         },
-        ifSweep = { path, profile, _, _ -> pathBox(path).grow(profileRadius(profile)) },
-        ifThickSolid = { _, offset, target, _ -> target.bbox.grow(offset) },
+        ifSweep = { path, profile, _, _ -> pathBox(path).growNotShrink(profileRadius(profile)) },
+        ifThickSolid = { _, offset, target, _ -> target.bbox.growNotShrink(offset) },
         ifTorus = { major_radius, minor_radius, _ ->
             val radius = major_radius + minor_radius
             box(
@@ -154,17 +155,14 @@ private fun A3Values<ClosedRange<Double>>.cover(
     other: A3Values<ClosedRange<Double>>,
 ): A3Values<ClosedRange<Double>> = combineWith(other = other) { a, b -> a.cover(b) }
 
-private fun A3Values<ClosedRange<Double>>.grow(
+private fun A3Values<ClosedRange<Double>>.growNotShrink(
     distance: Double,
-): A3Values<ClosedRange<Double>> =
-    map {
-        it.grow(
-            maxOf(
-                a = 0.0,
-                b = distance,
-            ),
-        )
-    }
+): A3Values<ClosedRange<Double>> = growOrShrink(
+    distance = maxOf(
+        a = 0.0,
+        b = distance,
+    ),
+)
 
 /** The radius of the profile about its own origin — how far a swept section can reach from the path. */
 private fun profileRadius(
