@@ -14,6 +14,7 @@ import org.hnau.ktcad.axis.div
 import org.hnau.ktcad.axis.times
 import org.hnau.ktcad.axis.toVec3
 import org.hnau.ktcad.axis.unaryMinus
+import org.hnau.ktcad.bbox.length
 import org.hnau.ktcad.box
 import org.hnau.ktcad.cylinder
 import org.hnau.ktcad.ir.Vec3
@@ -44,6 +45,17 @@ fun box(
             }
         )
 }
+
+fun box(
+    bounds: A3Values<ClosedRange<Double>>,
+): Solid = box(
+    size = bounds
+        .map(ClosedRange<Double>::length)
+).translate(
+    bounds
+        .map(ClosedRange<Double>::start)
+        .map(Double::unaryMinus)
+)
 
 fun cylinder(
     radius: Double,
