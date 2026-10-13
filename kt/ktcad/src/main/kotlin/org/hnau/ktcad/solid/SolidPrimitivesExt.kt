@@ -18,6 +18,7 @@ import org.hnau.ktcad.bbox.length
 import org.hnau.ktcad.box
 import org.hnau.ktcad.cylinder
 import org.hnau.ktcad.ir.Vec3
+import org.hnau.ktcad.path.helix
 import org.hnau.ktcad.polyhedron
 
 fun box(
@@ -72,6 +73,18 @@ fun cylinder(
         ifTrue = { cylinder.translate(-A3.Z.direction * height / 2.0) }
     )
 }
+
+fun cylinder(
+    radius: Double,
+    zRange: ClosedRange<Double>,
+    angle: Double? = null,
+): Solid = cylinder(
+    radius = radius,
+    height = zRange.length,
+    angle = angle,
+).translate(
+    value = A3.Z.direction * zRange.start,
+)
 
 data class PolyhedronFace(
     val first: A3Values<Double>,
