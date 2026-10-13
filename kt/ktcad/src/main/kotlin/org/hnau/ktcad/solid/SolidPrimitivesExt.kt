@@ -52,9 +52,8 @@ fun box(
     size = bounds
         .map(ClosedRange<Double>::length)
 ).translate(
-    bounds
+    value = bounds
         .map(ClosedRange<Double>::start)
-        .map(Double::unaryMinus)
 )
 
 fun cylinder(
