@@ -3,16 +3,22 @@
 // Shared helpers for the OCCT bridge implementation. Not part of the cxx bridge (see occt.h).
 
 #include <cstddef>
+#include <vector>
 
 #include <Standard_Failure.hxx>
 #include <Approx_ParametrizationType.hxx>
 #include <Bnd_Box.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_TransitionMode.hxx>
+#include <BRep_Builder.hxx>
 #include <GeomAbs_JoinType.hxx>
 #include <GeomAbs_Shape.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Compound.hxx>
 #include <TopoDS_Edge.hxx>
+#include <TopoDS_Face.hxx>
 #include <TopoDS_Shape.hxx>
 #include <gp_Pnt.hxx>
 
@@ -100,6 +106,28 @@ void ensure_valid(const TopoDS_Shape& shape);
 
 /// True when the shape is a solid or a compound consisting solely of solids.
 bool solids_only(const TopoDS_Shape& shape);
+
+/// Applies `build` to every face of `region` (in explorer order) and combines the results: the sole
+/// result when the region is a single face, otherwise a compound. A planar region may consist of
+/// several disjoint faces (e.g. the fuse of non-overlapping contours), so every region operation is
+/// defined face by face and lifted back into a single shape.
+template <typename F>
+TopoDS_Shape for_each_face(const TopoDS_Shape& region, F&& build) {
+    std::vector<TopoDS_Shape> results;
+    for (TopExp_Explorer explorer(region, TopAbs_FACE); explorer.More(); explorer.Next()) {
+        results.push_back(build(TopoDS::Face(explorer.Current())));
+    }
+    if (results.size() == 1) {
+        return results.front();
+    }
+    TopoDS_Compound compound;
+    BRep_Builder builder;
+    builder.MakeCompound(compound);
+    for (const TopoDS_Shape& result : results) {
+        builder.Add(compound, result);
+    }
+    return compound;
+}
 
 /// The `index`-th solid of `shape` (throws when out of range).
 TopoDS_Shape nth_solid(const TopoDS_Shape& shape, std::size_t index);

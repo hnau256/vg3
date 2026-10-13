@@ -58,25 +58,25 @@ std::unique_ptr<Shape> offset(const Shape& shape, double distance, std::uint8_t 
 
 std::unique_ptr<Shape> offset2d(const Shape& profile, double distance, std::uint8_t join) {
     return std::make_unique<Shape>(detail::build([&] {
-        const TopoDS_Face face = TopoDS::Face(profile.topods());
-
-        // Offset the whole face (not just the outer wire): holes are offset in the right direction
-        // and preserved. The result is a compound of wires; rebuild the face from all of them —
-        // OCCT classifies the outer boundary and the holes itself.
-        BRepOffsetAPI_MakeOffset maker(face, detail::join_type(join), Standard_False);
-        maker.Perform(distance);
-        if (!maker.IsDone()) {
-            throw std::runtime_error("BRepOffsetAPI_MakeOffset did not complete");
-        }
-        BRepBuilderAPI_MakeFace make_face(BRep_Tool::Surface(face), detail::kPointTolerance);
-        for (TopExp_Explorer explorer(maker.Shape(), TopAbs_WIRE); explorer.More();
-             explorer.Next()) {
-            make_face.Add(TopoDS::Wire(explorer.Current()));
-        }
-        if (!make_face.IsDone()) {
-            throw std::runtime_error("cannot build a face from the offset contour");
-        }
-        return make_face.Face();
+        return detail::for_each_face(profile.topods(), [&](const TopoDS_Face& face) {
+            // Offset the whole face (not just the outer wire): holes are offset in the right
+            // direction and preserved. The result is a compound of wires; rebuild the face from all
+            // of them — OCCT classifies the outer boundary and the holes itself.
+            BRepOffsetAPI_MakeOffset maker(face, detail::join_type(join), Standard_False);
+            maker.Perform(distance);
+            if (!maker.IsDone()) {
+                throw std::runtime_error("BRepOffsetAPI_MakeOffset did not complete");
+            }
+            BRepBuilderAPI_MakeFace make_face(BRep_Tool::Surface(face), detail::kPointTolerance);
+            for (TopExp_Explorer explorer(maker.Shape(), TopAbs_WIRE); explorer.More();
+                 explorer.Next()) {
+                make_face.Add(TopoDS::Wire(explorer.Current()));
+            }
+            if (!make_face.IsDone()) {
+                throw std::runtime_error("cannot build a face from the offset contour");
+            }
+            return TopoDS_Shape(make_face.Face());
+        });
     }));
 }
 

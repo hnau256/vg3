@@ -60,25 +60,29 @@ std::unique_ptr<Shape> make_circle(double radius) {
 
 std::unique_ptr<Shape> extrude(const Shape& profile, double height) {
     return std::make_unique<Shape>(detail::build([&] {
-        BRepPrimAPI_MakePrism maker(TopoDS::Face(profile.topods()), gp_Vec(0.0, 0.0, height));
-        if (!maker.IsDone()) {
-            throw std::runtime_error("BRepPrimAPI_MakePrism did not complete");
-        }
-        return maker.Shape();
+        return detail::for_each_face(profile.topods(), [&](const TopoDS_Face& face) {
+            BRepPrimAPI_MakePrism maker(face, gp_Vec(0.0, 0.0, height));
+            if (!maker.IsDone()) {
+                throw std::runtime_error("BRepPrimAPI_MakePrism did not complete");
+            }
+            return maker.Shape();
+        });
     }));
 }
 
 std::unique_ptr<Shape> revolve(const Shape& profile, double angle) {
     return std::make_unique<Shape>(detail::build([&] {
-        BRepPrimAPI_MakeRevol maker(
-            TopoDS::Face(profile.topods()),
-            gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 1.0, 0.0)),
-            angle
-        );
-        if (!maker.IsDone()) {
-            throw std::runtime_error("BRepPrimAPI_MakeRevol did not complete");
-        }
-        return maker.Shape();
+        return detail::for_each_face(profile.topods(), [&](const TopoDS_Face& face) {
+            BRepPrimAPI_MakeRevol maker(
+                face,
+                gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 1.0, 0.0)),
+                angle
+            );
+            if (!maker.IsDone()) {
+                throw std::runtime_error("BRepPrimAPI_MakeRevol did not complete");
+            }
+            return maker.Shape();
+        });
     }));
 }
 
@@ -90,7 +94,6 @@ std::unique_ptr<Shape> sweep(
 ) {
     return std::make_unique<Shape>(detail::build([&] {
         const TopoDS_Wire spine_wire = TopoDS::Wire(spine.topods());
-        const TopoDS_Face profile_face = TopoDS::Face(profile.topods());
 
         // The profile lives in the XY plane; place it at the spine start, its plane perpendicular
         // to the tangent. Section frame (documented in README.md): local X is radial — away from
@@ -150,25 +153,30 @@ std::unique_ptr<Shape> sweep(
             return pipe.Shape();
         };
 
-        // Sweep the outer contour into a solid, then subtract each hole swept the same way — so a
-        // section with holes becomes a hollow tube (README: holes are preserved).
-        const TopoDS_Wire outer = BRepTools::OuterWire(profile_face);
-        TopoDS_Shape result = sweep_wire(outer);
-        for (TopExp_Explorer wires(profile_face, TopAbs_WIRE); wires.More(); wires.Next()) {
-            const TopoDS_Wire wire = TopoDS::Wire(wires.Current());
-            if (wire.IsSame(outer)) {
-                continue;
+        // Sweep each face of the profile into a solid, then subtract each hole swept the same way —
+        // so a section with holes becomes a hollow tube (README: holes are preserved). A region of
+        // several disjoint faces becomes several pipes, combined into one shape.
+        const auto sweep_face = [&](const TopoDS_Face& profile_face) -> TopoDS_Shape {
+            const TopoDS_Wire outer = BRepTools::OuterWire(profile_face);
+            TopoDS_Shape result = sweep_wire(outer);
+            for (TopExp_Explorer wires(profile_face, TopAbs_WIRE); wires.More(); wires.Next()) {
+                const TopoDS_Wire wire = TopoDS::Wire(wires.Current());
+                if (wire.IsSame(outer)) {
+                    continue;
+                }
+                const TopoDS_Shape cavity = sweep_wire(wire);
+                BRepAlgoAPI_Cut cut(result, cavity);
+                cut.SetRunParallel(Standard_False);
+                cut.Build();
+                if (!cut.IsDone()) {
+                    throw std::runtime_error("cannot subtract a swept hole from the swept section");
+                }
+                result = cut.Shape();
             }
-            const TopoDS_Shape cavity = sweep_wire(wire);
-            BRepAlgoAPI_Cut cut(result, cavity);
-            cut.SetRunParallel(Standard_False);
-            cut.Build();
-            if (!cut.IsDone()) {
-                throw std::runtime_error("cannot subtract a swept hole from the swept section");
-            }
-            result = cut.Shape();
-        }
-        return result;
+            return result;
+        };
+
+        return detail::for_each_face(profile.topods(), sweep_face);
     }));
 }
 

@@ -1,0 +1,25 @@
+{
+  "bodies": [
+    {
+      "area": 117.69911184307756,
+      "bounds": {
+        "max": {
+          "x": 14.0,
+          "y": 4.0,
+          "z": 2.0
+        },
+        "min": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      "edges": 48,
+      "faces": 20,
+      "name": "sketch_fillet2d_disjoint",
+      "solids": 2,
+      "volume": 60.56637061435917
+    }
+  ],
+  "version": 1
+}

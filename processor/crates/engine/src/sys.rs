@@ -97,7 +97,7 @@ pub(crate) mod ffi {
 
         fn make_circle(radius: f64) -> Result<UniquePtr<Shape>>;
 
-        fn as_face(shape: &Shape) -> Result<UniquePtr<Shape>>;
+        fn as_region(shape: &Shape) -> Result<UniquePtr<Shape>>;
 
         fn extrude(profile: &Shape, height: f64) -> Result<UniquePtr<Shape>>;
 
@@ -138,9 +138,9 @@ pub(crate) mod ffi {
 
         fn fillet2d(profile: &Shape, values: &[f64]) -> Result<UniquePtr<Shape>>;
 
-        fn face_corner_count(face: &Shape) -> usize;
+        fn region_corner_count(region: &Shape) -> usize;
 
-        fn face_corner_data(face: &Shape, corner: usize) -> Vec<f64>;
+        fn region_corner_data(region: &Shape, corner: usize) -> Vec<f64>;
 
         type BooleanBuilder;
 

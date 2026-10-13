@@ -125,82 +125,101 @@ gp_Vec edge_tangent_at(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
     }
     return tangent.Normalized();
 }
-}  // namespace
 
-std::size_t face_corner_count(const Shape& face) {
-    const auto vertex_edges = face_corner_map(face.topods());
-    std::size_t count = 0;
-    for (Standard_Integer index = 1; index <= vertex_edges.Extent(); ++index) {
-        if (vertex_edges.FindFromIndex(index).Extent() >= 2) {
-            ++count;
+/// Calls `visit` for every corner (a vertex shared by at least two edges) of the planar region, in
+/// explorer order: face by face, and within a face in `face_corner_map` order. The region may
+/// consist of several disjoint faces, so corners are enumerated per face and indexed globally.
+template <typename F>
+void for_each_corner(const TopoDS_Shape& region, F&& visit) {
+    for (TopExp_Explorer faces(region, TopAbs_FACE); faces.More(); faces.Next()) {
+        const TopoDS_Face face = TopoDS::Face(faces.Current());
+        const auto vertex_edges = face_corner_map(face);
+        for (Standard_Integer index = 1; index <= vertex_edges.Extent(); ++index) {
+            const TopTools_ListOfShape& edges = vertex_edges.FindFromIndex(index);
+            if (edges.Extent() < 2) {
+                continue;
+            }
+            visit(TopoDS::Vertex(vertex_edges.FindKey(index)), edges);
         }
     }
+}
+}  // namespace
+
+std::size_t region_corner_count(const Shape& region) {
+    std::size_t count = 0;
+    for_each_corner(
+        region.topods(),
+        [&](const TopoDS_Vertex&, const TopTools_ListOfShape&) { ++count; }
+    );
     return count;
 }
 
-rust::Vec<double> face_corner_data(const Shape& face, std::size_t corner) {
-    const auto vertex_edges = face_corner_map(face.topods());
+rust::Vec<double> region_corner_data(const Shape& region, std::size_t corner) {
+    rust::Vec<double> result;
     std::size_t current = 0;
-    for (Standard_Integer index = 1; index <= vertex_edges.Extent(); ++index) {
-        const TopTools_ListOfShape& edges = vertex_edges.FindFromIndex(index);
-        if (edges.Extent() < 2) {
-            continue;
+    bool found = false;
+    for_each_corner(
+        region.topods(),
+        [&](const TopoDS_Vertex& vertex, const TopTools_ListOfShape& edges) {
+            if (current++ != corner) {
+                return;
+            }
+            const gp_Pnt point = BRep_Tool::Pnt(vertex);
+            const gp_Vec first = edge_tangent_at(TopoDS::Edge(edges.First()), vertex);
+            const gp_Vec second = edge_tangent_at(TopoDS::Edge(edges.Last()), vertex);
+            const double angle = first.Angle(second);
+            result.push_back(point.X());
+            result.push_back(point.Y());
+            result.push_back(point.Z());
+            result.push_back(first.X());
+            result.push_back(first.Y());
+            result.push_back(first.Z());
+            result.push_back(second.X());
+            result.push_back(second.Y());
+            result.push_back(second.Z());
+            result.push_back(angle);
+            found = true;
         }
-        if (current != corner) {
-            ++current;
-            continue;
-        }
-        const TopoDS_Vertex vertex = TopoDS::Vertex(vertex_edges.FindKey(index));
-        const gp_Pnt point = BRep_Tool::Pnt(vertex);
-        const gp_Vec first = edge_tangent_at(TopoDS::Edge(edges.First()), vertex);
-        const gp_Vec second = edge_tangent_at(TopoDS::Edge(edges.Last()), vertex);
-        const double angle = first.Angle(second);
-        rust::Vec<double> data;
-        data.push_back(point.X());
-        data.push_back(point.Y());
-        data.push_back(point.Z());
-        data.push_back(first.X());
-        data.push_back(first.Y());
-        data.push_back(first.Z());
-        data.push_back(second.X());
-        data.push_back(second.Y());
-        data.push_back(second.Z());
-        data.push_back(angle);
-        return data;
+    );
+    if (!found) {
+        throw std::runtime_error("corner index is out of range");
     }
-    throw std::runtime_error("corner index is out of range");
+    return result;
 }
 
 std::unique_ptr<Shape> fillet2d(const Shape& profile, rust::Slice<const double> values) {
     return std::make_unique<Shape>(detail::build([&] {
-        const TopoDS_Face face = TopoDS::Face(profile.topods());
-        const auto vertex_edges = face_corner_map(face);
-
-        BRepFilletAPI_MakeFillet2d maker(face);
         std::size_t global = 0;
-        std::size_t added = 0;
-        for (Standard_Integer index = 1; index <= vertex_edges.Extent(); ++index) {
-            if (vertex_edges.FindFromIndex(index).Extent() < 2) {
-                continue;
+        return detail::for_each_face(
+            profile.topods(),
+            [&](const TopoDS_Face& face) -> TopoDS_Shape {
+                const auto vertex_edges = face_corner_map(face);
+                BRepFilletAPI_MakeFillet2d maker(face);
+                std::size_t added = 0;
+                for (Standard_Integer index = 1; index <= vertex_edges.Extent(); ++index) {
+                    if (vertex_edges.FindFromIndex(index).Extent() < 2) {
+                        continue;
+                    }
+                    if (global >= values.size()) {
+                        throw std::runtime_error("fillet2d value array is too short");
+                    }
+                    const double value = values[global];
+                    ++global;
+                    if (value > 0.0) {
+                        maker.AddFillet(TopoDS::Vertex(vertex_edges.FindKey(index)), value);
+                        ++added;
+                    }
+                }
+                if (added == 0) {
+                    return TopoDS_Shape(face);
+                }
+                maker.Build();
+                if (!maker.IsDone()) {
+                    throw std::runtime_error("BRepFilletAPI_MakeFillet2d did not complete");
+                }
+                return maker.Shape();
             }
-            if (global >= values.size()) {
-                throw std::runtime_error("fillet2d value array is too short");
-            }
-            const double value = values[global];
-            ++global;
-            if (value > 0.0) {
-                maker.AddFillet(TopoDS::Vertex(vertex_edges.FindKey(index)), value);
-                ++added;
-            }
-        }
-        if (added == 0) {
-            return TopoDS_Shape(face);
-        }
-        maker.Build();
-        if (!maker.IsDone()) {
-            throw std::runtime_error("BRepFilletAPI_MakeFillet2d did not complete");
-        }
-        return maker.Shape();
+        );
     }));
 }
 

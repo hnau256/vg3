@@ -129,8 +129,9 @@ std::unique_ptr<Shape> make_face(const Shape& wire);
 
 std::unique_ptr<Shape> make_circle(double radius);
 
-/// Reduces a shape (a face, or a compound such as a boolean result) to its single planar face.
-std::unique_ptr<Shape> as_face(const Shape& shape);
+/// Reduces a shape (a face, or a compound such as a boolean result) to its planar region: the single
+/// face, or a compound of the disjoint faces it is made of. A region may have several parts.
+std::unique_ptr<Shape> as_region(const Shape& shape);
 
 std::unique_ptr<Shape> extrude(const Shape& profile, double height);
 
@@ -198,9 +199,9 @@ std::unique_ptr<Shape> fillet(
 
 std::unique_ptr<Shape> fillet2d(const Shape& profile, rust::Slice<const double> values);
 
-std::size_t face_corner_count(const Shape& face);
+std::size_t region_corner_count(const Shape& region);
 
-rust::Vec<double> face_corner_data(const Shape& face, std::size_t corner);
+rust::Vec<double> region_corner_data(const Shape& region, std::size_t corner);
 
 class BooleanBuilder {
 public:

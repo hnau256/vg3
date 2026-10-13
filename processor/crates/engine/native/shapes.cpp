@@ -6,11 +6,14 @@
 #include <StlAPI_Writer.hxx>
 
 #include <Standard_Version.hxx>
+#include <BRep_Builder.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Compound.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shape.hxx>
+
+#include <vector>
 
 namespace vg3 {
 
@@ -40,19 +43,26 @@ rust::String occt_version() {
     return rust::String(OCC_VERSION_COMPLETE);
 }
 
-std::unique_ptr<Shape> as_face(const Shape& shape) {
+std::unique_ptr<Shape> as_region(const Shape& shape) {
     return std::make_unique<Shape>(detail::build([&] {
-        TopoDS_Face face;
-        Standard_Integer count = 0;
+        std::vector<TopoDS_Face> faces;
         for (TopExp_Explorer explorer(shape.topods(), TopAbs_FACE); explorer.More();
              explorer.Next()) {
-            face = TopoDS::Face(explorer.Current());
-            ++count;
+            faces.push_back(TopoDS::Face(explorer.Current()));
         }
-        if (count != 1) {
-            throw std::runtime_error("a region must be a single planar face");
+        if (faces.empty()) {
+            throw std::runtime_error("a region must contain at least one face");
         }
-        return TopoDS_Shape(face);
+        if (faces.size() == 1) {
+            return TopoDS_Shape(faces.front());
+        }
+        TopoDS_Compound compound;
+        BRep_Builder builder;
+        builder.MakeCompound(compound);
+        for (const TopoDS_Face& face : faces) {
+            builder.Add(compound, face);
+        }
+        return TopoDS_Shape(compound);
     }));
 }
 

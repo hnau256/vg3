@@ -1,0 +1,25 @@
+{
+  "bodies": [
+    {
+      "area": 47.12388980384691,
+      "bounds": {
+        "max": {
+          "x": 6.5,
+          "y": 1.5,
+          "z": 1.0
+        },
+        "min": {
+          "x": -1.5,
+          "y": -1.5,
+          "z": 0.0
+        }
+      },
+      "edges": 6,
+      "faces": 6,
+      "name": "sketch_offset2d_disjoint",
+      "solids": 2,
+      "volume": 14.13716694115407
+    }
+  ],
+  "version": 1
+}
